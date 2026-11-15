@@ -796,6 +796,59 @@
   .fx.gold.big { font-size: 22px; color: #ffe45c; text-shadow: 0 0 8px #000, 0 0 16px #ffd84a; white-space: nowrap; }
 
   .charges .val .extra { font-size: .9rem; margin-left: 4px; color: #8dffb0; text-shadow: 0 0 8px #8dffb088; vertical-align: super; }
+
+  /* ---- v14: clearer HIT (burning) vs SUNK (wreck) ---- */
+  .mark.hit {
+    background: radial-gradient(circle at 50% 60%, #fff3b0 0 10%, #ffb02e 24%, #ff4b1f 44%, #ff4b1f00 66%);
+    box-shadow: inset 0 0 0 2px #ff6a1fcc;
+    border-radius: 6px;
+  }
+  .mark.hit::before {                 /* little flame tongues */
+    content: ""; position: absolute; left: 50%; top: 18%; width: 14px; height: 18px; margin-left: -7px;
+    background: radial-gradient(ellipse at 50% 80%, #fff6c0 0 20%, #ffb02e 45%, #ff4b1f00 72%);
+    border-radius: 50% 50% 45% 45%; animation: flick .45s ease-in-out infinite alternate;
+  }
+  @keyframes flick { from { transform: scaleY(.85) translateY(2px); opacity: .8; } to { transform: scaleY(1.25) translateY(-3px); opacity: 1; } }
+  .mark.hit.dead { background: radial-gradient(circle, #3a3f45 0 22%, #22272c 45%, #22272c00 68%); box-shadow: none; opacity: .9; filter: none; }
+  .mark.hit.dead::before { display: none; }
+  .mark.hit.dead::after { display: block !important; background: radial-gradient(circle, #ff6a1f66 0, #ff6a1f00 60%); animation: ember 1.6s ease-in-out infinite alternate; width: 10px; height: 10px; margin: -5px; }
+  @keyframes ember { from { opacity: .3; } to { opacity: .9; } }
+  .sunkmark { position: absolute; z-index: 5; pointer-events: none; border: 2.5px solid #ff3b3b; border-radius: 8px;
+    background: repeating-linear-gradient(45deg, #ff3b3b22 0 6px, transparent 6px 12px); box-shadow: 0 0 10px #ff3b3b88;
+    display: flex; align-items: center; justify-content: center; animation: sunkIn .6s cubic-bezier(.2, 1.4, .4, 1); }
+  .sunkmark span { font-size: 22px; color: #fff; text-shadow: 0 0 6px #ff3b3b, 0 2px 0 #000; }
+  @keyframes sunkIn { from { transform: scale(1.4); opacity: 0; } }
+  .shipmodel.sunk { filter: grayscale(1) brightness(.35) sepia(.4) drop-shadow(2px 4px 2px #00142c99); opacity: .85; }
+  body.low-gfx .mark.hit::before { animation: none; }
+
+  /* ---- v14: SHOP ---- */
+  .upgrades { width: 230px; }
+  .shopbtn { width: 100%; margin-top: 4px; padding: 10px; border-radius: 10px; cursor: pointer; font-family: "Black Ops One", "Segoe UI", sans-serif;
+    letter-spacing: 2px; font-size: 1rem; color: #fff; background: linear-gradient(180deg, #ffb02e, #d4651a); border: 1px solid #ffe9a8;
+    box-shadow: 0 4px 14px #ff9a3c55; transition: transform .12s, box-shadow .12s; }
+  .shopbtn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px #ff9a3c88; }
+  .shop-sub { font-size: .7rem; opacity: .75; margin-top: 6px; text-align: center; line-height: 1.3; }
+  .shop { position: fixed; inset: 0; z-index: 30; display: none; align-items: center; justify-content: center; background: #000b; }
+  .shop.show { display: flex; animation: homeIn .25s ease-out; }
+  .shop-box { width: min(1180px, 96vw); max-height: 92vh; display: flex; flex-direction: column; border-radius: 18px; padding: 16px 18px;
+    background: linear-gradient(180deg, #0b3a66, #021a33); border: 1px solid #ffe9a888; box-shadow: 0 20px 60px #000c; animation: menuIn .3s ease-out; }
+  .shop-top { display: flex; align-items: center; gap: 16px; }
+  .shop-title { font-family: "Black Ops One", "Segoe UI", sans-serif; font-size: 1.8rem; letter-spacing: 5px; flex: 1; }
+  .shop-gold { font-size: 1.5rem; color: #ffd84a; text-shadow: 0 0 10px #ffd84a88; }
+  .shop-close { width: 38px; height: 38px; border-radius: 10px; cursor: pointer; font-size: 1.1rem; color: #fff; background: #ffffff18; border: 1px solid #ffffff44; }
+  .shop-note { font-size: .85rem; opacity: .75; margin: 4px 0 12px; }
+  .shop-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 14px 10px; overflow-y: auto; padding: 6px 4px 10px; }
+  .shopitem { display: flex; flex-direction: column; align-items: center; gap: 6px; transition: transform .15s; }
+  .shopitem .si-card { width: 113px; height: 161px; }
+  .shopitem .si-card .gcard { transform: scale(.75); transform-origin: top left; }
+  .shopitem:not(.locked):hover { transform: translateY(-4px); }
+  .shopitem.locked .si-card { filter: grayscale(.85) brightness(.6); }
+  .si-buy { width: 100%; max-width: 113px; padding: 6px 0; border-radius: 9px; cursor: pointer; font-weight: bold; font-size: .9rem;
+    background: #ffd84a22; color: #ffe89a; border: 1px solid #ffd84aaa; }
+  .si-buy:hover:not(:disabled) { background: #ffd84a55; }
+  .si-buy:disabled { opacity: .45; cursor: default; }
+  .shopitem.bought { animation: bought .6s ease-out; }
+  @keyframes bought { 30% { transform: scale(1.12); filter: drop-shadow(0 0 16px #ffd84a); } }
 </style>
 </head>
 <body>
@@ -835,6 +888,18 @@
 
   <div class="fleetpanel" id="fleet"></div>
   <div class="upgrades" id="upgrades"></div>
+
+  <div class="shop" id="shop">
+    <div class="shop-box">
+      <div class="shop-top">
+        <div class="shop-title">🛒 SHOP</div>
+        <div class="shop-gold">🪙 <b id="shopGold">0</b></div>
+        <button class="shop-close" id="shopClose">✕</button>
+      </div>
+      <div class="shop-note" id="shopNote"></div>
+      <div class="shop-grid" id="shopGrid"></div>
+    </div>
+  </div>
 
   <div class="popup" id="popup">
     <div class="popup-title">CHOOSE A CARD</div>
@@ -960,7 +1025,7 @@
 
   let moved = 0;
   window.addEventListener("mousedown", e => {
-    if (e.button !== 0 || e.target.closest(".panel, .charges, .overlay, .popup, .soundbtn, .fleetpanel, .upgrades, .home, .menubtn, .leavebox")) return;
+    if (e.button !== 0 || e.target.closest(".panel, .charges, .overlay, .popup, .soundbtn, .fleetpanel, .upgrades, .home, .menubtn, .leavebox, .shop")) return;
     moved = 0;                     // camera is fixed: clicks only, no dragging
     e.preventDefault();
   });
@@ -1089,13 +1154,14 @@
   //  GOLD & UPGRADES
   // =====================================================================
   const GOLD_PER_HIT = 10;
+  // upgrades were removed — every card keeps its base stats
   const UPGRADES = {
-    shot:    { name: "Shot",         icon: "🎯", base: 1,  levels: [{ cost: 60,  v: 2 }, { cost: 150, v: 3 }] },
-    aoe:     { name: "AOE Strike",   icon: "💥", base: 5,  levels: [{ cost: 80,  v: 7 }, { cost: 160, v: 9 }] },
-    scan:    { name: "Sonar Scan",   icon: "📡", base: 9,  levels: [{ cost: 60,  v: 11 }, { cost: 120, v: 13 }] },
-    cluster: { name: "Cluster Bomb", icon: "🎆", base: 10, levels: [{ cost: 70,  v: 15 }, { cost: 140, v: 20 }] },
-    torpedo: { name: "Torpedo",      icon: "🚀", base: 1,  levels: [{ cost: 70,  v: 2 }, { cost: 140, v: 3 }] },
-    repair:  { name: "Repair",       icon: "🔧", base: 1,  levels: [{ cost: 100, v: 2 }] },
+    shot:    { name: "Shot",         base: 1,  levels: [] },
+    aoe:     { name: "AOE Strike",   base: 5,  levels: [] },
+    scan:    { name: "Sonar Scan",   base: 9,  levels: [] },
+    cluster: { name: "Cluster Bomb", base: 10, levels: [] },
+    torpedo: { name: "Torpedo",      base: 1,  levels: [] },
+    repair:  { name: "Repair",       base: 1,  levels: [] },
   };
   const level = (sd, key) => sd.up[key];
   const val = (sd, key) => level(sd, key) ? UPGRADES[key].levels[level(sd, key) - 1].v : UPGRADES[key].base;
@@ -1489,6 +1555,7 @@
       ship.sunk = true;
       drawModel(T, ship);
       st.sunk++;
+      sunkMarker(T, ship);
       sinkBonus(other(T), j);
       sunkToast(T === sides.bot, ship.size);
       ship.cells.forEach(k => { const m = T.marks[k]; if (m && m.el) m.el.classList.add("dead"); });   // stop fire animation on wrecks
@@ -1924,6 +1991,17 @@
     return `${who}: NUKE — ` + summary(res);
   }
 
+  // a sunk ship gets a red outline + skull so it's obvious it's destroyed
+  function sunkMarker(T, ship) {
+    const r0 = Math.min(...ship.cells.map(j => rc(j)[0])), c0 = Math.min(...ship.cells.map(j => rc(j)[1]));
+    const el = document.createElement("div");
+    el.className = "sunkmark";
+    el.style.left = (10 + c0 * 39 - 3) + "px"; el.style.top = (10 + r0 * 39 - 3) + "px";
+    el.style.width = ((ship.horiz ? ship.size : 1) * 39 + 5) + "px"; el.style.height = ((ship.horiz ? 1 : ship.size) * 39 + 5) + "px";
+    el.innerHTML = '<span>☠</span>';
+    document.getElementById(T.zone).appendChild(el);
+  }
+
   function renderShields(sd) {
     sd.cells.forEach(c => c.classList.remove("shielded"));
     document.getElementById(sd.zone).classList.toggle("domed", sd.shields.some(sh => sh.cells.size === N * N));
@@ -2002,6 +2080,7 @@
     whose = who; busy = false; active = -1; moving = null;
     const sd = sides[who];
     sd.extraShots = 0;
+    sd.gold += TURN_INCOME; stats[sd.name].gold += TURN_INCOME;   // same on both screens in multiplayer
     // shields of the OTHER side count down at the start of each of my turns (i.e. after an enemy turn)
     if (sd.shields.length) { sd.shields.forEach(sh => sh.turns--); sd.shields = sd.shields.filter(sh => sh.turns > 0); renderShields(sd); }
     if (sd.charge < CHARGE_CAP) {
@@ -2013,6 +2092,7 @@
     w.textContent = "TURN " + Math.max(1, turn) + " · " + (who === "me" ? "YOUR TURN" : mode === "mp" ? "OPPONENT'S TURN" : "ENEMY TURN");
     w.className = "who " + who;
     renderCharges(); renderPanel(); renderUpgrades(); refreshHover();
+    if (who !== "me") closeShop();
     const tb = document.getElementById("turnbar");
     tb.classList.remove("pulse"); void tb.offsetWidth; tb.classList.add("pulse");
     turnBanner(who);
@@ -2104,6 +2184,8 @@
     setTimeout(() => el.remove(), 600);
     await wait(250);
   }
+  document.getElementById("shopClose").onclick = closeShop;
+  document.getElementById("shop").addEventListener("mousedown", e => { if (e.target.id === "shop") closeShop(); });
   document.getElementById("charges").onclick = () => {
     if (phase !== "battle" || sides.me.charge < MAX_CHARGE) return;
     openDraw();
@@ -2148,8 +2230,49 @@
     popup.classList.add("show");
   }
 
-  // upgrades panel ----------------------------------------------------------
-  function renderUpgrades(bump) {
+  // shop -----------------------------------------------------------------
+  const PRICE = { common: 30, rare: 60, epic: 120, legendary: 250 };
+  const TURN_INCOME = 5;                                    // a little gold every turn
+  const priceOf = key => PRICE[rarityOf(key)];
+  const SHOP_ORDER = Object.keys(CARDS).sort((a, b) => priceOf(a) - priceOf(b) || CARDS[a].name.localeCompare(CARDS[b].name));
+  function renderUpgrades(bump) {                          // the small SHOP panel (bottom left)
+    const el = document.getElementById("upgrades"), me = sides.me;
+    const cheapest = Math.min(...Object.values(PRICE));
+    el.innerHTML = `<div class="up-head"><h3>SHOP</h3><div class="gold${bump ? " bump" : ""}">🪙 <b>${me.gold}</b></div></div>` +
+      `<button class="shopbtn" id="openShop">🛒 OPEN SHOP</button>` +
+      `<div class="shop-sub">${me.gold >= cheapest ? "You can afford a card!" : "Earn gold: +10 per hit · +20 per ship sunk · +" + TURN_INCOME + " per turn"}</div>`;
+    document.getElementById("openShop").onclick = openShop;
+    if (document.getElementById("shop").classList.contains("show")) renderShop();
+  }
+  function openShop() { Sound.play("select"); document.getElementById("shop").classList.add("show"); renderShop(); }
+  function closeShop() { document.getElementById("shop").classList.remove("show"); }
+  function renderShop() {
+    const me = sides.me, canBuy = phase === "battle" && whose === "me" && !busy;
+    document.getElementById("shopGold").textContent = me.gold;
+    document.getElementById("shopNote").textContent = canBuy ? "Buying doesn't use your turn · bought cards go to your hand" : "You can buy on your turn";
+    const grid = document.getElementById("shopGrid");
+    grid.innerHTML = "";
+    SHOP_ORDER.forEach(key => {
+      const price = priceOf(key), ok = canBuy && me.gold >= price;
+      const item = document.createElement("div");
+      item.className = "shopitem" + (ok ? "" : " locked");
+      item.innerHTML = `<div class="si-card">${cardHTML(key)}</div><button class="si-buy" ${ok ? "" : "disabled"}>🪙 ${price}</button>`;
+      item.querySelector(".si-buy").onclick = () => buyCard(key, item);
+      grid.appendChild(item);
+    });
+  }
+  function buyCard(key, item) {
+    const me = sides.me, price = priceOf(key);
+    if (phase !== "battle" || whose !== "me" || busy || me.gold < price) return;
+    me.gold -= price;
+    me.inv.push(key); newCard = true;
+    if (mode === "mp") Net.send({ t: "act", a: "shop", cost: price });
+    Sound.play("coin"); setTimeout(() => Sound.play("pick"), 80);
+    if (item) { item.classList.remove("bought"); void item.offsetWidth; item.classList.add("bought"); }
+    setLog(`You bought ${CARDS[key].name}`);
+    renderPanel(); renderUpgrades(true); refreshHover();
+  }
+  function oldUpgradesPanelUnused(bump) {
     const el = document.getElementById("upgrades"), me = sides.me;
     const canBuy = phase === "battle" && whose === "me" && !busy;
     let html = `<div class="up-head"><h3>UPGRADES</h3><div class="gold${bump ? " bump" : ""}">🪙 <b>${me.gold}</b></div></div>`;
@@ -2166,7 +2289,7 @@
     el.innerHTML = html;
     el.querySelectorAll(".buy").forEach(b => b.onclick = () => buyUpgrade(b.dataset.k));
   }
-  function buyUpgrade(key) {
+  function buyUpgradeUnused(key) {
     const me = sides.me, next = UPGRADES[key].levels[level(me, key)];
     if (!next || me.gold < next.cost || whose !== "me" || busy || phase !== "battle") return;
     me.gold -= next.cost; me.up[key]++;
@@ -2215,10 +2338,11 @@
       await wait(700);
     }
     const smart = botLevel === "hard" ? 1 : botLevel === "medium" ? 0.75 : 0.3;   // how often it follows up on hits
-    // buy an upgrade if it can afford one (easy bots never upgrade)
-    if (botLevel !== "easy") for (const key of ["shot", "aoe", "cluster", "scan", "torpedo", "repair"]) {
-      const next = UPGRADES[key].levels[level(A, key)];
-      if (next && A.gold >= next.cost) { A.gold -= next.cost; A.up[key]++; setLog(`Enemy upgraded ${UPGRADES[key].name}`); await wait(600); break; }
+    // shop: buy the best card it can afford (easy bots never shop)
+    if (botLevel !== "easy") {
+      const wish = ["nuke", "kraken", "homing", "barrage", "carpet", "irondome", "aoe", "airstrike", "flare", "cluster", "armor", "depth", "scan", "torpedo"];
+      const k = wish.find(c => A.gold >= priceOf(c) && (A.gold - priceOf(c) >= 30 || priceOf(c) >= 120));
+      if (k) { A.gold -= priceOf(k); A.inv.push(k); setLog("Enemy bought a card from the shop"); await wait(600); }
     }
     // maybe play a card first
     const hot = Math.random() < smart ? botTarget() : -1;
@@ -2507,43 +2631,58 @@
 
   // ---- Ship models (top-down drawings) ----
   function shipSVG(size) {
-    const W = size * 39 - 1, H = 38;
-    const bow = size === 1 ? 12 : 22;
+    const W = size * 39 - 1, H = 38, uid = "s" + size;
+    const bow = size === 1 ? 12 : Math.min(30, 16 + size * 2);
+    const hull = `M7 6 Q2 6 2 12 L2 26 Q2 32 7 32 L${W - bow} 32 Q${W - 5} 29 ${W - 1} 19 Q${W - 5} 9 ${W - bow} 6 Z`;
     let g = `<defs>
-      <linearGradient id="hull" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stop-color="#9fb0bf"/><stop offset="0.5" stop-color="#7a8c9c"/><stop offset="1" stop-color="#53636f"/>
-      </linearGradient></defs>`;
-    // hull: rounded stern on the left, pointed bow on the right
-    g += `<path d="M6 6 Q2 6 2 12 L2 26 Q2 32 6 32 L${W - bow} 32 Q${W - 4} 28 ${W - 1} 19 Q${W - 4} 10 ${W - bow} 6 Z"
-            fill="url(#hull)" stroke="#2b3641" stroke-width="1.5"/>`;
-    // deck line
-    g += `<path d="M7 10 L${W - bow} 10 Q${W - 8} 13 ${W - 5} 19 Q${W - 8} 25 ${W - bow} 28 L7 28"
-            fill="none" stroke="#c9d5de" stroke-width="1" opacity="0.6"/>`;
+      <linearGradient id="${uid}h" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#c2ced8"/><stop offset=".45" stop-color="#8d9caa"/><stop offset="1" stop-color="#4c5a66"/></linearGradient>
+      <linearGradient id="${uid}d" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#a9b6c1"/><stop offset="1" stop-color="#7f8e9b"/></linearGradient>
+      <linearGradient id="${uid}b" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#f4f7fa"/><stop offset="1" stop-color="#b9c6d1"/></linearGradient>
+      <radialGradient id="${uid}t" cx=".4" cy=".35" r=".7"><stop offset="0" stop-color="#b8c5d0"/><stop offset="1" stop-color="#55636f"/></radialGradient>
+      <pattern id="${uid}p" width="6" height="38" patternUnits="userSpaceOnUse"><rect width="6" height="38" fill="none"/><line x1="0" y1="0" x2="0" y2="38" stroke="#6f7e8b" stroke-width=".6" opacity=".55"/></pattern>
+    </defs>`;
+    // foam around the waterline + bow spray + stern wake
+    g += `<path d="${hull}" fill="none" stroke="#ffffff" stroke-opacity=".55" stroke-width="4"/>`;
+    g += `<path d="M${W - 2} 19 l6 -5 M${W - 2} 19 l6 5" stroke="#fff" stroke-opacity=".7" stroke-width="1.5" stroke-linecap="round"/>`;
+    g += `<path d="M2 14 l-6 -3 M2 24 l-6 3" stroke="#fff" stroke-opacity=".5" stroke-width="1.5" stroke-linecap="round"/>`;
+    // hull + deck with planks
+    g += `<path d="${hull}" fill="url(#${uid}h)" stroke="#26313b" stroke-width="1.4"/>`;
+    g += `<path d="M8 10 L${W - bow} 10 Q${W - 9} 13 ${W - 6} 19 Q${W - 9} 25 ${W - bow} 28 L8 28 Q6 28 6 26 L6 12 Q6 10 8 10 Z" fill="url(#${uid}d)"/>`;
+    g += `<path d="M8 10 L${W - bow} 10 Q${W - 9} 13 ${W - 6} 19 Q${W - 9} 25 ${W - bow} 28 L8 28 Q6 28 6 26 L6 12 Q6 10 8 10 Z" fill="url(#${uid}p)"/>`;
+    g += `<line x1="8" y1="19" x2="${W - 10}" y2="19" stroke="#5d6b77" stroke-width=".6" opacity=".6"/>`;
     if (size === 1) {
-      // small patrol boat: little cabin
-      g += `<rect x="8" y="13" width="12" height="12" rx="2" fill="#dfe7ec" stroke="#2b3641"/>`;
-      g += `<rect x="16" y="15" width="3" height="8" fill="#5bc0eb"/>`;
-    } else {
-      // bridge / superstructure near the back
-      const bx = Math.max(8, W * 0.22);
-      g += `<rect x="${bx}" y="11" width="22" height="16" rx="3" fill="#dfe7ec" stroke="#2b3641"/>`;
-      g += `<rect x="${bx + 15}" y="13" width="4" height="12" fill="#5bc0eb"/>`;
-      g += `<circle cx="${bx + 7}" cy="19" r="3" fill="#4a5864"/>`;          // funnel
-      // gun turrets along the front, more for bigger ships
-      const turrets = size - 1;
-      const start = bx + 32, end = W - bow - 4;
-      for (let t = 0; t < turrets; t++) {
-        const x = turrets === 1 ? (start + end) / 2 : start + (end - start) * t / (turrets - 1);
-        if (x > end + 1) break;
-        g += `<rect x="${x}" y="17.5" width="13" height="3" rx="1" fill="#3a4651"/>`;  // barrel
-        g += `<circle cx="${x}" cy="19" r="5.5" fill="#8797a5" stroke="#2b3641"/>`;    // turret
-      }
-      // stern turret on big ships
-      if (size >= 4) {
-        g += `<rect x="${bx - 14}" y="17.5" width="12" height="3" rx="1" fill="#3a4651" transform="rotate(180 ${bx - 8} 19)"/>`;
-        g += `<circle cx="${bx - 8}" cy="19" r="5" fill="#8797a5" stroke="#2b3641"/>`;
-      }
+      g += `<rect x="8" y="12" width="13" height="14" rx="3" fill="url(#${uid}b)" stroke="#26313b"/>`;
+      g += `<rect x="16" y="14" width="3.5" height="10" rx="1" fill="#3aa7e0"/>`;
+      g += `<circle cx="26" cy="19" r="2" fill="#2d3741"/>`;
+      return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">${g}</svg>`;
     }
+    const turret = (x, flip) => {
+      const dir = flip ? -1 : 1;
+      return `<g transform="translate(${x} 19)">` +
+        `<rect x="${flip ? -15 : 3}" y="-3.4" width="12" height="2.2" rx="1" fill="#2f3a44"/><rect x="${flip ? -15 : 3}" y="1.2" width="12" height="2.2" rx="1" fill="#2f3a44"/>` +
+        `<circle r="6" fill="url(#${uid}t)" stroke="#26313b" stroke-width="1"/><circle r="2" fill="#3a4651" transform="translate(${-1.5 * dir} -1)"/></g>`;
+    };
+    // superstructure (two tiers), funnel, radar
+    const bx = Math.max(10, W * 0.24), bw = size >= 4 ? 30 : 24;
+    g += `<rect x="${bx}" y="10.5" width="${bw}" height="17" rx="3" fill="url(#${uid}b)" stroke="#26313b"/>`;
+    g += `<rect x="${bx + 5}" y="13" width="${bw - 12}" height="12" rx="2" fill="#dfe6ec" stroke="#8a97a3" stroke-width=".8"/>`;
+    g += `<rect x="${bx + bw - 6}" y="13" width="3.5" height="12" rx="1" fill="#3aa7e0"/>`;
+    g += `<ellipse cx="${bx + 7}" cy="19" rx="3.6" ry="3" fill="#39434d"/><ellipse cx="${bx + 7}" cy="18.4" rx="2.2" ry="1.7" fill="#14191e"/>`;
+    g += `<circle cx="${bx + bw / 2 + 2}" cy="19" r="2.4" fill="none" stroke="#2f3a44" stroke-width="1"/><line x1="${bx + bw / 2 + 2}" y1="16" x2="${bx + bw / 2 + 2}" y2="22" stroke="#2f3a44" stroke-width="1"/>`;
+    // lifeboats along the sides
+    if (size >= 3) { g += `<rect x="${bx + 2}" y="7.6" width="8" height="2.6" rx="1.3" fill="#e9814a"/><rect x="${bx + 2}" y="27.8" width="8" height="2.6" rx="1.3" fill="#e9814a"/>`; }
+    // forward turrets
+    const turrets = size - 1, start = bx + bw + 9, end = W - bow - 2;
+    for (let t = 0; t < turrets; t++) {
+      const x = turrets === 1 ? (start + end) / 2 : start + (end - start) * t / (turrets - 1);
+      if (x > end + 1) break;
+      g += turret(x, false);
+    }
+    // stern turret on big ships, helipad on the flagship
+    if (size >= 4) g += turret(bx - 9, true);
     return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">${g}</svg>`;
   }
 
@@ -2905,11 +3044,7 @@
     const B = sides.bot;
     // no rounding to 0 here: the draw can arrive just before this screen adds their turn's charge, and the order must not matter
     if (m.a === "draw") { B.charge -= MAX_CHARGE; setLog("Enemy drew a card"); return; }
-    if (m.a === "buy") {
-      const next = UPGRADES[m.key].levels[level(B, m.key)];
-      if (next) { B.gold -= next.cost; B.up[m.key]++; setLog(`Enemy upgraded ${UPGRADES[m.key].name}`); }
-      return;
-    }
+    if (m.a === "shop") { B.gold -= m.cost; setLog("Opponent bought a card from the shop"); return; }
     if (m.a === "card") {
       await showEnemyCard(m.key);
       setLog(await playSeeded(B, m.key, deserOpts(m.opts || {}, B), m.seed));
