@@ -1146,7 +1146,7 @@
     supply:    { name: "Supply Drop",   icon: "📦", type: "tactic", desc: "Get 2 charges right away",                      target: "none" },
     airstrike: { name: "Air Strike",    icon: "🛩️", type: "attack", desc: "A bomber hits 15 squares down a column",        target: "enemy" },
     sabotage:  { name: "Sabotage",      icon: "🕵️", type: "tactic", desc: "Enemy loses 2 charges · steal 40 of their gold", target: "none" },
-    satellite: { name: "Spy Satellite", icon: "🛰️", type: "intel",  desc: "Reveal 3 random hidden enemy ship squares",     target: "none" },
+    satellite: { name: "Spy Satellite", icon: "🛰️", type: "intel",  desc: "Scan 3 random 3×3 spots — ships inside them get revealed",     target: "none" },
     barrage:   { name: "Barrage",       icon: "🔥", type: "attack", desc: "3 random 3×3 blasts inside an 11×11 area",      target: "enemy" },
     carpet:    { name: "Carpet Bomb",   icon: "💣", type: "attack", desc: "Bombers flatten a 3×15 strip",                 target: "enemy" },
     gamble:    { name: "Gamble",        icon: "🎲", type: "attack", desc: "50% chance: blast a 5×5 area · 50%: nothing", target: "enemy" },
@@ -1243,7 +1243,7 @@
       case "mines": return `Hide mines in a ${sq(v)} area of your zone — each enemy hit on one costs them 20 gold`;
       case "armor": return `One of your ships ignores the next ${v} hits`;
       case "flare": return v === 1 ? "Reveal one whole hidden enemy ship" : `Reveal ${v} whole hidden enemy ships`;
-      case "satellite": return `Reveal ${v} random hidden enemy ship squares`;
+      case "satellite": return `Scan ${v} random 3×3 spots — ships inside them get revealed`;
       case "plunder": return `Get ${v} gold right away`;
       case "supply": return `Get ${v} charges right away`;
       case "recon": return v === 1 ? "Reveal enemy ships in a whole column" : `Reveal enemy ships in ${v} whole columns`;
@@ -1915,13 +1915,14 @@
         Sound.play("ping");
         await wait(1600);
       } else {
-        const hidden = [];
-        alive(T).forEach(sh => sh.cells.forEach((j, seg) => {
-          if (!sh.hits.has(seg) && !(A === sides.me && T.marks[j] && T.marks[j].kind === "detect") && !(A === sides.bot && botMem.detected.has(j))) hidden.push(j);
-        }));
-        list = lshuffle(hidden).slice(0, val(A, "satellite"));
+        // several random 3×3 scans anywhere on the enemy zone — only ships inside them show up
+        const spots = Array.from({ length: val(A, "satellite") }, () => clampCenter(lrand(N * N), 3));
+        list = [...new Set(spots.flatMap(c => area(c, 3)))];
         Sound.play("ping");
-        list.forEach(j => fx(T, "sweep", ...center(j), 1300, { "--r": "160px" }));
+        spots.forEach((c, k) => setTimeout(() => {
+          fx(T, "sweep", ...center(c), 1300, { "--r": "70px" });
+          flash(T, area(c, 3), "flash-scan", 900);
+        }, k * 120));
         await wait(1100);
       }
       let found = 0;
