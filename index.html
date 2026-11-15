@@ -897,6 +897,16 @@
   body.battle-in .passives { animation: slideR .6s cubic-bezier(.2, 1.2, .4, 1) backwards .2s; }
   @media (max-width: 1400px), (max-height: 860px) { .passives { zoom: .82; } }
   .gcard.passive .gc-rar { background: linear-gradient(90deg, #ffe45c, #ffb02e); color: #3a2400; }
+
+  /* ---- v21: flames go out, enemy card pop-out, enemy hand/gold ---- */
+  .mark.hit.cold { animation: none !important; background: radial-gradient(circle, #8a1d14 0 20%, #4a1410cc 42%, #4a141000 68%) !important; box-shadow: none !important; filter: none; }
+  .mark.hit.cold::before, .mark.hit.cold::after { display: none !important; }
+  .fstats { display: flex; justify-content: center; gap: 14px; font-size: .8rem; margin: -2px 0 8px; opacity: .95; }
+  .fstats b { color: #ffd84a; }
+  .eh { cursor: default; transition: transform .15s; }
+  .eh:hover { transform: scale(1.35); box-shadow: 0 0 10px var(--rc); }
+  .pv-tag { position: absolute; left: 50%; top: -30px; transform: translateX(-50%); white-space: nowrap; font: bold .7rem "Segoe UI", sans-serif; letter-spacing: 3px;
+    background: #ff5a4a; color: #fff; padding: 3px 10px; border-radius: 8px; box-shadow: 0 0 14px #ff5a4a88; }
 </style>
 </head>
 <body>
@@ -1175,6 +1185,9 @@
     cross:     { name: "Cross Strike",  icon: "✚",  type: "attack", desc: "Hits a + shape, 4 squares in every direction", target: "enemy" },
     chain:     { name: "Chain Reaction",icon: "⛓️", type: "attack", desc: "Fire at a square — if it hits a ship, up to 3 squares of that ship blow up", target: "enemy" },
     evade:     { name: "Evasive Maneuver", icon: "🌀", type: "defense", desc: "All your revealed ships sail away to random safe spots", target: "none" },
+    pickpocket:{ name: "Pickpocket",    icon: "👛", type: "tactic", desc: "Steal 30 gold from the enemy", target: "none" },
+    cardthief: { name: "Card Thief",    icon: "🦹", type: "tactic", desc: "Steal a random card from the enemy's hand", target: "none" },
+    jammer:    { name: "Jammer",        icon: "📡", type: "tactic", desc: "Destroy a random card in the enemy's hand", target: "none" },
     timewarp:  { name: "Time Warp",     icon: "⏳", type: "tactic", desc: "Take another turn right after this one", target: "none" },
     kraken:    { name: "KRAKEN",        icon: "🐙", type: "attack", desc: "A sea monster hits 2 random enemy ships", target: "none" },
     flare:   { name: "Flare",        icon: "🔦", type: "intel",  desc: "Reveal one whole hidden enemy ship",       target: "none" },
@@ -1190,9 +1203,9 @@
 
   // rarity of each card + how often each rarity shows up in a draw
   const RARITY = {
-    common:    { label: "COMMON",    weight: 50, cards: ["scan", "torpedo", "plunder", "move", "depth", "broadside", "recon", "supply", "smoke", "gamble"] },
-    rare:      { label: "RARE",      weight: 30, cards: ["aoe", "cluster", "repair", "shield", "flare", "airstrike", "sabotage", "satellite", "decoy", "armor", "cross", "chain", "evade"] },
-    epic:      { label: "EPIC",      weight: 15, cards: ["homing", "double", "barrage", "carpet", "irondome", "mines", "timewarp"] },
+    common:    { label: "COMMON",    weight: 50, cards: ["satellite", "plunder", "move", "depth", "broadside", "supply", "smoke", "gamble", "pickpocket"] },
+    rare:      { label: "RARE",      weight: 30, cards: ["scan", "torpedo", "recon", "aoe", "cluster", "repair", "shield", "airstrike", "sabotage", "decoy", "armor", "cross", "chain", "evade", "jammer"] },
+    epic:      { label: "EPIC",      weight: 15, cards: ["flare", "homing", "double", "barrage", "carpet", "irondome", "mines", "timewarp", "cardthief"] },
     legendary: { label: "LEGENDARY", weight: 5,  cards: ["nuke", "kraken"] },
   };
   const rarityOf = key => Object.keys(RARITY).find(r => RARITY[r].cards.includes(key));
@@ -1247,6 +1260,9 @@
     nuke:      { name: "NUKE",           base: 11, levels: [{ v: 13 }] },
     sabotage:  { name: "Sabotage",       base: 40, levels: [{ v: 70 }] },
     gamble:    { name: "Gamble",         base: 5,  levels: [{ v: 7 }] },
+    pickpocket:{ name: "Pickpocket",     base: 30, levels: [{ v: 45 }, { v: 60 }] },
+    cardthief: { name: "Card Thief",     base: 1,  levels: [{ v: 2 }] },
+    jammer:    { name: "Jammer",         base: 1,  levels: [{ v: 2 }] },
     cross:     { name: "Cross Strike",   base: 4,  levels: [{ v: 6 }, { v: 8 }] },
     chain:     { name: "Chain Reaction", base: 3,  levels: [{ v: 4 }, { v: 5 }] },
   };
@@ -1286,6 +1302,9 @@
       case "nuke": return `Obliterate a ${sq(v)} area`;
       case "sabotage": return `Enemy loses 2 charges · steal ${v} of their gold`;
       case "gamble": return `50% chance: blast a ${sq(v)} area · 50%: nothing`;
+      case "pickpocket": return `Steal ${v} gold from the enemy`;
+      case "cardthief": return v === 1 ? "Steal a random card from the enemy's hand" : `Steal ${v} random cards from the enemy's hand`;
+      case "jammer": return v === 1 ? "Destroy a random card in the enemy's hand" : `Destroy ${v} random cards in the enemy's hand`;
       case "cross": return `Hits a + shape, ${v} squares in every direction`;
       case "chain": return `Fire at a square — if it hits a ship, up to ${v} squares of that ship blow up`;
     }
@@ -1509,7 +1528,13 @@
     el.style.left = (10 + c * 39) + "px";
     el.style.top = (10 + r * 39) + "px";
     document.getElementById(sd.zone).appendChild(el);
-    sd.marks[j] = { kind, el };
+    sd.marks[j] = { kind, el, born: turn };
+  }
+  const BURN_ROUNDS = 3;                       // hit flames go out after this many rounds
+  function coolFlames() {
+    ["me", "bot"].forEach(n => Object.values(sides[n].marks).forEach(m => {
+      if (m.kind === "hit" && m.el && !m.el.classList.contains("cold") && turn - (m.born || 0) >= BURN_ROUNDS) m.el.classList.add("cold");
+    }));
   }
   function flash(sd, list, cls, ms = 650) {
     list.forEach(j => sd.cells[j].classList.add(cls));
@@ -1580,7 +1605,8 @@
     const el = document.getElementById("fleet");
     const ships = sides.bot.ships.filter(sh => !sh.decoy);
     const left = alive(sides.bot).length;
-    let html = `<h3>ENEMY FLEET</h3><div class="fleft"><b>${left}</b> / ${ships.length} left</div>`;
+    let html = `<h3>ENEMY FLEET</h3><div class="fleft"><b>${left}</b> / ${ships.length} left</div>` +
+      `<div class="fstats"><span title="Cards in their hand">🃏 <b>${sides.bot.inv.length}</b> cards</span><span title="Their gold">🪙 <b>${sides.bot.gold}</b></span></div>`;
     FLEET_DEF.forEach(([size]) => {
       const group = ships.filter(sh => sh.size === size);
       const aliveN = group.filter(sh => !sh.sunk).length;
@@ -1593,10 +1619,11 @@
     });
     if (typeof enemyPlayed !== "undefined" && enemyPlayed.length) {
       html += `<div class="ehist-t">CARDS THEY PLAYED</div><div class="ehist">` +
-        enemyPlayed.slice(-8).reverse().map((k, n) => `<span class="eh r-${rarityOf(k)}${n === 0 ? " newest" : ""}" title="${CARDS[k].name} — ${cardDesc(sides.bot, k)}">${CARDS[k].icon}</span>`).join("") +
+        enemyPlayed.slice(-8).reverse().map((k, n) => `<span class="eh r-${rarityOf(k)}${n === 0 ? " newest" : ""}" data-k="${k}">${CARDS[k].icon}</span>`).join("") +
         `</div>`;
     }
     el.innerHTML = html;
+    el.querySelectorAll(".eh").forEach(e => { e.onmouseenter = () => showPreview(e.dataset.k, sides.bot, "ENEMY USED"); e.onmouseleave = hidePreview; });
     if (justSunk) { el.classList.remove("hitpulse"); void el.offsetWidth; el.classList.add("hitpulse"); }
   }
 
@@ -1977,6 +2004,31 @@
       await wait(400);
       return `${who}: ${name} — +${val(A, "supply")} charges`;
     }
+    if (key === "pickpocket") {
+      const stolen = Math.min(val(A, "pickpocket"), T.gold);
+      T.gold -= stolen; A.gold += stolen;
+      for (let k = 0; k < 3; k++) setTimeout(() => Sound.play("coin"), 100 + k * 110);
+      renderUpgrades(true); renderFleet();
+      await wait(500);
+      return `${who}: ${name} — ${stolen} gold stolen`;
+    }
+    if (key === "cardthief" || key === "jammer") {
+      // pick from the sorted hand so both screens agree in multiplayer
+      const took = [];
+      for (let k = 0; k < val(A, key) && T.inv.length; k++) {
+        const c = [...T.inv].sort()[lrand(T.inv.length)];
+        T.inv.splice(T.inv.indexOf(c), 1); took.push(c);
+        if (key === "cardthief") A.inv.push(c);
+      }
+      Sound.play(took.length ? "whoosh" : "splash");
+      if (A === sides.me && key === "cardthief") newCard = took.length > 0;
+      renderPanel(); renderFleet();
+      await wait(600);
+      if (!took.length) return `${who}: ${name} — their hand was empty`;
+      const names = took.map(c => CARDS[c].name).join(" and ");
+      if (key === "jammer") return `${who}: ${name} — destroyed ${A === sides.me ? "their " + names : "your " + names}`;
+      return A === sides.me ? `You: ${name} — stole ${names}!` : `${who}: ${name} — stole your ${names}!`;
+    }
     if (key === "sabotage") {
       const stolen = Math.min(val(A, "sabotage"), T.gold);
       T.charge = Math.max(0, T.charge - 2); T.gold -= stolen; A.gold += stolen;
@@ -2293,11 +2345,11 @@
       sd.charge++;
       if (who === "me") Sound.play(sd.charge % MAX_CHARGE === 0 ? "full" : "charge", ((sd.charge - 1) % MAX_CHARGE) + 1);
     }
-    if (who === "me") { turn++; Sound.play("turn"); }
+    if (who === "me") { turn++; Sound.play("turn"); coolFlames(); }
     const w = document.getElementById("who");
     w.textContent = "TURN " + Math.max(1, turn) + " · " + (who === "me" ? "YOUR TURN" : mode === "mp" ? "OPPONENT'S TURN" : "ENEMY TURN");
     w.className = "who " + who;
-    renderCharges(); renderPanel(); renderUpgrades(); renderPassives(); refreshHover();
+    renderCharges(); renderPanel(); renderUpgrades(); renderPassives(); renderFleet(); refreshHover();
     if (who !== "me") closeShop();
     const tb = document.getElementById("turnbar");
     tb.classList.remove("pulse"); void tb.offsetWidth; tb.classList.add("pulse");
@@ -2523,7 +2575,7 @@
     if (phase !== "battle" || whose !== "me" || busy || me.gold < price || !me.unl.has(key)) return;
     me.gold -= price;
     me.inv.push(key); newCard = true;
-    if (mode === "mp") Net.send({ t: "act", a: "shop", cost: price });
+    if (mode === "mp") Net.send({ t: "act", a: "shop", cost: price, key });
     Sound.play("coin"); setTimeout(() => Sound.play("pick"), 80);
     if (item) { item.classList.remove("bought"); void item.offsetWidth; item.classList.add("bought"); }
     setLog(`You bought ${CARDS[key].name}`);
@@ -2605,9 +2657,9 @@
     // shop: buy the best card it can afford (easy bots never shop)
     if (botLevel === "easy" && A.gold >= 30 && Math.random() < 0.5) { const cheap = SHOP_ORDER.filter(k => priceOf(k) === 30 && A.unl.has(k)); if (cheap.length) { A.inv.push(cheap[rand(cheap.length)]); A.gold -= 30; } }
     if (botLevel !== "easy") {
-      const wish = ["nuke", "kraken", "timewarp", "homing", "barrage", "carpet", "irondome", "chain", "aoe", "cross", "evade", "airstrike", "flare", "cluster", "armor", "depth", "gamble", "scan", "torpedo"];
+      const wish = ["nuke", "kraken", "timewarp", "homing", "barrage", "carpet", "irondome", "chain", "cardthief", "aoe", "cross", "evade", "jammer", "airstrike", "flare", "cluster", "armor", "depth", "gamble", "scan", "torpedo"];
       const k = wish.concat(SHOP_ORDER).find(c => A.unl.has(c) && A.gold >= priceOf(c) && (A.gold - priceOf(c) >= 30 || priceOf(c) >= 120) && (wish.includes(c) || Math.random() < 0.3));
-      if (k) { A.gold -= priceOf(k); A.inv.push(k); setLog("Enemy bought a card from the shop"); await wait(600); }
+      if (k) { A.gold -= priceOf(k); A.inv.push(k); renderFleet(); setLog("Enemy bought a card from the shop"); await wait(600); }
     }
     // maybe play a card first
     const hot = Math.random() < smart ? botTarget() : -1;
@@ -2618,6 +2670,9 @@
     const damagedAny = alive(A).filter(s => s.hits.size > 0).sort((a, b) => b.hits.size - a.hits.size)[0];
     if (pick("repair") >= 0 && badly) { idx = pick("repair"); opts = { ship: badly }; }
     else if (pick("plunder") >= 0) { idx = pick("plunder"); opts = {}; }
+    else if (pick("cardthief") >= 0 && sides.me.inv.length) { idx = pick("cardthief"); opts = {}; }
+    else if (pick("jammer") >= 0 && sides.me.inv.length) { idx = pick("jammer"); opts = {}; }
+    else if (pick("pickpocket") >= 0 && sides.me.gold >= 20) { idx = pick("pickpocket"); opts = {}; }
     else if (pick("double") >= 0) { idx = pick("double"); opts = {}; }
     else if (pick("nuke") >= 0) { idx = pick("nuke"); opts = { at: clampCenter(hot >= 0 ? hot : randomUnshot(), CARDS.nuke.area) }; }
     else if (pick("homing") >= 0) { idx = pick("homing"); opts = {}; }
@@ -2695,9 +2750,9 @@
       }).join("");
     el.querySelectorAll(".pas").forEach(r => { r.onmouseenter = () => showPreview(r.dataset.k); r.onmouseleave = hidePreview; });
   }
-  function showPreview(key) {
+  function showPreview(key, sd = sides.me, tag = "") {
     const el = document.getElementById("cardPreview");
-    el.innerHTML = isPassive(key) ? passiveHTML(key) : cardHTML(key);
+    el.innerHTML = (tag ? `<div class="pv-tag">${tag}</div>` : "") + (isPassive(key) ? passiveHTML(key, sd) : cardHTML(key, sd));
     el.classList.add("show");
   }
   function hidePreview() { document.getElementById("cardPreview").classList.remove("show"); }
@@ -3332,8 +3387,9 @@
     // no rounding to 0 here: the draw can arrive just before this screen adds their turn's charge, and the order must not matter
     if (m.a === "draw") { B.charge -= MAX_CHARGE; setLog("Enemy drew a card"); return; }
     if (m.a === "upg") { const what = applyPick(B, m.key); B.charge -= MAX_CHARGE; setLog(what === "unlock" ? "Opponent unlocked a new card" : `Opponent upgraded ${UPGRADES[m.key].name}`); return; }
-    if (m.a === "shop") { B.gold -= m.cost; setLog("Opponent bought a card from the shop"); return; }
+    if (m.a === "shop") { B.gold -= m.cost; if (m.key) B.inv.push(m.key); renderFleet(); setLog("Opponent bought a card from the shop"); return; }
     if (m.a === "card") {
+      { const i = B.inv.indexOf(m.key); if (i >= 0) B.inv.splice(i, 1); }
       await showEnemyCard(m.key);
       setLog(await playSeeded(B, m.key, deserOpts(m.opts || {}, B), m.seed));
       if (checkOver()) return;
