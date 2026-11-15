@@ -1,11 +1,7 @@
-# Neon Tic Tac Toe
+# Battleships
 
-A simple, single-file Tic Tac Toe game with a neon, 3D top-down board.
+A 3D naval battle game that runs in the browser: 50×50 ocean boards, ship placement,
+a card system with rarities, gold and upgrades, bots (Easy / Medium / Hard), sound and effects.
 
 ## Play
 Open `index.html` in any browser — no install needed.
-
-## Features
-- Play against a bot: **Easy**, **Medium** or **Hard** (unbeatable)
-- **2 Players** mode on one screen
-- Score tracking for X, O and draws
