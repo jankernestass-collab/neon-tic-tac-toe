@@ -684,6 +684,14 @@
   .startbtn.ghost { border-color: #ffffff66; background: transparent; }
   .okc { color: #8dffb0; }
   body.no-ambient .life, body.no-ambient .wreck, body.no-ambient .cloudshadow, body.no-ambient .warplane, body.no-ambient .swell { display: none; }
+
+  .gcard.defense { --edge: #b18cff; }
+  .shipmodel.decoy { opacity: .55; filter: sepia(.6) hue-rotate(200deg) drop-shadow(2px 4px 2px #00142c99); }
+  .shipmodel.armored { filter: drop-shadow(0 0 3px #ffe9a8) drop-shadow(0 0 8px #ffd84a) drop-shadow(2px 4px 2px #00142c99); }
+  .cell.mined { box-shadow: inset 0 0 0 2px #b18cff88; background-image: radial-gradient(circle, #b18cff 0 3px, transparent 4px), linear-gradient(135deg, #3cc8e8 0%, #1a8fc4 50%, #0f6aa3 100%); }
+  .fx.mineboom { width: 60px; height: 60px; border-radius: 50%; background: radial-gradient(circle, #fff 0 10%, #c38bff 35%, #6a2bff00 70%); animation: fxburst .8s ease-out forwards; --s: 2; }
+
+  .zone.domed { box-shadow: 0 0 0 4px #7fe7ff, 0 0 60px 10px #7fe7ff88, 0 16px 0 #06355e, 0 50px 80px #00142c99; }
 </style>
 </head>
 <body>
@@ -877,8 +885,8 @@
   const FLEET_TOTAL = FLEET.reduce((t, f) => t + f.count, 0);
   const MAX_CHARGE = 5;
   const sides = {
-    me:  { name: "me",  zone: "zone1", cells: zoneCells.zone1, grid: new Array(N * N).fill(-1), ships: [], marks: {}, charge: 0, inv: [], gold: 0, shields: [], extraShots: 0, up: { shot: 0, aoe: 0, scan: 0, cluster: 0, torpedo: 0, repair: 0 } },
-    bot: { name: "bot", zone: "zone2", cells: zoneCells.zone2, grid: new Array(N * N).fill(-1), ships: [], marks: {}, charge: 0, inv: [], gold: 0, shields: [], extraShots: 0, up: { shot: 0, aoe: 0, scan: 0, cluster: 0, torpedo: 0, repair: 0 } },
+    me:  { name: "me",  zone: "zone1", cells: zoneCells.zone1, grid: new Array(N * N).fill(-1), ships: [], marks: {}, charge: 0, inv: [], gold: 0, shields: [], extraShots: 0, mines: new Set(), up: { shot: 0, aoe: 0, scan: 0, cluster: 0, torpedo: 0, repair: 0 } },
+    bot: { name: "bot", zone: "zone2", cells: zoneCells.zone2, grid: new Array(N * N).fill(-1), ships: [], marks: {}, charge: 0, inv: [], gold: 0, shields: [], extraShots: 0, mines: new Set(), up: { shot: 0, aoe: 0, scan: 0, cluster: 0, torpedo: 0, repair: 0 } },
   };
   const other = sd => sd === sides.me ? sides.bot : sides.me;
   const rc = i => [Math.floor(i / N), i % N];
@@ -913,16 +921,21 @@
     carpet:    { name: "Carpet Bomb",   icon: "💣", type: "attack", desc: "Bombers flatten a 3×15 strip",                 target: "enemy" },
     kraken:    { name: "KRAKEN",        icon: "🐙", type: "attack", desc: "A sea monster hits 4 random enemy ship squares", target: "none" },
     flare:   { name: "Flare",        icon: "🔦", type: "intel",  desc: "Reveal one whole hidden enemy ship",       target: "none" },
-    double:  { name: "Double Shot",  icon: "⚡", type: "tactic", desc: "Fire one extra shot this turn",            target: "none" },
+    double:  { name: "Double Shot",  icon: "⚡", type: "tactic", desc: "Fire 2 shots this turn",                   target: "none" },
+    smoke:     { name: "Smoke Screen",  icon: "🌫️", type: "defense", desc: "Erase everything the enemy has revealed about your ships", target: "none" },
+    decoy:     { name: "Decoy Ship",    icon: "🎭", type: "defense", desc: "Place a fake 3-square ship that soaks up enemy fire", target: "ownPlace" },
+    armor:     { name: "Armor Plating", icon: "🔩", type: "defense", desc: "One of your ships ignores the next 2 hits", target: "own" },
+    irondome:  { name: "Iron Dome",     icon: "🏰", type: "defense", desc: "Block every enemy attack on their next turn", target: "none" },
+    mines:     { name: "Sea Mines",     icon: "💠", type: "defense", desc: "Hide mines in a 5×5 area of your zone — each enemy hit on one costs them 20 gold", target: "ownArea", area: 5 },
     plunder: { name: "Plunder",      icon: "💰", type: "tactic", desc: "Get 60 gold right away",                   target: "none" },
     shield:  { name: "Shield",       icon: "🛡️", type: "tactic", desc: "Protect a 5×5 area of your zone for 2 enemy turns", target: "ownArea", area: 5 },
   };
 
   // rarity of each card + how often each rarity shows up in a draw
   const RARITY = {
-    common:    { label: "COMMON",    weight: 50, cards: ["scan", "torpedo", "plunder", "move", "depth", "broadside", "recon", "supply"] },
-    rare:      { label: "RARE",      weight: 30, cards: ["aoe", "cluster", "repair", "shield", "flare", "airstrike", "sabotage", "satellite"] },
-    epic:      { label: "EPIC",      weight: 15, cards: ["homing", "double", "barrage", "carpet"] },
+    common:    { label: "COMMON",    weight: 50, cards: ["scan", "torpedo", "plunder", "move", "depth", "broadside", "recon", "supply", "smoke"] },
+    rare:      { label: "RARE",      weight: 30, cards: ["aoe", "cluster", "repair", "shield", "flare", "airstrike", "sabotage", "satellite", "decoy", "armor"] },
+    epic:      { label: "EPIC",      weight: 15, cards: ["homing", "double", "barrage", "carpet", "irondome", "mines"] },
     legendary: { label: "LEGENDARY", weight: 5,  cards: ["nuke", "kraken"] },
   };
   const rarityOf = key => Object.keys(RARITY).find(r => RARITY[r].cards.includes(key));
@@ -1116,7 +1129,7 @@
     ship.model.style.width = (ship.size * 39 - 1) + "px";
   }
   const shipAt = (sd, j) => sd.grid[j] === -1 ? null : sd.ships[sd.grid[j]];
-  const alive = sd => sd.ships.filter(s => !s.sunk);
+  const alive = sd => sd.ships.filter(s => !s.sunk && !s.decoy);
 
   // misses and sonar rings are drawn on the square itself (no extra element) — keeps late game smooth
   function setMark(sd, j, kind) {
@@ -1203,7 +1216,7 @@
   const botMem = { hits: new Set(), detected: new Set(), shot: new Set() };
   function renderFleet(justSunk) {
     const el = document.getElementById("fleet");
-    const ships = sides.bot.ships;
+    const ships = sides.bot.ships.filter(sh => !sh.decoy);
     const left = alive(sides.bot).length;
     let html = `<h3>ENEMY FLEET</h3><div class="fleft"><b>${left}</b> / ${ships.length} left</div>`;
     FLEET_DEF.forEach(([size]) => {
@@ -1235,12 +1248,34 @@
     if (shielded(T, j)) { const [x, y] = center(j); fx(T, "ring blocked", x, y, 700); if (T === sides.me) botMem.shot.delete(j); return "blocked"; }
     const ship = shipAt(T, j);
     if (T === sides.me) { botMem.shot.add(j); botMem.detected.delete(j); }
-    if (!ship) { setMark(T, j, "miss"); return "miss"; }
+    if (!ship) {
+      setMark(T, j, "miss");
+      if (T.mines.has(j)) {                                   // boom — the attacker pays
+        T.mines.delete(j); T.cells[j].classList.remove("mined");
+        const A = other(T); A.gold = Math.max(0, A.gold - 20);
+        const [x, y] = center(j); fx(T, "mineboom", x, y, 800); Sound.play("boom", false);
+        if (A === sides.me) { const el = fx(T, "gold", x, y - 10, 1200); el.textContent = "−20"; }
+        renderUpgrades(true);
+        return "mine";
+      }
+      return "miss";
+    }
     const seg = ship.cells.indexOf(j);
+    if (ship.armor > 0 && !ship.hits.has(seg)) {             // armor plating soaks the hit
+      ship.armor--;
+      if (!ship.armor && ship.model) ship.model.classList.remove("armored");
+      const [x, y] = center(j); fx(T, "ring blocked", x, y, 700);
+      if (T === sides.me) botMem.shot.delete(j);
+      return "blocked";
+    }
     setMark(T, j, "hit");
     if (ship.hits.has(seg)) return "already";
     ship.hits.add(seg);
-    if (T === sides.me) botMem.hits.add(j);
+    if (T === sides.me && !ship.decoy) botMem.hits.add(j);
+    if (ship.decoy) {                                          // fooled! no gold for a decoy
+      if (ship.hits.size === ship.size) { ship.sunk = true; if (ship.model) ship.model.remove(); ship.cells.forEach(k => T.grid[k] = -1); }
+      return "hit";
+    }
     earnGold(other(T), j);
     if (ship.hits.size === ship.size) {
       ship.sunk = true;
@@ -1253,6 +1288,8 @@
     return "hit";
   }
   function summary(results) {
+    const mines = results.filter(r => r === "mine").length;
+    if (mines) return summary(results.map(r => r === "mine" ? "miss" : r)) + ` · hit ${mines} sea mine${mines > 1 ? "s" : ""} (−${mines * 20} gold)!`;
     const blocked = results.filter(r => r === "blocked").length;
     if (blocked && blocked === results.length) return "blocked by a shield!";
     const hits = results.filter(r => r === "hit" || r === "sunk").length;
@@ -1265,7 +1302,7 @@
   const canMoveTo = (sd, ship, list) => fits(sd, list, ship.id) && list.every(j => ship.cells.includes(j) || !shotAt(sd, j));
 
   function canUse(sd, key) {
-    if (key === "move") return alive(sd).length > 0;
+    if (key === "move" || key === "armor") return alive(sd).length > 0;
     if (key === "repair") return alive(sd).some(s => s.hits.size > 0);
     return true;
   }
@@ -1278,7 +1315,7 @@
     const res = list.map(k => strike(T, k));
     list.forEach((k, n) => setTimeout(() => hitFx(T, k, res[n]), n * 40));
     const who = A === sides.me ? "You" : "Enemy";
-    if (list.length === 1) return who + " fired — " + (res[0] === "sunk" ? "hit, ship sunk!" : res[0] === "hit" ? "hit!" : res[0] === "blocked" ? "blocked by a shield!" : "miss");
+    if (list.length === 1) return who + " fired — " + (res[0] === "sunk" ? "hit, ship sunk!" : res[0] === "hit" ? "hit!" : res[0] === "blocked" ? "blocked!" : res[0] === "mine" ? "hit a sea mine! (−20 gold)" : "miss");
     return who + " fired — " + summary(res);
   }
 
@@ -1594,6 +1631,46 @@
       await wait(500);
       return `${who}: ${name} — +60 gold`;
     }
+    if (key === "smoke") {
+      Sound.play("whoosh");
+      Object.keys(A.marks).forEach(j => { if (A.marks[j].kind === "detect") setMark(A, +j, null); });
+      if (A === sides.me) botMem.detected.clear();
+      const pts = alive(A).map(sh => sh.cells[0]);
+      if (A === sides.me) pts.slice(0, 12).forEach(j => fx(A, "smoke", ...center(j), 1600));
+      await wait(700);
+      return `${who}: ${name} — revealed positions were wiped`;
+    }
+    if (key === "decoy") {
+      const ship = addShip(A, 3, opts.horiz, opts.at);
+      ship.decoy = true;
+      if (A === sides.me) { drawModel(A, ship); ship.model.classList.add("decoy", "appear"); fxSplash(A, opts.at); }
+      Sound.play("splash");
+      await wait(500);
+      return `${who}: ${name} — ${A === sides.me ? "a fake ship is in the water" : "something moved in the water…"}`;
+    }
+    if (key === "armor") {
+      const ship = opts.ship;
+      ship.armor = (ship.armor || 0) + 2;
+      if (A === sides.me && ship.model) ship.model.classList.add("armored");
+      Sound.play("upgrade");
+      await wait(500);
+      return `${who}: ${name} — a ship is armored against 2 hits`;
+    }
+    if (key === "irondome") {
+      const all = new Set(); for (let j = 0; j < N * N; j++) all.add(j);
+      A.shields.push({ cells: all, turns: 1 });
+      renderShields(A);
+      Sound.play("repair");
+      fxWave(A, (N >> 1) * N + (N >> 1), 50, "shieldwave");
+      await wait(700);
+      return `${who}: ${name} — every attack is blocked next turn`;
+    }
+    if (key === "mines") {
+      area(opts.at, CARDS.mines.area).forEach(j => { if (A.grid[j] === -1) { A.mines.add(j); if (A === sides.me) A.cells[j].classList.add("mined"); } });
+      Sound.play("select");
+      await wait(400);
+      return `${who}: ${name} — ${A === sides.me ? "mines laid" : "the enemy laid something in the water…"}`;
+    }
     if (key === "shield") {
       const cells = area(opts.at, CARDS.shield.area);
       A.shields.push({ cells: new Set(cells), turns: 2 });
@@ -1636,7 +1713,8 @@
 
   function renderShields(sd) {
     sd.cells.forEach(c => c.classList.remove("shielded"));
-    sd.shields.forEach(sh => sh.cells.forEach(j => sd.cells[j].classList.add("shielded")));
+    document.getElementById(sd.zone).classList.toggle("domed", sd.shields.some(sh => sh.cells.size === N * N));
+    sd.shields.forEach(sh => { if (sh.cells.size < N * N) sh.cells.forEach(j => sd.cells[j].classList.add("shielded")); });
   }
 
   async function playSeeded(A, key, opts, seed) {
@@ -1691,8 +1769,7 @@
     const sd = sides[who];
     sd.extraShots = 0;
     // shields of the OTHER side count down at the start of each of my turns (i.e. after an enemy turn)
-    const opp = other(sd);
-    if (opp.shields.length) { opp.shields.forEach(sh => sh.turns--); opp.shields = opp.shields.filter(sh => sh.turns > 0); renderShields(opp); }
+    if (sd.shields.length) { sd.shields.forEach(sh => sh.turns--); sd.shields = sd.shields.filter(sh => sh.turns > 0); renderShields(sd); }
     if (sd.charge < MAX_CHARGE) {
       sd.charge++;
       if (who === "me") Sound.play(sd.charge === MAX_CHARGE ? "full" : "charge", sd.charge);
@@ -1740,8 +1817,13 @@
     if (mode === "mp") Net.send({ t: "act", a: "card", key, opts: serOpts(opts), seed });
     setLog(await playSeeded(sides.me, key, opts, seed));
     if (checkOver()) return;
-    busy = false;                 // still your turn — you can still shoot
-    renderPanel(); renderUpgrades(); refreshHover();
+    if (key === "double") {        // Double Shot: now fire your 2 shots
+      busy = false;
+      renderPanel(); renderUpgrades(); refreshHover();
+      return;
+    }
+    await wait(700);
+    nextTurn("bot");               // playing a card uses your turn
   }
 
   // charges / draw pop-up -------------------------------------------------
@@ -1862,7 +1944,7 @@
     // draw a card when charges are full
     if (A.charge >= MAX_CHARGE) {
       const offer = drawOffer();
-      A.inv.push(["nuke", "kraken", "homing", "barrage", "carpet", "aoe", "airstrike", "double", "flare", "satellite", "cluster", "scan", "depth", "broadside", "torpedo", "recon", "plunder", "sabotage", "supply", "shield", "repair", "move"].find(k => offer.includes(k)));
+      A.inv.push(["nuke", "kraken", "irondome", "homing", "barrage", "carpet", "aoe", "airstrike", "double", "flare", "satellite", "cluster", "scan", "depth", "broadside", "torpedo", "recon", "plunder", "sabotage", "supply", "shield", "armor", "mines", "decoy", "smoke", "repair", "move"].find(k => offer.includes(k)));
       A.charge = 0;
       setLog("Enemy drew a card");
       await wait(700);
@@ -1893,6 +1975,14 @@
     else if (hot < 0 && pick("torpedo") >= 0) { idx = pick("torpedo"); opts = { at: rand(N * N) }; }
     else if (hot < 0 && pick("aoe") >= 0) { idx = pick("aoe"); opts = { at: clampCenter(randomUnshot(), val(A, "aoe")) }; }
     else if (hot < 0 && pick("cluster") >= 0) { idx = pick("cluster"); opts = { at: clampCenter(randomUnshot(), clusterArea(A)) }; }
+    if (idx < 0 && damagedAny && pick("armor") >= 0) { idx = pick("armor"); opts = { ship: damagedAny }; }
+    if (idx < 0 && damagedAny && pick("irondome") >= 0) { idx = pick("irondome"); opts = {}; }
+    if (idx < 0 && pick("smoke") >= 0 && Object.values(A.marks).some(m => m.kind === "detect")) { idx = pick("smoke"); opts = {}; }
+    if (idx < 0 && pick("mines") >= 0) { const sh = alive(A)[rand(alive(A).length)]; idx = pick("mines"); opts = { at: sh.cells[0] }; }
+    if (idx < 0 && pick("decoy") >= 0) {
+      for (let t = 0; t < 300 && !opts; t++) { const h = Math.random() < 0.5, p = rand(N * N), l = footprint(3, h, p); if (l && fits(A, l)) opts = { horiz: h, at: p }; }
+      if (opts) idx = pick("decoy");
+    }
     if (idx < 0) {
       for (const k of ["kraken", "barrage", "carpet", "airstrike", "depth", "broadside", "satellite", "recon", "supply", "sabotage"]) {
         if (pick(k) < 0) continue;
@@ -1913,6 +2003,7 @@
       setLog(await playCard(A, key, opts));
       if (checkOver()) return;
       await wait(700);
+      if (key !== "double") { nextTurn("me"); return; }
     }
     // then fire one shot
     do {
@@ -1993,12 +2084,15 @@
     if (phase !== "battle") panelHint.textContent = "";
     else if (whose !== "me") panelHint.textContent = "Enemy is taking its turn…";
     else if (busy) panelHint.textContent = "…";
-    else if (active < 0) panelHint.textContent = sides.me.extraShots > 0 ? "⚡ Bonus shot — fire again!" : "Click a square on the enemy zone to fire · or pick a card to use";
+    else if (active < 0) panelHint.textContent = sides.me.extraShots > 0 ? "⚡ Bonus shot — fire again!" : "Fire at the enemy zone · or play a card (a card uses your turn)";
     else {
       const key = inv[active];
       if (key === "repair") panelHint.textContent = "Click one of your damaged ships";
       else if (key === "move") panelHint.innerHTML = moving ? "Click a new spot (not on shot squares) · <kbd>R</kbd> to rotate" : "Click one of your ships to move it";
       else if (key === "shield") panelHint.textContent = "Click your zone to place the shield";
+      else if (key === "armor") panelHint.textContent = "Click one of your ships to armor it";
+      else if (key === "decoy") panelHint.innerHTML = "Click your zone to place the decoy · <kbd>R</kbd> to rotate";
+      else if (key === "mines") panelHint.textContent = "Click your zone to lay the mines";
       else if (key === "torpedo") panelHint.textContent = "Click a row on the enemy zone";
       else if (key === "recon") panelHint.textContent = "Click a column on the enemy zone";
       else panelHint.textContent = "Click the enemy zone to use " + CARDS[key].name;
@@ -2046,7 +2140,9 @@
         const ship = shipAt(me, i);
         if (ship && !ship.sunk) { picked = ship; ship.model.classList.add("pick"); }
       }
-      if (key === "shield") area(i, CARDS.shield.area).forEach(j => mark(me, j, "aim-scan"));
+      if (key === "shield" || key === "mines") area(i, CARDS[key].area).forEach(j => mark(me, j, "aim-scan"));
+      if (key === "armor") { const ship = shipAt(me, i); if (ship && !ship.sunk && !ship.decoy) { picked = ship; ship.model.classList.add("pick"); } }
+      if (key === "decoy") { const list = footprint(3, horizontal, i); const ok = !!list && fits(me, list); (list || [i]).forEach(j => mark(me, j, ok ? "ok" : "bad")); }
     }
   }
   ["zone1", "zone2"].forEach(z => {
@@ -2103,6 +2199,14 @@
         if (list && canMoveTo(me, moving, list)) myCard(active, { ship: moving, horiz: horizontal, at: i });
         else setLog("Can't move there — that spot is taken or already shot");
       }
+    } else if (key === "mines" && onZone === "zone1") {
+      myCard(active, { at: i });
+    } else if (key === "armor" && onZone === "zone1") {
+      const ship = shipAt(me, i);
+      if (ship && !ship.sunk && !ship.decoy) myCard(active, { ship });
+    } else if (key === "decoy" && onZone === "zone1") {
+      const list = footprint(3, horizontal, i);
+      if (list && fits(me, list)) myCard(active, { horiz: horizontal, at: i });
     } else if (key === "shield" && onZone === "zone1") {
       myCard(active, { at: i });
     } else if (key === "repair" && onZone === "zone1") {
@@ -2517,7 +2621,8 @@
     }
     if (m.a === "card") {
       setLog(await playSeeded(B, m.key, deserOpts(m.opts || {}, B), m.seed));
-      checkOver();
+      if (checkOver()) return;
+      if (m.key !== "double") { await wait(700); nextTurn("me"); }
       return;
     }
     if (m.a === "shot") {
