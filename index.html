@@ -792,6 +792,8 @@
   /* shorter screens: slightly smaller panels so the boards get more room */
   @media (max-height: 860px) { .panel, .upgrades, .charges, .fleetpanel { zoom: .82; } }
   @media (max-height: 700px) { .panel, .upgrades, .charges, .fleetpanel { zoom: .7; } }
+
+  .fx.gold.big { font-size: 22px; color: #ffe45c; text-shadow: 0 0 8px #000, 0 0 16px #ffd84a; white-space: nowrap; }
 </style>
 </head>
 <body>
@@ -1048,7 +1050,7 @@
     satellite: { name: "Spy Satellite", icon: "🛰️", type: "intel",  desc: "Reveal 3 random hidden enemy ship squares",     target: "none" },
     barrage:   { name: "Barrage",       icon: "🔥", type: "attack", desc: "3 random 3×3 blasts inside an 11×11 area",      target: "enemy" },
     carpet:    { name: "Carpet Bomb",   icon: "💣", type: "attack", desc: "Bombers flatten a 3×15 strip",                 target: "enemy" },
-    kraken:    { name: "KRAKEN",        icon: "🐙", type: "attack", desc: "A sea monster hits 4 random enemy ship squares", target: "none" },
+    kraken:    { name: "KRAKEN",        icon: "🐙", type: "attack", desc: "A sea monster hits 2 random enemy ships", target: "none" },
     flare:   { name: "Flare",        icon: "🔦", type: "intel",  desc: "Reveal one whole hidden enemy ship",       target: "none" },
     double:  { name: "Double Shot",  icon: "⚡", type: "tactic", desc: "Fire 2 shots this turn",                   target: "none" },
     smoke:     { name: "Smoke Screen",  icon: "🌫️", type: "defense", desc: "Erase everything the enemy has revealed about your ships", target: "none" },
@@ -1413,6 +1415,21 @@
   }
 
   const stats = { me: { fired: 0, hits: 0, sunk: 0, gold: 0, cards: 0 }, bot: { fired: 0, hits: 0, sunk: 0, gold: 0, cards: 0 } };
+  // +1 charge for every hit on an enemy ship
+  function gainCharge(A) {
+    if (A.charge >= MAX_CHARGE) return;
+    A.charge++;
+    if (A === sides.me) { renderCharges(); Sound.play(A.charge === MAX_CHARGE ? "full" : "charge", A.charge); }
+  }
+  // +20 gold for every ship destroyed
+  const SINK_GOLD = 20;
+  function sinkBonus(A, j) {
+    A.gold += SINK_GOLD; stats[A.name].gold += SINK_GOLD;
+    if (A !== sides.me) return;
+    const [x, y] = center(j);
+    setTimeout(() => { const el = fx(sides.bot, "gold big", x, y - 30, 1500); el.textContent = "+" + SINK_GOLD + " SUNK!"; }, 250);
+    renderUpgrades(true);
+  }
   let lastCoin = 0;
   function earnGold(A, j) {
     A.gold += GOLD_PER_HIT;
@@ -1461,10 +1478,12 @@
     }
     earnGold(other(T), j);
     st.hits++;
+    gainCharge(other(T));
     if (ship.hits.size === ship.size) {
       ship.sunk = true;
       drawModel(T, ship);
       st.sunk++;
+      sinkBonus(other(T), j);
       sunkToast(T === sides.bot, ship.size);
       ship.cells.forEach(k => { const m = T.marks[k]; if (m && m.el) m.el.classList.add("dead"); });   // stop fire animation on wrecks
       if (T === sides.bot) renderFleet(ship);
@@ -1758,9 +1777,9 @@
       return `${who}: ${name} — ` + summary(res);
     }
     if (key === "kraken") {
-      const targets = [];
-      alive(T).forEach(sh => sh.cells.forEach((j, seg) => { if (!sh.hits.has(seg) && !shielded(T, j)) targets.push(j); }));
-      const list = lshuffle(targets).slice(0, 4);
+      // one unhit square on each of 2 different ships
+      const ships = lshuffle(alive(T).filter(sh => sh.cells.some((j, seg) => !sh.hits.has(seg) && !shielded(T, j)))).slice(0, 2);
+      const list = ships.map(sh => { const free = sh.cells.filter((j, seg) => !sh.hits.has(seg) && !shielded(T, j)); return free[lrand(free.length)]; });
       if (!list.length) return `${who}: ${name} — found nothing to grab`;
       Sound.play("kraken"); shake();
       const res = [];
