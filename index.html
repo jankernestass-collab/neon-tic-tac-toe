@@ -708,6 +708,51 @@
     background: #ffffff12; border: 1px solid var(--rc, #ffffff44); cursor: help; }
   .eh.r-common { --rc: #b9c6d2; } .eh.r-rare { --rc: #4fa8ff; } .eh.r-epic { --rc: #c77dff; } .eh.r-legendary { --rc: #ffc93c; }
   .eh.newest { box-shadow: 0 0 8px var(--rc); animation: pipPop .5s ease-out; }
+
+  /* ---- v11: polish ---- */
+  .shipmodel.ghost { opacity: .55; pointer-events: none; z-index: 5; filter: drop-shadow(0 0 6px #8dffb0); }
+  .shipmodel.ghost.bad { filter: grayscale(1) sepia(1) hue-rotate(-50deg) saturate(4) drop-shadow(0 0 6px #ff5a3c); opacity: .5; }
+  .shipmodel.ghost::before { display: none; }
+  body.my-turn #zone2 .cell { cursor: crosshair; }
+  .turnbanner { position: fixed; left: 0; right: 0; top: 40%; z-index: 21; pointer-events: none; text-align: center;
+    font-family: "Black Ops One", "Segoe UI", sans-serif; font-size: 3.4rem; letter-spacing: 12px; padding: 14px 0;
+    background: linear-gradient(90deg, transparent, #00203fdd 25%, #00203fdd 75%, transparent);
+    animation: banner 1.4s cubic-bezier(.3, .8, .3, 1) forwards; }
+  .turnbanner.me { color: #8dffb0; text-shadow: 0 0 24px #8dffb0aa; }
+  .turnbanner.bot { color: #ff7a5c; text-shadow: 0 0 24px #ff5a3caa; }
+  @keyframes banner { 0% { transform: translateX(-60%) skewX(-12deg); opacity: 0; } 18% { transform: translateX(0) skewX(0); opacity: 1; }
+                      75% { transform: translateX(0); opacity: 1; letter-spacing: 16px; } 100% { transform: translateX(60%) skewX(12deg); opacity: 0; } }
+  .toast { position: fixed; left: 50%; top: 128px; z-index: 23; transform: translateX(-50%); pointer-events: none;
+    display: flex; align-items: center; gap: 14px; padding: 10px 20px; border-radius: 14px;
+    background: linear-gradient(180deg, #0b3a66f2, #021a33f5); font-family: "Black Ops One", "Segoe UI", sans-serif; letter-spacing: 3px; font-size: 1.15rem;
+    animation: toastIn 2.6s ease-out forwards; }
+  .toast small { display: block; font-family: "Segoe UI", sans-serif; letter-spacing: 1px; font-size: .75rem; opacity: .8; }
+  .toast.good { border: 2px solid #8dffb0; color: #8dffb0; box-shadow: 0 0 30px #8dffb055; }
+  .toast.bad { border: 2px solid #ff5a3c; color: #ff9a80; box-shadow: 0 0 30px #ff5a3c55; }
+  .toast .ts-icon svg { height: 22px; width: auto; display: block; }
+  @keyframes toastIn { 0% { transform: translateX(-50%) translateY(-20px) scale(.8); opacity: 0; } 10% { transform: translateX(-50%) scale(1.06); opacity: 1; }
+                       16% { transform: translateX(-50%) scale(1); } 85% { opacity: 1; } 100% { transform: translateX(-50%) translateY(-10px); opacity: 0; } }
+  .turnbar .log { transition: color .3s; }
+  .turnbar .log.l-hit { color: #ffd36b; }
+  .turnbar .log.l-sunk { color: #8dffb0; font-weight: bold; }
+  body.battle-in .charges, body.battle-in .upgrades { animation: slideL .6s cubic-bezier(.2, 1.2, .4, 1) backwards; }
+  body.battle-in .fleetpanel { animation: slideR .6s cubic-bezier(.2, 1.2, .4, 1) backwards .1s; }
+  body.battle-in .turnbar { animation: slideT .6s cubic-bezier(.2, 1.2, .4, 1) backwards; }
+  @keyframes slideL { from { transform: translateX(-120%); opacity: 0; } }
+  @keyframes slideR { from { transform: translateX(120%); opacity: 0; } }
+  @keyframes slideT { from { transform: translateX(-50%) translateY(-120%); opacity: 0; } }
+  .hand .slot:hover { transform: translateY(-46px) scale(1.35); transform-origin: 50% 100%; z-index: 5; }
+  .hand .slot.sel { transform: translateY(-20px); }
+  .slot .gcard, .slot { transition: transform .18s ease, box-shadow .18s; }
+  .endstats { display: flex; flex-direction: column; gap: 4px; min-width: 360px; padding: 14px 18px; border-radius: 14px;
+    background: #00203fcc; border: 1px solid #bff3ff55; }
+  .sr { display: grid; grid-template-columns: 1fr 1.6fr 1fr; align-items: center; text-align: center; padding: 4px 0; border-bottom: 1px solid #ffffff14; }
+  .sr:last-child { border: 0; }
+  .sr b { font-weight: normal; opacity: .75; font-size: .85rem; }
+  .sr span { font-size: 1.1rem; font-weight: bold; }
+  .sr.head span { font-family: "Black Ops One", "Segoe UI", sans-serif; letter-spacing: 2px; font-size: .9rem; }
+  .sr.head span:first-child, .sr span:first-child { color: #8dffb0; } .sr span:last-child { color: #ff9a80; }
+  .overlay .big { animation: titleDrop .8s cubic-bezier(.2, 1.4, .4, 1); }
 </style>
 </head>
 <body>
@@ -820,6 +865,7 @@
 
   <div class="overlay" id="overlay">
     <div class="big" id="endText"></div>
+    <div class="endstats" id="endStats"></div>
     <button class="startbtn" onclick="location.reload()">BACK TO MENU</button>
   </div>
 
@@ -1299,9 +1345,11 @@
     if (justSunk) { el.classList.remove("hitpulse"); void el.offsetWidth; el.classList.add("hitpulse"); }
   }
 
+  const stats = { me: { fired: 0, hits: 0, sunk: 0, gold: 0, cards: 0 }, bot: { fired: 0, hits: 0, sunk: 0, gold: 0, cards: 0 } };
   let lastCoin = 0;
   function earnGold(A, j) {
     A.gold += GOLD_PER_HIT;
+    stats[A.name].gold += GOLD_PER_HIT;
     if (A !== sides.me) return;
     const [x, y] = center(j);
     const el = fx(sides.bot, "gold", x, y - 10, 1200); el.textContent = "+" + GOLD_PER_HIT;
@@ -1311,6 +1359,8 @@
 
   const shielded = (sd, j) => sd.shields.some(sh => sh.cells.has(j));
   function strike(T, j) {
+    const st = stats[other(T).name];
+    st.fired++;
     if (shielded(T, j)) { const [x, y] = center(j); fx(T, "ring blocked", x, y, 700); if (T === sides.me) botMem.shot.delete(j); return "blocked"; }
     const ship = shipAt(T, j);
     if (T === sides.me) { botMem.shot.add(j); botMem.detected.delete(j); }
@@ -1343,9 +1393,12 @@
       return "hit";
     }
     earnGold(other(T), j);
+    st.hits++;
     if (ship.hits.size === ship.size) {
       ship.sunk = true;
       drawModel(T, ship);
+      st.sunk++;
+      sunkToast(T === sides.bot, ship.size);
       ship.cells.forEach(k => { const m = T.marks[k]; if (m && m.el) m.el.classList.add("dead"); });   // stop fire animation on wrecks
       if (T === sides.bot) renderFleet(ship);
       if (T === sides.me) ship.cells.forEach(k => { botMem.hits.delete(k); botMem.detected.delete(k); });
@@ -1804,7 +1857,26 @@
     }
     return out;
   }
-  function setLog(t) { document.getElementById("log").textContent = t; }
+  function setLog(t) {
+    const el = document.getElementById("log");
+    el.textContent = t;
+    el.className = "log" + (/sunk/i.test(t) ? " l-sunk" : /\bhits?\b/i.test(t) && !/missed/.test(t) ? " l-hit" : "");
+  }
+  function sunkToast(enemyShip, size) {
+    const el = document.createElement("div");
+    el.className = "toast " + (enemyShip ? "good" : "bad");
+    el.innerHTML = `<span class="ts-icon">${shipSVG(size).replace('preserveAspectRatio="none"', "")}</span>` +
+                   `<span>${enemyShip ? "ENEMY SHIP SUNK!" : "YOUR SHIP WAS SUNK!"}<small>${size}-square ship</small></span>`;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 2600);
+  }
+  function turnBanner(who) {
+    const el = document.createElement("div");
+    el.className = "turnbanner " + who;
+    el.textContent = who === "me" ? "YOUR TURN" : mode === "mp" ? "OPPONENT'S TURN" : "ENEMY TURN";
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 1400);
+  }
   function checkOver() {
     if (!alive(sides.bot).length) { gameOver(true); return true; }
     if (!alive(sides.me).length) { gameOver(false); return true; }
@@ -1821,6 +1893,7 @@
       }
     });
     phase = "battle";
+    document.body.classList.add("battle-in");
     document.getElementById("turnbar").style.display = "block";
     document.getElementById("fleet").style.display = "block";
     document.getElementById("upgrades").style.display = "block";
@@ -1847,6 +1920,8 @@
     renderCharges(); renderPanel(); renderUpgrades(); refreshHover();
     const tb = document.getElementById("turnbar");
     tb.classList.remove("pulse"); void tb.offsetWidth; tb.classList.add("pulse");
+    turnBanner(who);
+    document.body.classList.toggle("my-turn", who === "me");
     if (who === "me" && sd.charge >= MAX_CHARGE) setTimeout(() => { if (phase === "battle") openDraw(); }, 800);
     if (who === "bot") { busy = true; if (mode === "bot") setTimeout(botTurn, 900); }   // in multiplayer we wait for the opponent's moves
   }
@@ -1856,6 +1931,14 @@
     const t = document.getElementById("endText");
     t.textContent = win ? "VICTORY" : "DEFEAT";
     t.style.color = win ? "#8dffb0" : "#ff7a5c";
+    const acc = s => s.fired ? Math.round(s.hits / s.fired * 100) + "%" : "—";
+    const row = (label, a, b) => `<div class="sr"><span>${a}</span><b>${label}</b><span>${b}</span></div>`;
+    const me = stats.me, en = stats.bot, foe = mode === "mp" ? "OPPONENT" : "ENEMY";
+    document.getElementById("endStats").innerHTML =
+      `<div class="sr head"><span>YOU</span><b></b><span>${foe}</span></div>` +
+      row("Turns", turn, turn) + row("Squares fired at", me.fired, en.fired) + row("Hits", me.hits, en.hits) +
+      row("Accuracy", acc(me), acc(en)) + row("Ships sunk", me.sunk, en.sunk) + row("Gold earned", me.gold, en.gold) +
+      row("Cards played", me.cards, en.cards);
     document.getElementById("overlay").style.display = "flex";
     Sound.play(win ? "win" : "lose");
   }
@@ -1878,6 +1961,7 @@
     const key = sides.me.inv[idx];
     busy = true; active = -1; moving = null; clearAim(); clearPick();
     sides.me.inv.splice(idx, 1);
+    stats.me.cards++;
     renderPanel();
     const seed = newSeed();
     if (mode === "mp") Net.send({ t: "act", a: "card", key, opts: serOpts(opts), seed });
@@ -1911,6 +1995,7 @@
   const enemyPlayed = [];
   async function showEnemyCard(key) {
     enemyPlayed.push(key);
+    stats.bot.cards++;
     renderFleet();
     const el = document.createElement("div");
     el.className = "enemycard";
@@ -2058,7 +2143,7 @@
     else if (hot < 0 && pick("aoe") >= 0) { idx = pick("aoe"); opts = { at: clampCenter(randomUnshot(), val(A, "aoe")) }; }
     else if (hot < 0 && pick("cluster") >= 0) { idx = pick("cluster"); opts = { at: clampCenter(randomUnshot(), clusterArea(A)) }; }
     if (idx < 0 && damagedAny && pick("armor") >= 0) { idx = pick("armor"); opts = { ship: damagedAny }; }
-    if (idx < 0 && damagedAny && pick("irondome") >= 0) { idx = pick("irondome"); opts = {}; }
+    if (idx < 0 && pick("irondome") >= 0 && (damagedAny || Math.random() < 0.35)) { idx = pick("irondome"); opts = {}; }
     if (idx < 0 && pick("smoke") >= 0 && Object.values(A.marks).some(m => m.kind === "detect")) { idx = pick("smoke"); opts = {}; }
     if (idx < 0 && pick("mines") >= 0) { const sh = alive(A)[rand(alive(A).length)]; idx = pick("mines"); opts = { at: sh.cells[0] }; }
     if (idx < 0 && pick("decoy") >= 0) {
@@ -2071,6 +2156,10 @@
         if ((k === "satellite" || k === "recon") && hot >= 0) continue;
         idx = pick(k); opts = { at: hot >= 0 ? hot : randomUnshot() }; break;
       }
+    }
+    if (idx < 0 && A.inv.length > 3) {
+      const k = A.inv.find(c => CARDS[c].target === "none" || c === "irondome");
+      if (k) { idx = pick(k); opts = {}; }
     }
     if (idx < 0 && damagedAny && pick("move") >= 0) {
       for (let t = 0; t < 400 && !opts; t++) {
@@ -2189,7 +2278,19 @@
   function clearAim() {
     aimed.forEach(([sd, j]) => sd.cells[j].classList.remove("aim", "aim-c", "aim-scan", "ok", "bad"));
     aimed = [];
+    hideGhost();
   }
+  // see-through ship that follows the mouse while placing
+  let ghost = null;
+  function showGhost(size, horiz, at, ok) {
+    if (!ghost) { ghost = document.createElement("div"); document.getElementById("zone1").appendChild(ghost); }
+    if (ghost.dataset.size != size) { ghost.innerHTML = shipSVG(size); ghost.dataset.size = size; }
+    const [r, c] = rc(at);
+    ghost.className = "shipmodel ghost" + (horiz ? "" : " vertical") + (ok ? "" : " bad");
+    ghost.style.left = (10 + c * 39) + "px"; ghost.style.top = (10 + r * 39) + "px"; ghost.style.width = (size * 39 - 1) + "px";
+    ghost.style.display = "block";
+  }
+  function hideGhost() { if (ghost) ghost.style.display = "none"; }
   function clearPick() { if (picked) { picked.model && picked.model.classList.remove("pick"); picked = null; } }
   function mark(sd, j, cls) { sd.cells[j].classList.add(cls); aimed.push([sd, j]); }
 
@@ -2202,6 +2303,7 @@
       const list = footprint(FLEET[selected].size, horizontal, i);
       const ok = fits(me, list);
       (list || [i]).forEach(j => mark(me, j, ok ? "ok" : "bad"));
+      if (list) showGhost(FLEET[selected].size, horizontal, i, ok);
       return;
     }
     if (phase !== "battle") return;
@@ -2219,13 +2321,14 @@
         const list = footprint(moving.size, horizontal, i);
         const ok = !!list && canMoveTo(me, moving, list);
         (list || [i]).forEach(j => mark(me, j, ok ? "ok" : "bad"));
+        if (list) showGhost(moving.size, horizontal, i, ok);
       } else if (key === "move") {
         const ship = shipAt(me, i);
         if (ship && !ship.sunk) { picked = ship; ship.model.classList.add("pick"); }
       }
       if (key === "shield" || key === "mines") area(i, CARDS[key].area).forEach(j => mark(me, j, "aim-scan"));
       if (key === "armor") { const ship = shipAt(me, i); if (ship && !ship.sunk && !ship.decoy) { picked = ship; ship.model.classList.add("pick"); } }
-      if (key === "decoy") { const list = footprint(3, horizontal, i); const ok = !!list && fits(me, list); (list || [i]).forEach(j => mark(me, j, ok ? "ok" : "bad")); }
+      if (key === "decoy") { const list = footprint(3, horizontal, i); const ok = !!list && fits(me, list); (list || [i]).forEach(j => mark(me, j, ok ? "ok" : "bad")); if (list) showGhost(3, horizontal, i, ok); }
     }
   }
   ["zone1", "zone2"].forEach(z => {
