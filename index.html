@@ -54,7 +54,12 @@
     grid-template-columns: repeat(50, 38px);
     grid-template-rows: repeat(50, 38px);
     gap: 1px; padding: 10px; border-radius: 16px;
-    background: #0a4d80;
+    background:
+      linear-gradient(90deg, #0a4d80 1px, transparent 1px) 9px 0 / 39px 39px,
+      linear-gradient(0deg, #0a4d80 1px, transparent 1px) 0 9px / 39px 39px,
+      linear-gradient(135deg, #3cc8e8 0%, #1a8fc4 50%, #0f6aa3 100%) 10px 10px / 39px 39px,
+      #0a4d80;
+    contain: layout style;
     border: 3px solid #bff3ff;
     box-shadow: 0 0 0 4px #ffffff44, 0 16px 0 #06355e, 0 50px 80px #00142c99;
   }
@@ -119,10 +124,10 @@
       repeating-radial-gradient(circle at 30% 40%, #ffffff00 0 30px, #ffffff1c 33px, #ffffff00 38px),
       repeating-radial-gradient(circle at 70% 60%, #ffffff00 0 44px, #ffffff14 47px, #ffffff00 53px);
     animation: ripple 12s linear infinite alternate;
-    mix-blend-mode: screen;
+    opacity: .8; will-change: transform;
   }
   @keyframes ripple { from { transform: translate(-6%, -4%) rotate(0deg); } to { transform: translate(6%, 4%) rotate(8deg); } }
-  .cell { background: linear-gradient(135deg, #3cc8e8 0%, #1a8fc4 50%, #0f6aa3 100%); }
+  .cell { background: transparent; }
 
   .shipmodel {
     position: absolute; height: 38px; z-index: 3; pointer-events: none;
@@ -138,7 +143,7 @@
     position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%);
     background: linear-gradient(180deg, #0b3a66e6, #021a33f0);
     border: 1px solid #bff3ff80; border-radius: 18px;
-    padding: 12px 18px 12px; text-align: center; backdrop-filter: blur(8px);
+    padding: 12px 18px 12px; text-align: center; 
     box-shadow: 0 10px 30px #000a, inset 0 1px 0 #ffffff30;
   }
   .panel h2 {
@@ -206,7 +211,7 @@
   .shipmodel.pick { filter: drop-shadow(0 0 4px #8dffb0) drop-shadow(0 0 10px #8dffb0); }
 
   /* ---- Aim indicator on the enemy zone ---- */
-  .cell { transition: background .35s; }
+  .cell { transition: none; }
   .cell.aim   { background: #ff5a3c66; transition: none; }
   .cell.aim-c { background: #ff5a3c; box-shadow: inset 0 0 0 3px #fff; transition: none; }
   .cell.aim-scan { background: #8dffb055; transition: none; }
@@ -218,7 +223,7 @@
   .turnbar {
     position: fixed; top: 58px; left: 50%; transform: translateX(-50%); text-align: center;
     background: #00203fcc; border: 1px solid #bff3ff66; border-radius: 14px; padding: 6px 18px;
-    backdrop-filter: blur(6px); pointer-events: none; display: none;
+     pointer-events: none; display: none;
   }
   .turnbar .who { font-family: "Black Ops One", "Segoe UI", sans-serif; letter-spacing: 3px; font-size: 1.05rem; }
   .turnbar .who.me { color: #8dffb0; } .turnbar .who.bot { color: #ff7a5c; }
@@ -235,7 +240,7 @@
   .charges {
     position: fixed; left: 18px; bottom: 18px; min-width: 150px; text-align: center;
     background: linear-gradient(180deg, #0b3a66e6, #021a33f0); border: 1px solid #bff3ff80; border-radius: 16px;
-    padding: 10px 16px 12px; backdrop-filter: blur(8px); box-shadow: 0 10px 30px #000a, inset 0 1px 0 #ffffff30;
+    padding: 10px 16px 12px;  box-shadow: 0 10px 30px #000a, inset 0 1px 0 #ffffff30;
   }
   .charges h3 { margin: 0; font-family: "Black Ops One", "Segoe UI", sans-serif; font-weight: normal; letter-spacing: 3px; font-size: 1rem; }
   .charges .val { font-size: 2rem; font-weight: bold; color: #ffe45c; text-shadow: 0 0 10px #ffe45c88; margin: 2px 0 6px; }
@@ -245,7 +250,7 @@
   /* ---- End screen ---- */
   .overlay {
     position: fixed; inset: 0; display: none; align-items: center; justify-content: center; flex-direction: column; gap: 16px;
-    background: #000a; backdrop-filter: blur(3px);
+    background: #000a; 
   }
   .overlay .big { font-family: "Black Ops One", "Segoe UI", sans-serif; font-size: 4rem; letter-spacing: 8px; text-shadow: 0 0 30px currentColor; }
 
@@ -331,7 +336,7 @@
   /* draw pop-up (middle) */
   .popup {
     position: fixed; inset: 0; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 22px;
-    background: radial-gradient(ellipse at center, #021a33cc, #000c); backdrop-filter: blur(4px); z-index: 20;
+    background: radial-gradient(ellipse at center, #021a33cc, #000c);  z-index: 20;
   }
   .popup.show { display: flex; }
   .popup-title { font-family: "Black Ops One", "Segoe UI", sans-serif; font-size: 2.2rem; letter-spacing: 6px; text-shadow: 0 0 20px #5ad0e8; animation: titleIn .4s ease-out; }
@@ -368,7 +373,7 @@
   .fleetpanel {
     position: fixed; right: 16px; top: 70px; display: none; min-width: 170px;
     background: linear-gradient(180deg, #0b3a66e6, #021a33f0); border: 1px solid #bff3ff80; border-radius: 16px;
-    padding: 10px 14px 12px; backdrop-filter: blur(8px); box-shadow: 0 10px 30px #000a, inset 0 1px 0 #ffffff30;
+    padding: 10px 14px 12px;  box-shadow: 0 10px 30px #000a, inset 0 1px 0 #ffffff30;
   }
   .fleetpanel h3 { margin: 0; text-align: center; font-family: "Black Ops One", "Segoe UI", sans-serif; font-weight: normal; letter-spacing: 3px; font-size: 1rem; }
   .fleetpanel .fleft { text-align: center; font-size: .8rem; opacity: .85; margin: 2px 0 8px; }
@@ -454,7 +459,7 @@
   .upgrades {
     position: fixed; left: 186px; bottom: 18px; width: 310px; display: none;
     background: linear-gradient(180deg, #0b3a66e6, #021a33f0); border: 1px solid #bff3ff80; border-radius: 16px;
-    padding: 10px 12px 8px; backdrop-filter: blur(8px); box-shadow: 0 10px 30px #000a, inset 0 1px 0 #ffffff30;
+    padding: 10px 12px 8px;  box-shadow: 0 10px 30px #000a, inset 0 1px 0 #ffffff30;
   }
   .up-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
   .up-head h3 { margin: 0; font-family: "Black Ops One", "Segoe UI", sans-serif; font-weight: normal; letter-spacing: 3px; font-size: 1rem; }
@@ -483,12 +488,10 @@
 
   /* ---- v6: lighter marks, new cards ---- */
   .cell.m-miss {
-    background-image: radial-gradient(circle, transparent 0 5px, #ffffffcc 6px 8px, transparent 9px),
-                      linear-gradient(135deg, #3cc8e8 0%, #1a8fc4 50%, #0f6aa3 100%);
+    background-image: radial-gradient(circle, transparent 0 5px, #ffffffcc 6px 8px, transparent 9px);
   }
   .cell.m-detect {
-    background-image: radial-gradient(circle, transparent 0 9px, #8dffb0 10px 13px, transparent 14px),
-                      linear-gradient(135deg, #3cc8e8 0%, #1a8fc4 50%, #0f6aa3 100%);
+    background-image: radial-gradient(circle, transparent 0 9px, #8dffb0 10px 13px, transparent 14px);
   }
   .mark.hit.dead { animation: none; opacity: .75; filter: saturate(.6); }
   .mark.hit.dead::after { display: none; }
@@ -688,7 +691,7 @@
   .gcard.defense { --edge: #b18cff; }
   .shipmodel.decoy { opacity: .55; filter: sepia(.6) hue-rotate(200deg) drop-shadow(2px 4px 2px #00142c99); }
   .shipmodel.armored { filter: drop-shadow(0 0 3px #ffe9a8) drop-shadow(0 0 8px #ffd84a) drop-shadow(2px 4px 2px #00142c99); }
-  .cell.mined { box-shadow: inset 0 0 0 2px #b18cff88; background-image: radial-gradient(circle, #b18cff 0 3px, transparent 4px), linear-gradient(135deg, #3cc8e8 0%, #1a8fc4 50%, #0f6aa3 100%); }
+  .cell.mined { box-shadow: inset 0 0 0 2px #b18cff88; background-image: radial-gradient(circle, #b18cff 0 3px, transparent 4px); }
   .fx.mineboom { width: 60px; height: 60px; border-radius: 50%; background: radial-gradient(circle, #fff 0 10%, #c38bff 35%, #6a2bff00 70%); animation: fxburst .8s ease-out forwards; --s: 2; }
 
   .zone.domed { box-shadow: 0 0 0 4px #7fe7ff, 0 0 60px 10px #7fe7ff88, 0 16px 0 #06355e, 0 50px 80px #00142c99; }
@@ -753,6 +756,38 @@
   .sr.head span { font-family: "Black Ops One", "Segoe UI", sans-serif; letter-spacing: 2px; font-size: .9rem; }
   .sr.head span:first-child, .sr span:first-child { color: #8dffb0; } .sr span:last-child { color: #ff9a80; }
   .overlay .big { animation: titleDrop .8s cubic-bezier(.2, 1.4, .4, 1); }
+
+  /* ---- v12: performance ---- */
+  #world { will-change: transform; }
+  .sea { will-change: transform; }
+  .rays, .wave, .bubble { display: none; }            /* fully covered by the sea — no need to animate them */
+  .warplane.plane svg { filter: none; }
+  .fx.ring { width: 80px; height: 80px; border-width: 2px; animation: fxgrow .7s ease-out forwards; }
+  .fx.ring.wide { width: 130px; height: 130px; animation-duration: 1s; }
+  .fx.ring.shock { width: calc(var(--s) * 110px); height: calc(var(--s) * 110px); border-width: 4px; animation-duration: .55s; }
+  .fx.amb-ring { width: 54px; height: 54px; animation: fxgrow 1.5s ease-out forwards; }
+  .fx.wave { width: var(--r); height: var(--r); border-width: 6px; animation: fxgrow .9s ease-out forwards; }
+  .fx.wave.sonar { animation-duration: 1.4s; }
+  .fx.wave.nukewave { border-width: 14px; animation-duration: 1.6s; }
+  @keyframes fxgrow { from { transform: translate(-50%, -50%) scale(.1); opacity: 1; } to { transform: translate(-50%, -50%) scale(1); opacity: 0; } }
+  .fx, .mark.hit, .creature, .warplane { will-change: transform, opacity; }
+  .charges, .upgrades, .fleetpanel { contain: layout paint; }
+
+  /* ---- v12: lighter ripples + static wakes for everyone ---- */
+  .ripples::after { inset: -8%; animation: ripple2 12s linear infinite alternate; }
+  @keyframes ripple2 { from { transform: translate(-4%, -3%); } to { transform: translate(4%, 3%); } }
+  .shipmodel::before { animation: none; opacity: .55; }
+  /* ---- Low graphics: same game, far less to draw ---- */
+  body.low-gfx .sea::before, body.low-gfx .sea::after { display: none; }
+  body.low-gfx .sea { background-image: none; }
+  body.low-gfx .ripples, body.low-gfx .life, body.low-gfx .wreck, body.low-gfx .cloudshadow, body.low-gfx .warplane,
+  body.low-gfx .swell, body.low-gfx .vignette, body.low-gfx .beam, body.low-gfx .embers { display: none; }
+  body.low-gfx .shipmodel::before { display: none; }
+  body.low-gfx .mark.hit { animation: none; }
+  body.low-gfx .mark.hit::after { display: none; }
+  body.low-gfx .gcard::after { animation: none; display: none; }
+  .set select { background: #00203f; color: #fff; border: 1px solid #bff3ff66; border-radius: 8px; padding: 5px 8px; font-size: .9rem; }
+  .m-status.small { font-size: .75rem; opacity: .7; min-height: 0; margin-top: -4px; }
 </style>
 </head>
 <body>
@@ -851,6 +886,8 @@
         <label class="set"><span>🔊 Effects</span><input type="range" id="setSfx" min="0" max="100"></label>
         <label class="set"><span>🐋 Sea life &amp; planes</span><input type="checkbox" id="setAmbient"></label>
         <label class="set"><span>📳 Screen shake</span><input type="checkbox" id="setShake"></label>
+        <label class="set"><span>🖥️ Graphics</span><select id="setGfx"><option value="auto">Auto</option><option value="high">High</option><option value="low">Low (smoother)</option></select></label>
+        <div class="m-status small" id="gfxNote"></div>
         <button class="mbtn small" data-back="1">BACK</button>
       </div>
 
@@ -897,6 +934,8 @@
   const PER_X = 2800, PER_Y = 1600;          // sea pattern repeats every 2800 x 1600 px
   // can't zoom out so far that you'd see past the sea (bigger screens see more, so they stop sooner)
   const minZoom = () => 0.35 * Math.max(1, window.innerWidth / 1920, window.innerHeight / 1080);
+  let camQueued = false;
+  function scheduleCamera() { if (camQueued) return; camQueued = true; requestAnimationFrame(() => { camQueued = false; applyCamera(); }); }
   function applyCamera() {
     zoom = Math.max(minZoom(), Math.min(3, zoom));
     const limX = world.offsetWidth / 2 + 3500, limY = world.offsetHeight / 2 + 3000;
@@ -924,7 +963,7 @@
     cam.x -= (e.clientX - drag.x) / zoom;
     cam.y -= (e.clientY - drag.y) * 1.3 / zoom;   // a bit more up/down because of the tilt
     drag = { x: e.clientX, y: e.clientY };
-    applyCamera();
+    scheduleCamera();
   });
   const stopDrag = () => { drag = null; document.body.style.cursor = ""; };
   window.addEventListener("mouseup", stopDrag);
@@ -935,7 +974,7 @@
     e.preventDefault();
     if (document.body.classList.contains("in-menu")) return;
     zoom *= e.deltaY < 0 ? 1.1 : 1 / 1.1;
-    applyCamera();
+    scheduleCamera();
   }, { passive: false });
 
   // =====================================================================
@@ -2528,7 +2567,7 @@
     }
   }
   requestAnimationFrame(() => {
-    spawn("fishSchool", 22); spawn("whale", 4); spawn("manta", 8); spawn("turtle", 10); spawn("jelly", 16);
+    spawn("fishSchool", 14); spawn("whale", 3); spawn("manta", 6); spawn("turtle", 7); spawn("jelly", 10);
     // sun glints sparkling on the surface
     for (let k = 0; k < 30; k++) {
       const g = document.createElement("div");
@@ -2557,7 +2596,7 @@
            <ellipse cx="14" cy="0" rx="5" ry="2" fill="#9fd4ff"/></g></svg>`;
 
     function planePass() {
-      if (document.hidden || !settings.ambient) return;
+      if (document.hidden || !settings.ambient || lowGfx()) return;
       const big = Math.random() < 0.35, count = big ? 1 + rand(2) : 1 + rand(3);
       // fly across the whole battlefield
       const ang = Math.random() * Math.PI * 2, R = Math.max(W(), H()) + 3000;
@@ -2584,7 +2623,7 @@
     }
 
     function farBoom() {
-      if (document.hidden || !settings.ambient) return;
+      if (document.hidden || !settings.ambient || lowGfx()) return;
       // somewhere out at sea, not on the zones
       let x, y;
       do { x = -2500 + Math.random() * (W() + 5000); y = -2000 + Math.random() * (H() + 4000); }
@@ -2637,15 +2676,15 @@
   (() => {
     const zones = ["zone1", "zone2"].map(id => document.getElementById(id));
     setInterval(() => {
-      if (document.hidden || !settings.ambient) return;
+      if (document.hidden || !settings.ambient || lowGfx()) return;
       const z = zones[rand(2)], j = rand(N * N), [x, y] = center(j);
       const kind = Math.random();
       if (kind < 0.55) fx({ zone: z.id }, "amb-cap", x, y, 1600);
       else if (kind < 0.85) { fx({ zone: z.id }, "amb-ring", x, y, 1500); fx({ zone: z.id }, "amb-drop", x, y, 900, { "--dx": (rand(30) - 15) + "px", "--dy": -rand(20) + "px" }); }
       else { fx({ zone: z.id }, "column small", x, y, 650); fx({ zone: z.id }, "amb-ring", x, y, 1500); }
-    }, 260);
+    }, 480);
     setInterval(() => {
-      if (document.hidden || !settings.ambient) return;
+      if (document.hidden || !settings.ambient || lowGfx()) return;
       zones.forEach(z => {
         const el = document.createElement("div");
         el.className = "swell";
@@ -2659,11 +2698,17 @@
   // =====================================================================
   //  SETTINGS
   // =====================================================================
-  const settings = { music: 0.6, sfx: 0.8, ambient: true, shake: true };
+  const settings = { music: 0.6, sfx: 0.8, ambient: true, shake: true, gfx: "auto" };
+  let autoLow = false;
+  try { autoLow = localStorage.getItem("bs-autolow") === "1"; } catch (e) {}
+  const lowGfx = () => settings.gfx === "low" || (settings.gfx === "auto" && autoLow);
   try { Object.assign(settings, JSON.parse(localStorage.getItem("bs-settings") || "{}")); } catch (e) {}
   function applySettings() {
     Sound.setVolumes(settings.music, settings.sfx);
     document.body.classList.toggle("no-ambient", !settings.ambient);
+    document.body.classList.toggle("low-gfx", lowGfx());
+    const note = document.getElementById("gfxNote");
+    if (note) note.textContent = settings.gfx === "auto" ? (autoLow ? "Auto picked Low for this device" : "Auto picked High for this device") : "";
     try { localStorage.setItem("bs-settings", JSON.stringify(settings)); } catch (e) {}
   }
 
@@ -2917,7 +2962,10 @@
     document.getElementById("setSfx").value = settings.sfx * 100;
     document.getElementById("setAmbient").checked = settings.ambient;
     document.getElementById("setShake").checked = settings.shake;
+    document.getElementById("setGfx").value = settings.gfx;
+    applySettings();
   };
+  document.getElementById("setGfx").onchange = e => { settings.gfx = e.target.value; if (settings.gfx === "high") { autoLow = false; try { localStorage.removeItem("bs-autolow"); } catch (x) {} } applySettings(); };
   document.getElementById("setMusic").oninput = e => { settings.music = e.target.value / 100; applySettings(); };
   document.getElementById("setSfx").oninput = e => { settings.sfx = e.target.value / 100; applySettings(); };
   document.getElementById("setSfx").onchange = () => Sound.play("boom", false);
@@ -2945,8 +2993,25 @@
     setTimeout(() => location.reload(), 250);
   }
 
+  function measureFps() {
+    if (settings.gfx !== "auto" || autoLow) return;
+    let frames = 0, t0 = 0;
+    function tick(t) {
+      if (!t0) t0 = t;
+      frames++;
+      if (t - t0 < 3000) return requestAnimationFrame(tick);
+      const fps = frames / ((t - t0) / 1000);
+      if (fps < 40 && !document.hidden) {
+        autoLow = true;
+        try { localStorage.setItem("bs-autolow", "1"); } catch (e) {}
+        applySettings();
+      }
+    }
+    setTimeout(() => requestAnimationFrame(tick), 2500);
+  }
   applySettings();
   enterMenu();
+  measureFps();
 
   // ---- Bubbles ----
   const ocean = document.querySelector(".ocean");
