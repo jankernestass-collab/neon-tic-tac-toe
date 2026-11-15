@@ -483,7 +483,7 @@
   .buy:hover:not(:disabled) { background: #ffd84a55; transform: scale(1.05); }
   .buy:disabled { opacity: .35; cursor: default; }
   .maxed { min-width: 62px; text-align: center; font-size: .72rem; font-weight: bold; color: #8dffb0; letter-spacing: 1px; }
-  @media (max-width: 1400px) { .upgrades { left: 18px; bottom: 200px; } }
+  @media (max-width: 1400px) { .panel, .upgrades, .charges, .fleetpanel { zoom: .82; } }
   .fx.gold { color: #ffd84a; font: bold 17px "Segoe UI", sans-serif; text-shadow: 0 0 6px #000, 0 0 10px #ffd84a; animation: fxplus 1.2s ease-out forwards; z-index: 7; }
 
   /* ---- v6: lighter marks, new cards ---- */
@@ -788,6 +788,10 @@
   body.low-gfx .gcard::after { animation: none; display: none; }
   .set select { background: #00203f; color: #fff; border: 1px solid #bff3ff66; border-radius: 8px; padding: 5px 8px; font-size: .9rem; }
   .m-status.small { font-size: .75rem; opacity: .7; min-height: 0; margin-top: -4px; }
+
+  /* shorter screens: slightly smaller panels so the boards get more room */
+  @media (max-height: 860px) { .panel, .upgrades, .charges, .fleetpanel { zoom: .82; } }
+  @media (max-height: 700px) { .panel, .upgrades, .charges, .fleetpanel { zoom: .7; } }
 </style>
 </head>
 <body>
@@ -936,8 +940,9 @@
   const minZoom = () => 0.35 * Math.max(1, window.innerWidth / 1920, window.innerHeight / 1080);
   let camQueued = false;
   function scheduleCamera() { if (camQueued) return; camQueued = true; requestAnimationFrame(() => { camQueued = false; applyCamera(); }); }
+  let fixedCam = false;          // in a game the camera is fixed and framed by fitCamera()
   function applyCamera() {
-    zoom = Math.max(minZoom(), Math.min(3, zoom));
+    if (!fixedCam) zoom = Math.max(minZoom(), Math.min(3, zoom));
     const limX = world.offsetWidth / 2 + 3500, limY = world.offsetHeight / 2 + 3000;
     cam.x = Math.max(-limX, Math.min(limX, cam.x));
     cam.y = Math.max(-limY, Math.min(limY, cam.y));
@@ -952,9 +957,7 @@
   let moved = 0;
   window.addEventListener("mousedown", e => {
     if (e.button !== 0 || e.target.closest(".panel, .charges, .overlay, .popup, .soundbtn, .fleetpanel, .upgrades, .home, .menubtn, .leavebox")) return;
-    drag = { x: e.clientX, y: e.clientY };
-    moved = 0;
-    document.body.style.cursor = "grabbing";
+    moved = 0;                     // camera is fixed: clicks only, no dragging
     e.preventDefault();
   });
   window.addEventListener("mousemove", e => {
@@ -972,10 +975,35 @@
   // ---- Zoom: scroll the middle mouse wheel ----
   window.addEventListener("wheel", e => {
     e.preventDefault();
-    if (document.body.classList.contains("in-menu")) return;
-    zoom *= e.deltaY < 0 ? 1.1 : 1 / 1.1;
-    scheduleCamera();
   }, { passive: false });
+
+  // frame both boards fully between the top bar and the bottom panels
+  function fitCamera() {
+    fixedCam = true;
+    cam.x = 0; cam.y = 0; zoom = 1; applyCamera();
+    // fit above whichever bottom panels are on screen
+    let bottom = window.innerHeight - 12;
+    [".panel", ".upgrades", ".charges"].forEach(sel => {
+      const el = document.querySelector(sel);
+      if (!el || getComputedStyle(el).display === "none") return;
+      const r = el.getBoundingClientRect();
+      if (r.height > 0) bottom = Math.min(bottom, r.top - 10);
+    });
+    const top = 112, left = 14, right = window.innerWidth - 14;
+    const boxW = right - left, boxH = Math.max(200, bottom - top), midY = (top + bottom) / 2;
+    const bounds = () => {
+      const a = document.getElementById("zone1").getBoundingClientRect(), b = document.getElementById("zone2").getBoundingClientRect();
+      return { l: Math.min(a.left, b.left), r: Math.max(a.right, b.right), t: Math.min(a.top, b.top), btm: Math.max(a.bottom, b.bottom) };
+    };
+    for (let k = 0; k < 8; k++) {
+      let r = bounds();
+      zoom *= Math.min(boxW / (r.r - r.l), boxH / (r.btm - r.t));
+      applyCamera();
+      r = bounds();
+      cam.y -= (midY - (r.t + r.btm) / 2) / (zoom * 0.85);
+      applyCamera();
+    }
+  }
 
   // =====================================================================
   //  GAME
@@ -1937,6 +1965,7 @@
     document.getElementById("fleet").style.display = "block";
     document.getElementById("upgrades").style.display = "block";
     renderFleet();
+    setTimeout(fitCamera, 50);
     setLog("Battle started!");
     if (mode === "mp" && !Net.state.isHost) { setLog("Battle started! The host fires first"); nextTurn("bot"); }
     else nextTurn("me");
@@ -2883,10 +2912,11 @@
     document.body.classList.remove("in-menu");
     home.classList.add("hide");
     setTimeout(() => { home.classList.remove("show", "hide"); }, 600);
-    cam.x = 0; cam.y = 0; zoom = 1; applyCamera();
+    fitCamera();
   }
   function menuDrift(t) {
     if (!document.body.classList.contains("in-menu")) return;
+    fixedCam = false;
     zoom = 0.6;
     cam.x = Math.sin(t / 14000) * 1600;
     cam.y = Math.cos(t / 17000) * 900 - 300;
@@ -2897,6 +2927,7 @@
     leaveMenu();
     phase = "place";
     renderPanel();
+    setTimeout(fitCamera, 650);
     setLog("");
   }
 
@@ -3023,7 +3054,7 @@
     ocean.appendChild(b);
   }
 
-  window.addEventListener("resize", applyCamera);
+  window.addEventListener("resize", () => { if (document.body.classList.contains("in-menu")) applyCamera(); else fitCamera(); });
   applyCamera();
 </script>
 </body>
