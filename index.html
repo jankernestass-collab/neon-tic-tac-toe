@@ -907,6 +907,57 @@
   .eh:hover { transform: scale(1.35); box-shadow: 0 0 10px var(--rc); }
   .pv-tag { position: absolute; left: 50%; top: -30px; transform: translateX(-50%); white-space: nowrap; font: bold .7rem "Segoe UI", sans-serif; letter-spacing: 3px;
     background: #ff5a4a; color: #fff; padding: 3px 10px; border-radius: 8px; box-shadow: 0 0 14px #ff5a4a88; }
+
+  /* =====================================================================
+     v22 — UI polish: one consistent look for every HUD panel
+     ===================================================================== */
+  .panel, .charges, .upgrades, .passives, .fleetpanel, .turnbar {
+    background: linear-gradient(180deg, #0e3f6ef2 0%, #05223ff5 100%) !important;
+    border: 1px solid #9fe6ff3d !important;
+    box-shadow: 0 14px 34px #00000080, inset 0 1px 0 #ffffff24, inset 0 0 0 1px #00000030 !important;
+  }
+  .charges, .upgrades, .passives, .fleetpanel { border-radius: 14px !important; }
+  .panel { border-radius: 16px !important; }
+  /* headers */
+  .charges h3, .up-head h3, .passives h3, .fleetpanel h3 {
+    font-size: .82rem !important; letter-spacing: 4px !important; color: #cdeeff; opacity: .95; text-shadow: 0 0 10px #5ad0e855;
+  }
+  .passives h3, .fleetpanel h3 { padding-bottom: 7px; margin-bottom: 8px !important; border-bottom: 1px solid #9fe6ff26; }
+  .panel h2 { font-size: 1.05rem !important; letter-spacing: 5px !important; margin-bottom: 8px !important; }
+  .panel h2::after { width: 85% !important; margin-top: 7px !important; background: linear-gradient(90deg, transparent, #9fe6ff55, transparent) !important; }
+  .rotate-hint { font-size: .74rem !important; opacity: .6 !important; margin-top: 6px !important; }
+  /* bottom row: same height, same baseline */
+  .charges, .upgrades, .passives { bottom: 16px !important; min-height: 128px; box-sizing: border-box; }
+  .charges { left: 16px !important; width: 156px; min-width: 0 !important; padding: 12px 14px !important; }
+  .upgrades { left: 184px !important; width: 236px !important; padding: 12px 14px !important; }
+  .passives { right: 16px !important; width: 252px !important; padding: 12px 14px !important; }
+  .panel { bottom: 16px !important; }
+  .charges .val { font-size: 1.9rem !important; margin: 4px 0 8px !important; }
+  .charges .pips i { width: 16px !important; height: 8px !important; border-radius: 4px !important; }
+  .up-head { margin-bottom: 8px !important; padding-bottom: 7px; border-bottom: 1px solid #9fe6ff26; }
+  .shopbtn { padding: 9px !important; font-size: .9rem; letter-spacing: 3px; border-radius: 10px !important; }
+  .shop-sub { opacity: .6 !important; font-size: .68rem !important; }
+  .pas-empty { padding: 16px 0 !important; opacity: .55 !important; }
+  /* charges are only useful once the battle starts */
+  body:not(.battle-in) .charges { opacity: 0; pointer-events: none; }
+  /* enemy fleet panel: tidy rows */
+  .fleetpanel { top: 66px !important; right: 16px !important; width: 200px; min-width: 0 !important; padding: 12px 14px !important; }
+  .fleetpanel .fleft { margin: 0 0 6px !important; }
+  .fstats { gap: 6px !important; margin: 0 0 8px !important; }
+  .fstats .chip { background: #ffffff10; border: 1px solid #ffffff1a; border-radius: 20px; padding: 2px 9px; font-size: .74rem; }
+  .frow { display: flex !important; align-items: center; gap: 6px !important; margin: 3px 0 !important; max-width: none !important; flex-wrap: nowrap !important; }
+  .frow.gone { opacity: .45; }
+  .fsize { flex: none; width: 18px; height: 18px; display: grid; place-items: center; font-size: .66rem; font-weight: bold;
+    border-radius: 5px; background: #ffffff12; border: 1px solid #ffffff22; }
+  .fships { flex: 1; display: flex; flex-wrap: wrap; gap: 3px; align-items: center; min-width: 0; }
+  .fcnt { flex: none; font-size: .7rem; font-weight: bold; color: #ffd0c4; min-width: 26px; text-align: right; }
+  .ehist-t { margin-top: 10px !important; padding-top: 8px; border-top: 1px solid #9fe6ff26; opacity: .6 !important; }
+  .cm-tr, .cm-br { position: absolute; right: 0; width: 0; height: 0; pointer-events: none; }
+  .cm-tr { top: 0; } .cm-br { bottom: 0; }
+  /* turn bar */
+  .turnbar { border-radius: 12px !important; padding: 6px 20px !important; }
+  body > h1 { opacity: .9; }
+  @media (max-width: 1400px), (max-height: 860px) { .passives, .fleetpanel { zoom: .82; } }
 </style>
 </head>
 <body>
@@ -1113,7 +1164,7 @@
     cam.x = 0; cam.y = 0; zoom = 1; applyCamera();
     // fit above whichever bottom panels are on screen
     let bottom = window.innerHeight - 12;
-    [".panel", ".upgrades", ".charges"].forEach(sel => {
+    [".panel", ".upgrades", ".charges", ".passives"].forEach(sel => {
       const el = document.querySelector(sel);
       if (!el || getComputedStyle(el).display === "none") return;
       const r = el.getBoundingClientRect();
@@ -1132,6 +1183,20 @@
       r = bounds();
       cam.y -= (midY - (r.t + r.btm) / 2) / (zoom * 0.85);
       applyCamera();
+    }
+    // don't let the right board slide under the ENEMY FLEET panel (top right)
+    const fp = document.getElementById("fleet");
+    if (fp && getComputedStyle(fp).display !== "none") {
+      const z2 = document.getElementById("zone2");
+      let tr = z2.querySelector(".cm-tr"), br = z2.querySelector(".cm-br");
+      if (!tr) { tr = document.createElement("i"); tr.className = "cm-tr"; br = document.createElement("i"); br.className = "cm-br"; z2.append(tr, br); }
+      for (let k = 0; k < 25; k++) {
+        const f = fp.getBoundingClientRect(), a = tr.getBoundingClientRect(), b = br.getBoundingClientRect();
+        const t = Math.min(1, Math.max(0, (f.bottom - a.top) / Math.max(1, b.top - a.top)));
+        if (a.left + (b.left - a.left) * t < f.left - 10) break;
+        zoom *= 0.97; applyCamera();
+        const r = bounds(); cam.y -= (midY - (r.t + r.btm) / 2) / (zoom * 0.85); applyCamera();
+      }
     }
   }
 
@@ -1606,16 +1671,16 @@
     const ships = sides.bot.ships.filter(sh => !sh.decoy);
     const left = alive(sides.bot).length;
     let html = `<h3>ENEMY FLEET</h3><div class="fleft"><b>${left}</b> / ${ships.length} left</div>` +
-      `<div class="fstats"><span title="Cards in their hand">🃏 <b>${sides.bot.inv.length}</b> cards</span><span title="Their gold">🪙 <b>${sides.bot.gold}</b></span></div>`;
+      `<div class="fstats"><span class="chip" title="Cards in their hand">🃏 <b>${sides.bot.inv.length}</b> card${sides.bot.inv.length === 1 ? "" : "s"}</span><span class="chip" title="Their gold">🪙 <b>${sides.bot.gold}</b></span></div>`;
     FLEET_DEF.forEach(([size]) => {
       const group = ships.filter(sh => sh.size === size);
       const aliveN = group.filter(sh => !sh.sunk).length;
-      html += `<div class="frow"><span class="fnum">${aliveN}×</span>`;
+      html += `<div class="frow${aliveN ? "" : " gone"}"><span class="fsize">${size}</span><span class="fships">`;
       group.forEach(sh => {
-        html += `<span class="fship${sh.sunk ? " sunk" : ""}${sh === justSunk ? " just" : ""}" style="width:${size * 10}px">` +
+        html += `<span class="fship${sh.sunk ? " sunk" : ""}${sh === justSunk ? " just" : ""}" style="width:${size * 8}px">` +
                 shipSVG(size).replace('preserveAspectRatio="none"', "") + `</span>`;
       });
-      html += `</div>`;
+      html += `</span><span class="fcnt">${aliveN}/${group.length}</span></div>`;
     });
     if (typeof enemyPlayed !== "undefined" && enemyPlayed.length) {
       html += `<div class="ehist-t">CARDS THEY PLAYED</div><div class="ehist">` +
@@ -2325,6 +2390,7 @@
     document.getElementById("passives").style.display = "block";
     renderFleet(); renderPassives();
     setTimeout(fitCamera, 50);
+    setTimeout(fitCamera, 900);          // again once the side panels have slid in
     setLog("Battle started!");
     if (mode === "mp" && !Net.state.isHost) { setLog("Battle started! The host fires first"); nextTurn("bot"); }
     else nextTurn("me");
