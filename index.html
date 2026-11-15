@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Neon Tic Tac Toe</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    background: radial-gradient(circle at center, #12002b 0%, #05000f 100%);
+    font-family: "Segoe UI", Arial, sans-serif; color: #fff;
+  }
+  h1 {
+    margin: 0 0 12px; font-size: 2.2rem; letter-spacing: 4px;
+    color: #fff; text-shadow: 0 0 6px #ff00ff, 0 0 18px #ff00ff, 0 0 36px #ff00ff;
+  }
+  .controls { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; justify-content: center; }
+  button {
+    background: transparent; color: #0ff; border: 2px solid #0ff; border-radius: 8px;
+    padding: 8px 14px; font-size: 0.95rem; cursor: pointer;
+    box-shadow: 0 0 8px #0ff; text-shadow: 0 0 6px #0ff; transition: 0.15s;
+  }
+  button:hover, button.active { background: #0ff; color: #05000f; text-shadow: none; }
+  #status {
+    height: 28px; margin-bottom: 14px; font-size: 1.2rem;
+    text-shadow: 0 0 8px #fff;
+  }
+  /* ---- 3D stage ---- */
+  .stage {
+    perspective: 900px; perspective-origin: 50% 0%;
+    padding: 10px 40px 50px;
+  }
+  #board {
+    display: grid; grid-template-columns: repeat(3, 110px); grid-template-rows: repeat(3, 110px);
+    gap: 14px; padding: 16px; border-radius: 18px;
+    background: linear-gradient(160deg, #10002e, #05000f);
+    border: 2px solid #a020f0;
+    transform: rotateX(42deg);
+    transform-style: preserve-3d;
+    box-shadow:
+      0 0 20px #a020f0, inset 0 0 20px #a020f088,
+      0 18px 0 #3a0768,            /* board thickness */
+      0 40px 60px #a020f066;       /* glow on the floor */
+  }
+  .cell {
+    position: relative;
+    border: 2px solid #a020f0; border-radius: 12px; background: #0c0026;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 4rem; font-weight: bold; cursor: pointer; user-select: none;
+    transform-style: preserve-3d;
+    transform: translateZ(6px);
+    box-shadow: 0 0 8px #a020f0 inset, 0 8px 0 #2a0550, 0 10px 14px #000a;
+    transition: transform 0.15s, background 0.15s;
+  }
+  .cell:hover:empty { background: #1a0042; transform: translateZ(14px); }
+  .piece {
+    display: block;
+    transform: translateZ(30px) rotateX(-42deg); /* stand upright toward viewer */
+    animation: pop 0.25s ease-out;
+  }
+  @keyframes pop {
+    from { transform: translateZ(80px) rotateX(-42deg) scale(1.6); opacity: 0; }
+    to   { transform: translateZ(30px) rotateX(-42deg) scale(1); opacity: 1; }
+  }
+  .X { color: #0ff; text-shadow: 0 0 8px #0ff, 0 0 20px #0ff, 0 0 40px #0ff, 0 6px 0 #008a8a; }
+  .O { color: #ff2fd6; text-shadow: 0 0 8px #ff2fd6, 0 0 20px #ff2fd6, 0 0 40px #ff2fd6, 0 6px 0 #8a0072; }
+  #score .X, #score .O { text-shadow: 0 0 8px currentColor; }
+  .cell.X { box-shadow: 0 0 8px #a020f0 inset, 0 8px 0 #2a0550, 0 0 24px #0ff6; }
+  .cell.O { box-shadow: 0 0 8px #a020f0 inset, 0 8px 0 #2a0550, 0 0 24px #ff2fd666; }
+  .cell.win {
+    background: #2a0060; border-color: #fff; transform: translateZ(18px);
+    box-shadow: 0 0 24px #fff, 0 0 10px #fff inset, 0 8px 0 #6a4a9a;
+  }
+  #score { margin-top: 16px; font-size: 1rem; opacity: 0.9; }
+  #score span { margin: 0 10px; }
+  .label { font-size: 0.85rem; opacity: 0.7; margin-right: 4px; align-self: center; }
+</style>
+</head>
+<body>
+  <h1>TIC TAC TOE</h1>
+
+  <div class="controls">
+    <span class="label">Bot:</span>
+    <button data-level="easy">Easy</button>
+    <button data-level="medium" class="active">Medium</button>
+    <button data-level="hard">Hard</button>
+    <button data-level="none">2 Players</button>
+  </div>
+
+  <div id="status">Your turn (X)</div>
+  <div class="stage"><div id="board"></div></div>
+
+  <div class="controls" style="margin-top:16px">
+    <button id="restart">New Game</button>
+  </div>
+
+  <div id="score">
+    <span class="X">X: <b id="sx">0</b></span>
+    <span>Draws: <b id="sd">0</b></span>
+    <span class="O">O: <b id="so">0</b></span>
+  </div>
+
+<script>
+  const lines = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+  let board, turn, over, level = "medium", lastMove = -1;
+  const score = { X: 0, O: 0, D: 0 };
+  const boardEl = document.getElementById("board");
+  const statusEl = document.getElementById("status");
+
+  function winner(b) {
+    for (const l of lines) {
+      const [a, c, d] = l;
+      if (b[a] && b[a] === b[c] && b[a] === b[d]) return { p: b[a], line: l };
+    }
+    return b.every(Boolean) ? { p: "D" } : null;
+  }
+
+  function render(winLine = []) {
+    boardEl.innerHTML = "";
+    board.forEach((v, i) => {
+      const c = document.createElement("div");
+      c.className = "cell" + (v ? " " + v : "") + (winLine.includes(i) ? " win" : "");
+      if (v) {
+        const p = document.createElement("span");
+        p.className = "piece";
+        p.textContent = v;
+        if (i !== lastMove) p.style.animation = "none"; // only animate the newest piece
+        c.appendChild(p);
+      }
+      c.onclick = () => play(i);
+      boardEl.appendChild(c);
+    });
+  }
+
+  function newGame() {
+    board = Array(9).fill(null); turn = "X"; over = false; lastMove = -1;
+    statusEl.textContent = level === "none" ? "X's turn" : "Your turn (X)";
+    render();
+  }
+
+  function play(i) {
+    if (over || board[i]) return;
+    if (level !== "none" && turn === "O") return; // wait for bot
+    move(i);
+    if (!over && level !== "none") {
+      statusEl.textContent = "Bot is thinking...";
+      setTimeout(() => move(botMove()), 400);
+    }
+  }
+
+  function move(i) {
+    board[i] = turn; lastMove = i;
+    const w = winner(board);
+    if (w) return finish(w);
+    turn = turn === "X" ? "O" : "X";
+    statusEl.textContent = level === "none" ? turn + "'s turn" : (turn === "X" ? "Your turn (X)" : "Bot is thinking...");
+    render();
+  }
+
+  function finish(w) {
+    over = true;
+    if (w.p === "D") { score.D++; statusEl.textContent = "It's a draw!"; render(); }
+    else {
+      score[w.p]++;
+      statusEl.textContent = level === "none" ? w.p + " wins!" : (w.p === "X" ? "You win! 🎉" : "Bot wins!");
+      render(w.line);
+    }
+    document.getElementById("sx").textContent = score.X;
+    document.getElementById("so").textContent = score.O;
+    document.getElementById("sd").textContent = score.D;
+  }
+
+  // ---- Bot ----
+  const empty = b => b.map((v, i) => v ? null : i).filter(i => i !== null);
+  const randomMove = () => { const e = empty(board); return e[Math.floor(Math.random() * e.length)]; };
+
+  function minimax(b, player) {
+    const w = winner(b);
+    if (w) return { s: w.p === "O" ? 10 : w.p === "X" ? -10 : 0 };
+    let best = { s: player === "O" ? -Infinity : Infinity };
+    for (const i of empty(b)) {
+      b[i] = player;
+      const r = minimax(b, player === "O" ? "X" : "O");
+      b[i] = null;
+      if (player === "O" ? r.s > best.s : r.s < best.s) best = { s: r.s, i };
+    }
+    return best;
+  }
+
+  function botMove() {
+    if (level === "easy") return randomMove();
+    if (level === "medium" && Math.random() < 0.4) return randomMove();
+    return minimax(board.slice(), "O").i;
+  }
+
+  // ---- Controls ----
+  document.querySelectorAll("[data-level]").forEach(btn => {
+    btn.onclick = () => {
+      document.querySelectorAll("[data-level]").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      level = btn.dataset.level;
+      newGame();
+    };
+  });
+  document.getElementById("restart").onclick = newGame;
+
+  newGame();
+</script>
+</body>
+</html>
