@@ -2382,6 +2382,7 @@
   // =====================================================================
   const Net = (() => {
     let room, named = null, opp = null, outSeq = 0, inSeq = 0, pending = [], buffer = {}, timer = null;
+    let transport = null, peerObj = null, conn = null;      // "room" on claude.ai, "p2p" (PeerJS) in any other browser
     let handler = () => {}, onLeft = () => {};
     const state = { code: "", isHost: false, connected: false };
 
@@ -2390,7 +2391,46 @@
       try { room = window.claude && window.claude.use ? await window.claude.use("room") : null; } catch (e) { room = null; }
       return room;
     }
-    function rawSend(obj) { if (named) named.emit("mp", obj).catch(() => {}); }
+    function rawSend(obj) {
+      if (transport === "room" && named) named.emit("mp", obj).catch(() => {});
+      else if (transport === "p2p" && conn && conn.open) { try { conn.send(obj); } catch (e) {} }
+    }
+    // ---- browser-to-browser connection for normal web links (PeerJS) ----
+    function loadPeerJS() {
+      if (window.Peer) return Promise.resolve();
+      return new Promise((res, rej) => {
+        const sc = document.createElement("script");
+        sc.src = "https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js";
+        sc.onload = () => res(); sc.onerror = () => rej(new Error("no-internet"));
+        document.head.appendChild(sc);
+      });
+    }
+    function setConn(c) {
+      conn = c;
+      c.on("data", d => onMsg({ isMe: false, peer: "p2p", data: d }));
+      c.on("close", () => onLeft());
+    }
+    async function openP2P(code, asHost) {
+      await loadPeerJS();
+      const id = "bs-battleships-" + code.toLowerCase();
+      const ready = pr => new Promise((res, rej) => { pr.on("open", res); pr.on("error", rej); setTimeout(() => rej(new Error("timeout")), 12000); });
+      if (asHost) {
+        peerObj = new window.Peer(id);
+        await ready(peerObj);
+        peerObj.on("connection", c => { if (conn) { c.close(); return; } c.on("open", () => setConn(c)); });
+      } else {
+        peerObj = new window.Peer();
+        await ready(peerObj);
+        const c = peerObj.connect(id, { reliable: true });
+        await new Promise((res, rej) => {
+          c.on("open", res); c.on("error", rej);
+          peerObj.on("error", e => rej(e));
+          setTimeout(() => rej(new Error("timeout")), 12000);
+        });
+        setConn(c);
+      }
+      transport = "p2p";
+    }
     function send(obj) {
       const m = Object.assign({}, obj, { s: ++outSeq });
       pending.push(m);
@@ -2410,16 +2450,26 @@
     }
     async function open(code, asHost) {
       const r = await getRoom();
-      if (!r) throw new Error("unavailable");
       state.code = code; state.isHost = asHost;
-      named = await r.join("bs-" + code.toLowerCase());
-      named.on("mp", onMsg);
-      named.onPeers(ch => { if (opp && ch.left.some(p => p.peer === opp)) onLeft(); });
+      if (r) {
+        transport = "room";
+        named = await r.join("bs-" + code.toLowerCase());
+        named.on("mp", onMsg);
+        named.onPeers(ch => { if (opp && ch.left.some(p => p.peer === opp)) onLeft(); });
+      } else {
+        await openP2P(code, asHost);
+      }
       clearInterval(timer);
       timer = setInterval(() => pending.forEach(m => rawSend({ k: "m", m })), 900);   // resend until acknowledged
       state.connected = true;
     }
-    async function close() { clearInterval(timer); if (named) { try { await named.leave(); } catch (e) {} } named = null; }
+    async function close() {
+      clearInterval(timer);
+      if (named) { try { await named.leave(); } catch (e) {} }
+      if (conn) { try { conn.close(); } catch (e) {} }
+      if (peerObj) { try { peerObj.destroy(); } catch (e) {} }
+      named = null; conn = null; peerObj = null; transport = null; opp = null;
+    }
     return {
       state, getRoom, open, send, close,
       onMessage(fn) { handler = fn; },
@@ -2534,7 +2584,7 @@
       codeEl.textContent = code;
       st.innerHTML = 'Share this code with your friend<br><span class="dots">Waiting for opponent</span>';
     } catch (e) {
-      st.textContent = "Multiplayer isn't available in this view. Open the game on its claude.ai page while signed in.";
+      st.textContent = netError(e);
     }
   };
   document.querySelector('[data-go="join"]').onclick = () => {
@@ -2556,8 +2606,15 @@
       Net.send({ t: "hello" });
       st.innerHTML = '<span class="dots">Waiting for the host</span>';
     } catch (e) {
-      st.textContent = "Multiplayer isn't available in this view. Open the game on its claude.ai page while signed in.";
+      st.textContent = netError(e, true);
     }
+  }
+  function netError(e, joining) {
+    const t = (e && (e.type || e.message)) || "";
+    if (t === "no-internet") return "Couldn't reach the multiplayer service — check your internet connection.";
+    if (joining && (t === "peer-unavailable" || t === "timeout")) return "No game found with that code. Check it with your friend.";
+    if (t === "unavailable-id") return "That room code is busy — try HOST again.";
+    return "Couldn't connect. Check your internet and try again.";
   }
   document.getElementById("joinBtn").onclick = doJoin;
   document.getElementById("joinCode").addEventListener("keydown", e => { if (e.key === "Enter") doJoin(); });
