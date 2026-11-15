@@ -1152,6 +1152,7 @@
     gamble:    { name: "Gamble",        icon: "🎲", type: "attack", desc: "50% chance: blast a 5×5 area · 50%: nothing", target: "enemy" },
     cross:     { name: "Cross Strike",  icon: "✚",  type: "attack", desc: "Hits a + shape, 4 squares in every direction", target: "enemy" },
     chain:     { name: "Chain Reaction",icon: "⛓️", type: "attack", desc: "Fire at a square — if it hits a ship, up to 3 squares of that ship blow up", target: "enemy" },
+    evade:     { name: "Evasive Maneuver", icon: "🌀", type: "defense", desc: "All your revealed ships sail away to random safe spots", target: "none" },
     timewarp:  { name: "Time Warp",     icon: "⏳", type: "tactic", desc: "Take another turn right after this one", target: "none" },
     kraken:    { name: "KRAKEN",        icon: "🐙", type: "attack", desc: "A sea monster hits 2 random enemy ships", target: "none" },
     flare:   { name: "Flare",        icon: "🔦", type: "intel",  desc: "Reveal one whole hidden enemy ship",       target: "none" },
@@ -1168,7 +1169,7 @@
   // rarity of each card + how often each rarity shows up in a draw
   const RARITY = {
     common:    { label: "COMMON",    weight: 50, cards: ["scan", "torpedo", "plunder", "move", "depth", "broadside", "recon", "supply", "smoke", "gamble"] },
-    rare:      { label: "RARE",      weight: 30, cards: ["aoe", "cluster", "repair", "shield", "flare", "airstrike", "sabotage", "satellite", "decoy", "armor", "cross", "chain"] },
+    rare:      { label: "RARE",      weight: 30, cards: ["aoe", "cluster", "repair", "shield", "flare", "airstrike", "sabotage", "satellite", "decoy", "armor", "cross", "chain", "evade"] },
     epic:      { label: "EPIC",      weight: 15, cards: ["homing", "double", "barrage", "carpet", "irondome", "mines", "timewarp"] },
     legendary: { label: "LEGENDARY", weight: 5,  cards: ["nuke", "kraken"] },
   };
@@ -1656,6 +1657,8 @@
   }
   // a ship can only move onto free squares the enemy hasn't shot at
   const shotAt = (sd, j) => sd.marks[j] && (sd.marks[j].kind === "miss" || sd.marks[j].kind === "hit");
+  const isRevealed = (sd, j) => sd === sides.me ? botMem.detected.has(j) : !!(sd.marks[j] && sd.marks[j].kind === "detect");
+  const revealedShips = sd => alive(sd).filter(sh => sh.hits.size > 0 || sh.cells.some(j => isRevealed(sd, j)));
   const canMoveTo = (sd, ship, list) => fits(sd, list, ship.id) && list.every(j => ship.cells.includes(j) || !shotAt(sd, j));
 
   function canUse(sd, key) {
@@ -2040,6 +2043,37 @@
       if (A === sides.me) renderUpgrades(true);
       await wait(500);
       return `${who}: ${name} — +${val(A, "plunder")} gold`;
+    }
+    if (key === "evade") {
+      const list = revealedShips(A);
+      if (!list.length) { await wait(300); return `${who}: ${name} — no revealed ships to move`; }
+      Sound.play("whoosh");
+      let moved = 0;
+      for (const ship of list) {
+        let dest = null;
+        for (let t = 0; t < 600 && !dest; t++) {
+          const h = LR() < 0.5, at = lrand(N * N), cells = footprint(ship.size, h, at);
+          if (cells && canMoveTo(A, ship, cells) && !cells.some(j => ship.cells.includes(j))) dest = [h, at];
+        }
+        if (!dest) continue;
+        moved++;
+        fxSplash(A, ship.cells[Math.floor(ship.cells.length / 2)]);
+        ship.cells.forEach(j => {
+          if (A === sides.me) { botMem.detected.delete(j); if (A.marks[j] && A.marks[j].kind === "hit") setMark(A, j, "miss"); }
+          else if (A.marks[j] && A.marks[j].kind === "detect") setMark(A, j, null);
+          else if (A.marks[j] && A.marks[j].kind === "hit") setMark(A, j, "miss");
+        });
+        relocate(A, ship, dest[0], dest[1]);
+        if (A === sides.me) {
+          drawModel(A, ship);
+          ship.model.classList.remove("appear"); void ship.model.offsetWidth; ship.model.classList.add("appear");
+          ship.hits.forEach(seg => setMark(A, ship.cells[seg], "hit"));
+          fxSplash(A, ship.cells[0]);
+        }
+      }
+      Sound.play("splash");
+      await wait(700);
+      return `${who}: ${name} — ${moved} revealed ship${moved === 1 ? "" : "s"} slipped away`;
     }
     if (key === "smoke") {
       Sound.play("whoosh");
@@ -2516,7 +2550,7 @@
     // shop: buy the best card it can afford (easy bots never shop)
     if (botLevel === "easy" && A.gold >= 30 && Math.random() < 0.5) { const cheap = SHOP_ORDER.filter(k => priceOf(k) === 30 && A.unl.has(k)); if (cheap.length) { A.inv.push(cheap[rand(cheap.length)]); A.gold -= 30; } }
     if (botLevel !== "easy") {
-      const wish = ["nuke", "kraken", "timewarp", "homing", "barrage", "carpet", "irondome", "chain", "aoe", "cross", "airstrike", "flare", "cluster", "armor", "depth", "gamble", "scan", "torpedo"];
+      const wish = ["nuke", "kraken", "timewarp", "homing", "barrage", "carpet", "irondome", "chain", "aoe", "cross", "evade", "airstrike", "flare", "cluster", "armor", "depth", "gamble", "scan", "torpedo"];
       const k = wish.concat(SHOP_ORDER).find(c => A.unl.has(c) && A.gold >= priceOf(c) && (A.gold - priceOf(c) >= 30 || priceOf(c) >= 120) && (wish.includes(c) || Math.random() < 0.3));
       if (k) { A.gold -= priceOf(k); A.inv.push(k); setLog("Enemy bought a card from the shop"); await wait(600); }
     }
@@ -2542,6 +2576,7 @@
     else if (hot < 0 && pick("cluster") >= 0) { idx = pick("cluster"); opts = { at: clampCenter(randomUnshot(), clusterArea(A)) }; }
     if (idx < 0 && damagedAny && pick("armor") >= 0) { idx = pick("armor"); opts = { ship: damagedAny }; }
     if (idx < 0 && pick("irondome") >= 0 && (damagedAny || Math.random() < 0.35)) { idx = pick("irondome"); opts = {}; }
+    if (idx < 0 && pick("evade") >= 0 && revealedShips(A).length >= 2) { idx = pick("evade"); opts = {}; }
     if (idx < 0 && pick("smoke") >= 0 && Object.values(A.marks).some(m => m.kind === "detect")) { idx = pick("smoke"); opts = {}; }
     if (idx < 0 && pick("mines") >= 0) { const sh = alive(A)[rand(alive(A).length)]; idx = pick("mines"); opts = { at: sh.cells[0] }; }
     if (idx < 0 && pick("decoy") >= 0) {
