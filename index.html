@@ -876,6 +876,27 @@
   .gcard.unlocked-new { box-shadow: 0 0 0 2px #8dffb0, 0 0 34px #3ad07a99, 0 8px 22px #000a; }
   .shopitem.mystery-lock .lockback { width: 113px; height: 161px; display: grid; place-items: center;
     font-family: "Black Ops One", "Segoe UI", sans-serif; font-size: 3rem; color: #ffffff55; }
+
+  /* ---- v20: passive cards panel (right side) ---- */
+  .passives { position: fixed; right: 16px; bottom: 18px; width: 250px; display: none;
+    background: linear-gradient(180deg, #0b3a66e6, #021a33f0); border: 1px solid #bff3ff80; border-radius: 16px;
+    padding: 10px 12px 10px; box-shadow: 0 10px 30px #000a, inset 0 1px 0 #ffffff30; contain: layout paint; }
+  .passives h3 { margin: 0 0 6px; text-align: center; font-family: "Black Ops One", "Segoe UI", sans-serif; font-weight: normal; letter-spacing: 3px; font-size: 1rem; }
+  .pas-empty { text-align: center; font-size: .78rem; opacity: .7; padding: 4px 0 2px; }
+  .pas { display: flex; align-items: center; gap: 8px; padding: 5px 6px; border-radius: 10px; cursor: default; transition: background .2s; animation: pasIn .5s cubic-bezier(.2, 1.4, .4, 1); }
+  .pas + .pas { margin-top: 4px; }
+  .pas:hover { background: #ffffff14; }
+  .pas-ic { width: 34px; height: 34px; flex: none; display: grid; place-items: center; font-size: 1.3rem; border-radius: 9px;
+    background: radial-gradient(circle, #ffd84a33, #0000 70%), #021a33; border: 1px solid #ffd84a88; }
+  .pas-tx { flex: 1; display: flex; flex-direction: column; line-height: 1.15; min-width: 0; }
+  .pas-tx b { font-size: .82rem; letter-spacing: .5px; }
+  .pas-tx span { font-size: .68rem; opacity: .8; }
+  .pas-lv { font: bold .66rem "Segoe UI", sans-serif; color: #3a2400; background: #ffd84a; padding: 2px 6px; border-radius: 7px; }
+  @keyframes pasIn { from { transform: translateX(30px); opacity: 0; } }
+  body.in-menu .passives { opacity: 0; pointer-events: none; }
+  body.battle-in .passives { animation: slideR .6s cubic-bezier(.2, 1.2, .4, 1) backwards .2s; }
+  @media (max-width: 1400px), (max-height: 860px) { .passives { zoom: .82; } }
+  .gcard.passive .gc-rar { background: linear-gradient(90deg, #ffe45c, #ffb02e); color: #3a2400; }
 </style>
 </head>
 <body>
@@ -915,6 +936,7 @@
 
   <div class="fleetpanel" id="fleet"></div>
   <div class="upgrades" id="upgrades"></div>
+  <div class="passives" id="passives"></div>
 
   <div class="cardpreview" id="cardPreview"></div>
 
@@ -1188,9 +1210,19 @@
   //  GOLD & UPGRADES
   // =====================================================================
   const GOLD_PER_HIT = 10;
+  // passive cards: always on once unlocked (unlocking = level 1), shown on the right side
+  const PASSIVES = {
+    shot:       { name: "Shot Range",    icon: "🎯", type: "attack" },
+    warchest:   { name: "War Chest",     icon: "💰", type: "tactic" },
+    bounty:     { name: "Bounty Hunter", icon: "🏴‍☠️", type: "tactic" },
+    overcharge: { name: "Overcharge",    icon: "🔋", type: "intel" },
+  };
   // upgrade levels — won by choosing upgrades when your charges fill up
   const UPGRADES = {
     shot:      { name: "Shot Range",     base: 1,  levels: [{ v: 2 }, { v: 3 }] },
+    warchest:  { name: "War Chest",      base: 0,  levels: [{ v: 5 }, { v: 10 }, { v: 15 }] },
+    bounty:    { name: "Bounty Hunter",  base: 0,  levels: [{ v: 5 }, { v: 10 }, { v: 15 }] },
+    overcharge:{ name: "Overcharge",     base: 0,  levels: [{ v: 4 }, { v: 3 }, { v: 2 }] },
     aoe:       { name: "AOE Strike",     base: 5,  levels: [{ v: 7 }, { v: 9 }] },
     scan:      { name: "Sonar Scan",     base: 9,  levels: [{ v: 11 }, { v: 13 }] },
     cluster:   { name: "Cluster Bomb",   base: 10, levels: [{ v: 15 }, { v: 20 }] },
@@ -1226,7 +1258,10 @@
   function statText(key, v) {
     const sq = n => `${n}×${n}`;
     switch (key) {
-      case "shot": return v === 1 ? "1 square" : v === 2 ? "+ shape (5 squares)" : "3×3 (9 squares)";
+      case "shot": return v === 1 ? "Your shot hits 1 square" : v === 2 ? "Your shot hits a + shape (5 squares)" : "Your shot hits 3×3 (9 squares)";
+      case "warchest": return `+${v} extra gold at the start of every turn`;
+      case "bounty": return `+${v} extra gold for every ship square you hit`;
+      case "overcharge": return `+1 extra charge every ${v} turns`;
       case "aoe": return `Blast a ${sq(v)} area`;
       case "scan": return `Reveal enemy ships in a ${sq(v)} area`;
       case "cluster": return `${v} random hits in a ${v >= 20 ? "9×9" : "7×7"} area`;
@@ -1584,11 +1619,12 @@
   }
   let lastCoin = 0;
   function earnGold(A, j) {
-    A.gold += GOLD_PER_HIT;
-    stats[A.name].gold += GOLD_PER_HIT;
+    const g = GOLD_PER_HIT + val(A, "bounty");
+    A.gold += g;
+    stats[A.name].gold += g;
     if (A !== sides.me) return;
     const [x, y] = center(j);
-    const el = fx(sides.bot, "gold", x, y - 10, 1200); el.textContent = "+" + GOLD_PER_HIT;
+    const el = fx(sides.bot, "gold", x, y - 10, 1200); el.textContent = "+" + g;
     if (performance.now() - lastCoin > 120) { Sound.play("coin"); lastCoin = performance.now(); }
     renderUpgrades(true);
   }
@@ -2234,7 +2270,8 @@
     document.getElementById("turnbar").style.display = "block";
     document.getElementById("fleet").style.display = "block";
     document.getElementById("upgrades").style.display = "block";
-    renderFleet();
+    document.getElementById("passives").style.display = "block";
+    renderFleet(); renderPassives();
     setTimeout(fitCamera, 50);
     setLog("Battle started!");
     if (mode === "mp" && !Net.state.isHost) { setLog("Battle started! The host fires first"); nextTurn("bot"); }
@@ -2245,7 +2282,11 @@
     whose = who; busy = false; active = -1; moving = null;
     const sd = sides[who];
     sd.extraShots = 0;
-    sd.gold += TURN_INCOME; stats[sd.name].gold += TURN_INCOME;   // same on both screens in multiplayer
+    const income = TURN_INCOME + val(sd, "warchest");
+    sd.gold += income; stats[sd.name].gold += income;   // same on both screens in multiplayer
+    sd.turns = (sd.turns || 0) + 1;
+    const oc = val(sd, "overcharge");
+    if (oc && sd.turns % oc === 0 && sd.charge < CHARGE_CAP) sd.charge++;          // Overcharge passive
     // shields of the OTHER side count down at the start of each of my turns (i.e. after an enemy turn)
     if (sd.shields.length) { sd.shields.forEach(sh => sh.turns--); sd.shields = sd.shields.filter(sh => sh.turns > 0); renderShields(sd); }
     if (sd.charge < CHARGE_CAP) {
@@ -2256,7 +2297,7 @@
     const w = document.getElementById("who");
     w.textContent = "TURN " + Math.max(1, turn) + " · " + (who === "me" ? "YOUR TURN" : mode === "mp" ? "OPPONENT'S TURN" : "ENEMY TURN");
     w.className = "who " + who;
-    renderCharges(); renderPanel(); renderUpgrades(); refreshHover();
+    renderCharges(); renderPanel(); renderUpgrades(); renderPassives(); refreshHover();
     if (who !== "me") closeShop();
     const tb = document.getElementById("turnbar");
     tb.classList.remove("pulse"); void tb.offsetWidth; tb.classList.add("pulse");
@@ -2357,25 +2398,34 @@
   };
   // what a mystery pick can turn into: a locked card (unlocks it in the shop) or an upgrade of something you already have
   const canUpgrade = (sd, k) => !!UPGRADES[k] && level(sd, k) < UPGRADES[k].levels.length;
-  const pickPool = sd => ["shot", ...Object.keys(CARDS)].filter(k => k === "shot" ? canUpgrade(sd, k) : (!sd.unl.has(k) || canUpgrade(sd, k)));
+  const isPassive = k => !!PASSIVES[k];
+  const hasCard = (sd, k) => isPassive(k) ? level(sd, k) > 0 : sd.unl.has(k);       // already unlocked?
+  const pickPool = sd => [...Object.keys(PASSIVES), ...Object.keys(CARDS)].filter(k => isPassive(k) ? canUpgrade(sd, k) : (!sd.unl.has(k) || canUpgrade(sd, k)));
   function upgradeOffer(sd) { return lshuffle(pickPool(sd)).slice(0, 3); }
   const upgradable = sd => pickPool(sd);
   // apply a pick: unlock if new, otherwise upgrade
   function applyPick(sd, key) {
-    if (key !== "shot" && !sd.unl.has(key)) { sd.unl.add(key); return "unlock"; }
+    if (isPassive(key)) { sd.up[key] = level(sd, key) + 1; return level(sd, key) === 1 ? "unlock" : "upgrade"; }
+    if (!sd.unl.has(key)) { sd.unl.add(key); return "unlock"; }
     sd.up[key] = level(sd, key) + 1; return "upgrade";
   }
   function unlockHTML(key) {
     return cardHTML(key).replace('<div class="gcard', '<div class="gcard unlocked-new').replace(/<div class="gc-rar">[^<]*<\/div>/, '<div class="gc-rar new">NEW CARD</div>');
   }
   // a card showing an upgrade: now → after
+  // a passive card as a normal-looking card (for the right panel preview and unlocks)
+  function passiveHTML(key, sd = sides.me, label = "PASSIVE") {
+    const c = PASSIVES[key], lv = Math.max(1, level(sd, key));
+    return `<div class="gcard ${c.type} r-epic passive"><div class="gc-rar">${label}</div><div class="gc-name">${c.name}</div><div class="gc-art">${c.icon}</div>` +
+           `<div class="gc-type">PASSIVE · LV ${lv}</div><div class="gc-text">${statText(key, valAt(key, lv))}</div></div>`;
+  }
   function upgradeHTML(key, sd = sides.me) {
-    const isShot = key === "shot";
-    const c = isShot ? { name: "Shot Range", icon: "🎯", type: "attack" } : CARDS[key];
-    const rar = isShot ? "epic" : rarityOf(key), lv = level(sd, key);
+    const pas = isPassive(key);
+    const c = pas ? PASSIVES[key] : CARDS[key];
+    const rar = pas ? "epic" : rarityOf(key), lv = level(sd, key);
     const now = statText(key, val(sd, key)), next = statText(key, UPGRADES[key].levels[lv].v);
     return `<div class="gcard ${c.type} r-${rar} upg"><div class="gc-rar">UPGRADE</div><div class="gc-name">${c.name}</div>` +
-           `<div class="gc-art">${c.icon}<span class="lvbadge">LV ${lv + 1} → ${lv + 2}</span></div>` +
+           `<div class="gc-art">${c.icon}<span class="lvbadge">LV ${pas ? lv : lv + 1} → ${pas ? lv + 1 : lv + 2}</span></div>` +
            `<div class="gc-text upg-text"><span class="was">${now}</span><span class="arrow">▼</span><span class="now">${next}</span></div></div>`;
   }
   function openDraw() {
@@ -2384,16 +2434,18 @@
     const offer = upgradeOffer(sides.me);
     if (!offer.length) return;
     document.querySelector("#popup .popup-title").textContent = "PICK A MYSTERY CARD";
-    document.querySelector("#popup .popup-hint").textContent = "New card → unlocked in the SHOP · card you already have → upgraded";
+    document.querySelector("#popup .popup-hint").textContent = "? = something new to unlock · face-up = upgrade for one you already have";
     box.innerHTML = "";
     let picked = false;
     offer.forEach((key, k) => {
       const f = document.createElement("div");
       f.className = "flip"; f.style.setProperty("--i", k);
-      const isNew = key !== "shot" && !sides.me.unl.has(key);
+      const isNew = !hasCard(sides.me, key);
       f.className = "flip mystery"; f.style.setProperty("--i", k);
-      f.innerHTML = `<div class="flip-in"><div class="face front">${isNew ? unlockHTML(key) : upgradeHTML(key)}</div><div class="face back"><div class="gback">?</div></div></div>`;
+      const face = !isNew ? upgradeHTML(key) : isPassive(key) ? passiveHTML(key, { up: { [key]: 1 } }, "NEW PASSIVE").replace('gc-rar"', 'gc-rar new"') : unlockHTML(key);
+      f.innerHTML = `<div class="flip-in"><div class="face front">${face}</div><div class="face back"><div class="gback">?</div></div></div>`;
       setTimeout(() => Sound.play("flip"), k * 150 + 200);
+      if (!isNew) setTimeout(() => { if (!picked) { f.classList.add("open"); Sound.play("flip"); } }, 700 + k * 180);
       // tilt toward the mouse
       f.onmousemove = e => {
         if (picked) return;
@@ -2408,18 +2460,20 @@
         if (picked) return;
         picked = true;
         f.style.setProperty("--ry", "0deg"); f.style.setProperty("--rx", "0deg"); f.classList.remove("tilt");
-        f.classList.add("open"); Sound.play("flip");
+        const wasOpen = f.classList.contains("open");
+        f.classList.add("open"); if (!wasOpen) Sound.play("flip");
         [...box.children].forEach(o => { if (o !== f) o.classList.add("gone"); });
         setTimeout(() => Sound.play(isNew ? "full" : "upgrade"), 350);
-        setTimeout(() => f.classList.add("chosen"), 2100);
+        setTimeout(() => f.classList.add("chosen"), wasOpen ? 700 : 2100);
         setTimeout(() => {
           popup.classList.remove("show");
           const what = applyPick(sides.me, key); sides.me.charge = Math.max(0, sides.me.charge - MAX_CHARGE);
           if (sides.me.charge >= MAX_CHARGE) setTimeout(() => { if (phase === "battle") openDraw(); }, 900);
           if (mode === "mp") Net.send({ t: "act", a: "upg", key });
-          renderCharges(); renderPanel(); renderUpgrades(true); refreshHover();
-          setLog(what === "unlock" ? `Unlocked ${CARDS[key].name} — buy it in the SHOP` : `Upgraded ${UPGRADES[key].name} → ${statText(key, val(sides.me, key))}`);
-        }, 2850);
+          renderCharges(); renderPanel(); renderUpgrades(true); renderPassives(); refreshHover();
+          setLog(what === "unlock" ? (isPassive(key) ? `Unlocked passive ${PASSIVES[key].name} — ${statText(key, val(sides.me, key))}` : `Unlocked ${CARDS[key].name} — buy it in the SHOP`)
+                                   : `Upgraded ${UPGRADES[key].name} → ${statText(key, val(sides.me, key))}`);
+        }, wasOpen ? 1450 : 2850);
       };
       box.appendChild(f);
     });
@@ -2436,7 +2490,7 @@
     const prices = [...me.unl].map(priceOf), cheapest = prices.length ? Math.min(...prices) : Infinity;
     el.innerHTML = `<div class="up-head"><h3>SHOP</h3><div class="gold${bump ? " bump" : ""}">🪙 <b>${me.gold}</b></div></div>` +
       `<button class="shopbtn" id="openShop">🛒 OPEN SHOP</button>` +
-      `<div class="shop-sub">${me.gold >= cheapest ? "You can afford a card!" : !prices.length ? "Fill your CHARGES to unlock cards" : "Earn gold: +10 per hit · +20 per ship sunk · +" + TURN_INCOME + " per turn"}</div>`;
+      `<div class="shop-sub">${me.gold >= cheapest ? "You can afford a card!" : !prices.length ? "Fill your CHARGES to unlock cards" : "Earn gold: +" + (GOLD_PER_HIT + val(me, "bounty")) + " per hit · +20 per ship sunk · +" + (TURN_INCOME + val(me, "warchest")) + " per turn"}</div>`;
     document.getElementById("openShop").onclick = openShop;
     if (document.getElementById("shop").classList.contains("show")) renderShop();
   }
@@ -2630,9 +2684,20 @@
   const panelBody = document.getElementById("panelBody");
   const panelHint = document.getElementById("panelHint");
 
+  function renderPassives() {
+    const el = document.getElementById("passives"), me = sides.me;
+    const on = Object.keys(PASSIVES).filter(k => level(me, k) > 0);
+    el.innerHTML = `<h3>PASSIVES</h3>` + (on.length ? "" : `<div class="pas-empty">Unlock passives with CHARGES</div>`) +
+      on.map(k => {
+        const max = UPGRADES[k].levels.length, lv = level(me, k);
+        return `<div class="pas" data-k="${k}"><div class="pas-ic">${PASSIVES[k].icon}</div><div class="pas-tx"><b>${PASSIVES[k].name}</b>` +
+               `<span>${statText(k, val(me, k))}</span></div><div class="pas-lv">${lv >= max ? "MAX" : "LV " + lv}</div></div>`;
+      }).join("");
+    el.querySelectorAll(".pas").forEach(r => { r.onmouseenter = () => showPreview(r.dataset.k); r.onmouseleave = hidePreview; });
+  }
   function showPreview(key) {
     const el = document.getElementById("cardPreview");
-    el.innerHTML = cardHTML(key);
+    el.innerHTML = isPassive(key) ? passiveHTML(key) : cardHTML(key);
     el.classList.add("show");
   }
   function hidePreview() { document.getElementById("cardPreview").classList.remove("show"); }
