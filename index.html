@@ -794,6 +794,8 @@
   @media (max-height: 700px) { .panel, .upgrades, .charges, .fleetpanel { zoom: .7; } }
 
   .fx.gold.big { font-size: 22px; color: #ffe45c; text-shadow: 0 0 8px #000, 0 0 16px #ffd84a; white-space: nowrap; }
+
+  .charges .val .extra { font-size: .9rem; margin-left: 4px; color: #8dffb0; text-shadow: 0 0 8px #8dffb088; vertical-align: super; }
 </style>
 </head>
 <body>
@@ -1014,7 +1016,10 @@
                   { size: 3, count: 4 }, { size: 2, count: 5 }, { size: 1, count: 6 } ];
   const FLEET_DEF = FLEET.map(f => [f.size, f.count]);
   const FLEET_TOTAL = FLEET.reduce((t, f) => t + f.count, 0);
-  const MAX_CHARGE = 5;
+  const MAX_CHARGE = 5;          // 5 charges = one card pick
+  const CHARGE_CAP = 999;        // extra charges carry over
+  const HIT_CHARGE_MAX = 3;      // one shot or card earns at most +3 charges from hits
+  let actionCharge = 0;
   const sides = {
     me:  { name: "me",  zone: "zone1", cells: zoneCells.zone1, grid: new Array(N * N).fill(-1), ships: [], marks: {}, charge: 0, inv: [], gold: 0, shields: [], extraShots: 0, mines: new Set(), up: { shot: 0, aoe: 0, scan: 0, cluster: 0, torpedo: 0, repair: 0 } },
     bot: { name: "bot", zone: "zone2", cells: zoneCells.zone2, grid: new Array(N * N).fill(-1), ships: [], marks: {}, charge: 0, inv: [], gold: 0, shields: [], extraShots: 0, mines: new Set(), up: { shot: 0, aoe: 0, scan: 0, cluster: 0, torpedo: 0, repair: 0 } },
@@ -1417,9 +1422,10 @@
   const stats = { me: { fired: 0, hits: 0, sunk: 0, gold: 0, cards: 0 }, bot: { fired: 0, hits: 0, sunk: 0, gold: 0, cards: 0 } };
   // +1 charge for every hit on an enemy ship
   function gainCharge(A) {
-    if (A.charge >= MAX_CHARGE) return;
+    if (A.charge >= CHARGE_CAP || actionCharge >= HIT_CHARGE_MAX) return;
+    actionCharge++;
     A.charge++;
-    if (A === sides.me) { renderCharges(); Sound.play(A.charge === MAX_CHARGE ? "full" : "charge", A.charge); }
+    if (A === sides.me) { renderCharges(); Sound.play(A.charge % MAX_CHARGE === 0 ? "full" : "charge", ((A.charge - 1) % MAX_CHARGE) + 1); }
   }
   // +20 gold for every ship destroyed
   const SINK_GOLD = 20;
@@ -1514,6 +1520,7 @@
 
   // the basic action: one shot (1 square, or bigger with the Shot upgrade)
   async function shoot(A, j) {
+    actionCharge = 0;
     const T = other(A), list = shotCells(A, j);
     Sound.play("shot"); list.forEach(k => fxShell(T, k));
     await wait(380);
@@ -1588,6 +1595,7 @@
 
   // a card's ability, with its animation
   async function playCard(A, key, opts) {
+    actionCharge = 0;
     const T = other(A), who = A === sides.me ? "You" : "Enemy", name = CARDS[key].name;
     if (key === "aoe") {
       const size = val(A, "aoe"), list = area(opts.at, size);
@@ -1731,7 +1739,7 @@
       return `${who}: ${name} — found ${found} ship square${found === 1 ? "" : "s"}`;
     }
     if (key === "supply") {
-      A.charge = Math.min(MAX_CHARGE, A.charge + 2);
+      A.charge = Math.min(CHARGE_CAP, A.charge + 2);
       Sound.play("full");
       if (A === sides.me) { renderCharges(); if (A.charge >= MAX_CHARGE) setTimeout(openDraw, 600); }
       await wait(400);
@@ -1996,9 +2004,9 @@
     sd.extraShots = 0;
     // shields of the OTHER side count down at the start of each of my turns (i.e. after an enemy turn)
     if (sd.shields.length) { sd.shields.forEach(sh => sh.turns--); sd.shields = sd.shields.filter(sh => sh.turns > 0); renderShields(sd); }
-    if (sd.charge < MAX_CHARGE) {
+    if (sd.charge < CHARGE_CAP) {
       sd.charge++;
-      if (who === "me") Sound.play(sd.charge === MAX_CHARGE ? "full" : "charge", sd.charge);
+      if (who === "me") Sound.play(sd.charge % MAX_CHARGE === 0 ? "full" : "charge", ((sd.charge - 1) % MAX_CHARGE) + 1);
     }
     if (who === "me") { turn++; Sound.play("turn"); }
     const w = document.getElementById("who");
@@ -2066,8 +2074,10 @@
   // charges / draw pop-up -------------------------------------------------
   function renderCharges() {
     const c = sides.me.charge;
-    document.getElementById("chargeVal").textContent = c;
+    document.getElementById("chargeVal").innerHTML = c > MAX_CHARGE ? `${MAX_CHARGE}<small class="extra">+${c - MAX_CHARGE}</small>` : c;
     [...document.querySelectorAll("#pips i")].forEach((p, k) => p.classList.toggle("on", k < c));
+    const cta = document.querySelector("#charges .cta");
+    if (cta) cta.textContent = c >= MAX_CHARGE * 2 ? `${Math.floor(c / MAX_CHARGE)} CARDS READY!` : "CARD READY!";
     document.getElementById("charges").classList.toggle("ready", c >= MAX_CHARGE && phase === "battle");
   }
   const cardHTML = (key, sd = sides.me) => {
@@ -2100,7 +2110,7 @@
   };
   function openDraw() {
     const popup = document.getElementById("popup"), box = document.getElementById("popupCards");
-    if (popup.classList.contains("show")) return;
+    if (popup.classList.contains("show") || phase !== "battle" || whose !== "me") return;
     box.innerHTML = "";
     let picked = false;
     drawOffer().forEach((key, k) => {
@@ -2126,7 +2136,8 @@
         [...box.children].forEach(o => o.classList.add(o === f ? "chosen" : "gone"));
         setTimeout(() => {
           popup.classList.remove("show");
-          sides.me.inv.push(key); sides.me.charge = 0; newCard = true;
+          sides.me.inv.push(key); sides.me.charge = Math.max(0, sides.me.charge - MAX_CHARGE); newCard = true;
+          if (sides.me.charge >= MAX_CHARGE) setTimeout(() => { if (phase === "battle") openDraw(); }, 900);
           if (mode === "mp") Net.send({ t: "act", a: "draw" });
           renderCharges(); renderPanel();
           setLog("You drew " + CARDS[key].name);
@@ -2199,7 +2210,7 @@
     if (A.charge >= MAX_CHARGE) {
       const offer = drawOffer();
       A.inv.push(["nuke", "kraken", "irondome", "homing", "barrage", "carpet", "aoe", "airstrike", "double", "flare", "satellite", "cluster", "scan", "depth", "broadside", "torpedo", "recon", "plunder", "sabotage", "supply", "shield", "armor", "mines", "decoy", "smoke", "repair", "move"].find(k => offer.includes(k)));
-      A.charge = 0;
+      A.charge = Math.max(0, A.charge - MAX_CHARGE);
       setLog("Enemy drew a card");
       await wait(700);
     }
@@ -2892,7 +2903,8 @@
   // the opponent's actions, replayed exactly on this screen
   async function replay(m) {
     const B = sides.bot;
-    if (m.a === "draw") { B.charge = 0; setLog("Enemy drew a card"); return; }
+    // no rounding to 0 here: the draw can arrive just before this screen adds their turn's charge, and the order must not matter
+    if (m.a === "draw") { B.charge -= MAX_CHARGE; setLog("Enemy drew a card"); return; }
     if (m.a === "buy") {
       const next = UPGRADES[m.key].levels[level(B, m.key)];
       if (next) { B.gold -= next.cost; B.up[m.key]++; setLog(`Enemy upgraded ${UPGRADES[m.key].name}`); }
