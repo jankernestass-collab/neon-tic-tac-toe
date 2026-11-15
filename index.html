@@ -849,6 +849,22 @@
   .si-buy:disabled { opacity: .45; cursor: default; }
   .shopitem.bought { animation: bought .6s ease-out; }
   @keyframes bought { 30% { transform: scale(1.12); filter: drop-shadow(0 0 16px #ffd84a); } }
+
+  /* ---- v15: big hover preview, upgrade cards ---- */
+  .cardpreview { position: fixed; left: 50%; top: 46%; z-index: 24; pointer-events: none; opacity: 0;
+    transform: translate(-50%, -50%) scale(.6); transition: opacity .15s, transform .18s cubic-bezier(.2, 1.3, .4, 1); }
+  .cardpreview.show { opacity: 1; transform: translate(-50%, -50%) scale(1.6); }
+  .cardpreview .gcard { box-shadow: 0 0 0 2px #fff, 0 0 40px var(--edge), 0 20px 50px #000d; }
+  .hand .slot:hover { transform: translateY(-14px); }
+  .gcard.upg .gc-rar { background: linear-gradient(90deg, #ffe45c, #ffb02e); color: #3a2400; }
+  .gcard.upg { box-shadow: 0 0 22px #ffd84a66, 0 8px 22px #000a; }
+  .gc-art { position: relative; }
+  .lvbadge { position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%); font: bold .7rem "Segoe UI", sans-serif; letter-spacing: 1px;
+    background: #ffd84a; color: #3a2400; padding: 2px 8px; border-radius: 8px; white-space: nowrap; text-shadow: none; }
+  .upg-text { flex-direction: column; gap: 1px; font-size: .82em !important; line-height: 1.2; }
+  .upg-text .was { opacity: .55; text-decoration: line-through; font-size: .92em; }
+  .upg-text .arrow { color: #ffd84a; font-size: .8em; }
+  .upg-text .now { color: #8dffb0; font-weight: bold; }
 </style>
 </head>
 <body>
@@ -883,11 +899,13 @@
     <h3>CHARGES</h3>
     <div class="val" id="chargeVal">0</div>
     <div class="pips" id="pips"><i></i><i></i><i></i><i></i><i></i></div>
-    <div class="cta">CARD READY!</div>
+    <div class="cta">UPGRADE READY!</div>
   </div>
 
   <div class="fleetpanel" id="fleet"></div>
   <div class="upgrades" id="upgrades"></div>
+
+  <div class="cardpreview" id="cardPreview"></div>
 
   <div class="shop" id="shop">
     <div class="shop-box">
@@ -1120,6 +1138,10 @@
     satellite: { name: "Spy Satellite", icon: "🛰️", type: "intel",  desc: "Reveal 3 random hidden enemy ship squares",     target: "none" },
     barrage:   { name: "Barrage",       icon: "🔥", type: "attack", desc: "3 random 3×3 blasts inside an 11×11 area",      target: "enemy" },
     carpet:    { name: "Carpet Bomb",   icon: "💣", type: "attack", desc: "Bombers flatten a 3×15 strip",                 target: "enemy" },
+    gamble:    { name: "Gamble",        icon: "🎲", type: "attack", desc: "50% chance: blast a 5×5 area · 50%: nothing", target: "enemy" },
+    cross:     { name: "Cross Strike",  icon: "✚",  type: "attack", desc: "Hits a + shape, 4 squares in every direction", target: "enemy" },
+    chain:     { name: "Chain Reaction",icon: "⛓️", type: "attack", desc: "Fire at a square — if it hits a ship, up to 3 squares of that ship blow up", target: "enemy" },
+    timewarp:  { name: "Time Warp",     icon: "⏳", type: "tactic", desc: "Take another turn right after this one", target: "none" },
     kraken:    { name: "KRAKEN",        icon: "🐙", type: "attack", desc: "A sea monster hits 2 random enemy ships", target: "none" },
     flare:   { name: "Flare",        icon: "🔦", type: "intel",  desc: "Reveal one whole hidden enemy ship",       target: "none" },
     double:  { name: "Double Shot",  icon: "⚡", type: "tactic", desc: "Fire 2 shots this turn",                   target: "none" },
@@ -1134,9 +1156,9 @@
 
   // rarity of each card + how often each rarity shows up in a draw
   const RARITY = {
-    common:    { label: "COMMON",    weight: 50, cards: ["scan", "torpedo", "plunder", "move", "depth", "broadside", "recon", "supply", "smoke"] },
-    rare:      { label: "RARE",      weight: 30, cards: ["aoe", "cluster", "repair", "shield", "flare", "airstrike", "sabotage", "satellite", "decoy", "armor"] },
-    epic:      { label: "EPIC",      weight: 15, cards: ["homing", "double", "barrage", "carpet", "irondome", "mines"] },
+    common:    { label: "COMMON",    weight: 50, cards: ["scan", "torpedo", "plunder", "move", "depth", "broadside", "recon", "supply", "smoke", "gamble"] },
+    rare:      { label: "RARE",      weight: 30, cards: ["aoe", "cluster", "repair", "shield", "flare", "airstrike", "sabotage", "satellite", "decoy", "armor", "cross", "chain"] },
+    epic:      { label: "EPIC",      weight: 15, cards: ["homing", "double", "barrage", "carpet", "irondome", "mines", "timewarp"] },
     legendary: { label: "LEGENDARY", weight: 5,  cards: ["nuke", "kraken"] },
   };
   const rarityOf = key => Object.keys(RARITY).find(r => RARITY[r].cards.includes(key));
@@ -1154,27 +1176,73 @@
   //  GOLD & UPGRADES
   // =====================================================================
   const GOLD_PER_HIT = 10;
-  // upgrades were removed — every card keeps its base stats
+  // upgrade levels — won by choosing upgrades when your charges fill up
   const UPGRADES = {
-    shot:    { name: "Shot",         base: 1,  levels: [] },
-    aoe:     { name: "AOE Strike",   base: 5,  levels: [] },
-    scan:    { name: "Sonar Scan",   base: 9,  levels: [] },
-    cluster: { name: "Cluster Bomb", base: 10, levels: [] },
-    torpedo: { name: "Torpedo",      base: 1,  levels: [] },
-    repair:  { name: "Repair",       base: 1,  levels: [] },
+    shot:      { name: "Shot Range",     base: 1,  levels: [{ v: 2 }, { v: 3 }] },
+    aoe:       { name: "AOE Strike",     base: 5,  levels: [{ v: 7 }, { v: 9 }] },
+    scan:      { name: "Sonar Scan",     base: 9,  levels: [{ v: 11 }, { v: 13 }] },
+    cluster:   { name: "Cluster Bomb",   base: 10, levels: [{ v: 15 }, { v: 20 }] },
+    torpedo:   { name: "Torpedo",        base: 1,  levels: [{ v: 2 }, { v: 3 }] },
+    repair:    { name: "Repair",         base: 1,  levels: [{ v: 2 }] },
+    depth:     { name: "Depth Charge",   base: 3,  levels: [{ v: 5 }] },
+    broadside: { name: "Broadside",      base: 5,  levels: [{ v: 7 }, { v: 9 }] },
+    airstrike: { name: "Air Strike",     base: 15, levels: [{ v: 21 }, { v: 27 }] },
+    carpet:    { name: "Carpet Bomb",    base: 15, levels: [{ v: 19 }, { v: 23 }] },
+    barrage:   { name: "Barrage",        base: 3,  levels: [{ v: 4 }, { v: 5 }] },
+    homing:    { name: "Homing Missile", base: 1,  levels: [{ v: 2 }, { v: 3 }] },
+    kraken:    { name: "KRAKEN",         base: 2,  levels: [{ v: 3 }] },
+    shield:    { name: "Shield",         base: 5,  levels: [{ v: 7 }, { v: 9 }] },
+    mines:     { name: "Sea Mines",      base: 5,  levels: [{ v: 7 }] },
+    armor:     { name: "Armor Plating",  base: 2,  levels: [{ v: 3 }, { v: 4 }] },
+    flare:     { name: "Flare",          base: 1,  levels: [{ v: 2 }] },
+    satellite: { name: "Spy Satellite",  base: 3,  levels: [{ v: 5 }, { v: 7 }] },
+    plunder:   { name: "Plunder",        base: 60, levels: [{ v: 90 }, { v: 120 }] },
+    supply:    { name: "Supply Drop",    base: 2,  levels: [{ v: 3 }] },
+    recon:     { name: "Recon Plane",    base: 1,  levels: [{ v: 3 }] },
+    double:    { name: "Double Shot",    base: 2,  levels: [{ v: 3 }] },
+    nuke:      { name: "NUKE",           base: 11, levels: [{ v: 13 }] },
+    sabotage:  { name: "Sabotage",       base: 40, levels: [{ v: 70 }] },
+    gamble:    { name: "Gamble",         base: 5,  levels: [{ v: 7 }] },
+    cross:     { name: "Cross Strike",   base: 4,  levels: [{ v: 6 }, { v: 8 }] },
+    chain:     { name: "Chain Reaction", base: 3,  levels: [{ v: 4 }, { v: 5 }] },
   };
-  const level = (sd, key) => sd.up[key];
+  const level = (sd, key) => sd.up[key] || 0;
   const val = (sd, key) => level(sd, key) ? UPGRADES[key].levels[level(sd, key) - 1].v : UPGRADES[key].base;
   const valAt = (key, lv) => lv ? UPGRADES[key].levels[lv - 1].v : UPGRADES[key].base;
   const clusterArea = sd => val(sd, "cluster") >= 20 ? 9 : 7;
   // what each stat means, in words
   function statText(key, v) {
-    if (key === "shot") return v === 1 ? "1 square" : v === 2 ? "+ shape (5 squares)" : "3×3 (9 squares)";
-    if (key === "aoe") return `Blast a ${v}×${v} area`;
-    if (key === "scan") return `Reveal enemy ships in a ${v}×${v} area`;
-    if (key === "cluster") return `${v} random hits in a ${v >= 20 ? 9 : 7}×${v >= 20 ? 9 : 7} area`;
-    if (key === "torpedo") return v === 1 ? "Runs along a row and hits the first ship" : `Runs along a row and hits the first ${v} ship squares`;
-    if (key === "repair") return v === 1 ? "Fix all damage on one of your ships" : `Fix all damage on ${v} of your ships`;
+    const sq = n => `${n}×${n}`;
+    switch (key) {
+      case "shot": return v === 1 ? "1 square" : v === 2 ? "+ shape (5 squares)" : "3×3 (9 squares)";
+      case "aoe": return `Blast a ${sq(v)} area`;
+      case "scan": return `Reveal enemy ships in a ${sq(v)} area`;
+      case "cluster": return `${v} random hits in a ${v >= 20 ? "9×9" : "7×7"} area`;
+      case "torpedo": return v === 1 ? "Runs along a row and hits the first ship" : `Runs along a row and hits the first ${v} ship squares`;
+      case "repair": return v === 1 ? "Fix all damage on one of your ships" : `Fix all damage on ${v} of your ships`;
+      case "depth": return `Blast a ${sq(v)} area`;
+      case "broadside": return `${v} shells in a row, left to right`;
+      case "airstrike": return `A bomber hits ${v} squares down a column`;
+      case "carpet": return `Bombers flatten a 3×${v} strip`;
+      case "barrage": return `${v} random 3×3 blasts inside an 11×11 area`;
+      case "homing": return v === 1 ? "Always hits a random enemy ship square" : `${v} missiles, each always hits an enemy ship square`;
+      case "kraken": return `A sea monster hits ${v} random enemy ships`;
+      case "shield": return `Protect a ${sq(v)} area of your zone for 2 enemy turns`;
+      case "mines": return `Hide mines in a ${sq(v)} area of your zone — each enemy hit on one costs them 20 gold`;
+      case "armor": return `One of your ships ignores the next ${v} hits`;
+      case "flare": return v === 1 ? "Reveal one whole hidden enemy ship" : `Reveal ${v} whole hidden enemy ships`;
+      case "satellite": return `Reveal ${v} random hidden enemy ship squares`;
+      case "plunder": return `Get ${v} gold right away`;
+      case "supply": return `Get ${v} charges right away`;
+      case "recon": return v === 1 ? "Reveal enemy ships in a whole column" : `Reveal enemy ships in ${v} whole columns`;
+      case "double": return `Fire ${v} shots this turn`;
+      case "nuke": return `Obliterate a ${sq(v)} area`;
+      case "sabotage": return `Enemy loses 2 charges · steal ${v} of their gold`;
+      case "gamble": return `50% chance: blast a ${sq(v)} area · 50%: nothing`;
+      case "cross": return `Hits a + shape, ${v} squares in every direction`;
+      case "chain": return `Fire at a square — if it hits a ship, up to ${v} squares of that ship blow up`;
+    }
+    return "";
   }
   const cardDesc = (sd, key) => UPGRADES[key] ? statText(key, val(sd, key)) : CARDS[key].desc;
   // squares hit by the basic shot
@@ -1610,13 +1678,16 @@
       case "aoe": return area(i, val(sd, "aoe"));
       case "scan": return area(i, val(sd, "scan"));
       case "cluster": return area(i, clusterArea(sd));
-      case "nuke": return area(i, CARDS.nuke.area);
-      case "depth": return area(i, 3);
-      case "broadside": return rect(r, r, c - 2, c + 2);
-      case "recon": return rect(0, N - 1, c, c);
-      case "airstrike": return rect(r - 7, r + 7, c, c);
-      case "carpet": return rect(r - 1, r + 1, c - 7, c + 7);
+      case "nuke": return area(i, val(sd, "nuke"));
+      case "depth": return area(i, val(sd, "depth"));
+      case "gamble": return area(i, val(sd, "gamble"));
+      case "broadside": { const h = val(sd, "broadside") >> 1; return rect(r, r, c - h, c + h); }
+      case "recon": { const h = val(sd, "recon") >> 1; return rect(0, N - 1, c - h, c + h); }
+      case "airstrike": { const h = val(sd, "airstrike") >> 1; return rect(r - h, r + h, c, c); }
+      case "carpet": { const h = val(sd, "carpet") >> 1; return rect(r - 1, r + 1, c - h, c + h); }
       case "barrage": return area(i, 11);
+      case "cross": { const v = val(sd, "cross"); return [...new Set([...rect(r, r, c - v, c + v), ...rect(r - v, r + v, c, c)])]; }
+      case "chain": return [i];
       case "torpedo": return rect(r, r, 0, N - 1);
     }
     return [];
@@ -1770,8 +1841,51 @@
     }
     if (key === "nuke") return nuke(A, T, opts.at, who);
 
+    if (key === "gamble") {
+      Sound.play("flip");
+      const win = LR() < 0.5;
+      await wait(400);
+      if (!win) { fxSplash(T, opts.at); Sound.play("splash"); await wait(400); return `${who}: ${name} — 🎲 bad luck, nothing happened`; }
+      const res = await blast(T, cardCells(A, key, opts.at), opts.at, val(A, "gamble"));
+      await wait(600);
+      return `${who}: ${name} — 🎲 jackpot! ` + summary(res);
+    }
+    if (key === "cross") {
+      const [r, c] = rc(opts.at), v = val(A, "cross");
+      Sound.play("shot"); fxShell(T, opts.at);
+      await wait(380);
+      const res = [];
+      for (let d = 0; d <= v; d++) {
+        const ring = d === 0 ? [opts.at] : [[r, c + d], [r, c - d], [r + d, c], [r - d, c]].filter(([a, b]) => a >= 0 && b >= 0 && a < N && b < N).map(([a, b]) => a * N + b);
+        ring.forEach(j => { const x = strike(T, j); res.push(x); hitFx(T, j, x); });
+        await wait(60);
+      }
+      shake();
+      await wait(500);
+      return `${who}: ${name} — ` + summary(res);
+    }
+    if (key === "chain") {
+      Sound.play("shot"); fxShell(T, opts.at);
+      await wait(380);
+      const first = strike(T, opts.at), res = [first];
+      hitFx(T, opts.at, first);
+      const ship = shipAt(T, opts.at);
+      if ((first === "hit" || first === "sunk") && ship && !ship.decoy) {
+        const more = ship.cells.filter((j, seg) => !ship.hits.has(seg)).slice(0, val(A, "chain") - 1);
+        for (const j of more) { await wait(220); const x = strike(T, j); res.push(x); hitFx(T, j, x); }
+        if (more.length) shake();
+      }
+      await wait(500);
+      return `${who}: ${name} — ` + summary(res);
+    }
+    if (key === "timewarp") {
+      Sound.play("ping");
+      await wait(500);
+      return `${who}: ${name} — ${A === sides.me ? "you take another turn!" : "the enemy takes another turn!"}`;
+    }
+
     if (key === "depth") {
-      const res = await blast(T, cardCells(A, key, opts.at), opts.at, 3);
+      const res = await blast(T, cardCells(A, key, opts.at), opts.at, val(A, "depth"));
       await wait(600);
       return `${who}: ${name} — ` + summary(res);
     }
@@ -1791,7 +1905,7 @@
         alive(T).forEach(sh => sh.cells.forEach((j, seg) => {
           if (!sh.hits.has(seg) && !(A === sides.me && T.marks[j] && T.marks[j].kind === "detect") && !(A === sides.bot && botMem.detected.has(j))) hidden.push(j);
         }));
-        list = lshuffle(hidden).slice(0, 3);
+        list = lshuffle(hidden).slice(0, val(A, "satellite"));
         Sound.play("ping");
         list.forEach(j => fx(T, "sweep", ...center(j), 1300, { "--r": "160px" }));
         await wait(1100);
@@ -1806,14 +1920,14 @@
       return `${who}: ${name} — found ${found} ship square${found === 1 ? "" : "s"}`;
     }
     if (key === "supply") {
-      A.charge = Math.min(CHARGE_CAP, A.charge + 2);
+      A.charge = Math.min(CHARGE_CAP, A.charge + val(A, "supply"));
       Sound.play("full");
       if (A === sides.me) { renderCharges(); if (A.charge >= MAX_CHARGE) setTimeout(openDraw, 600); }
       await wait(400);
-      return `${who}: ${name} — +2 charges`;
+      return `${who}: ${name} — +${val(A, "supply")} charges`;
     }
     if (key === "sabotage") {
-      const stolen = Math.min(40, T.gold);
+      const stolen = Math.min(val(A, "sabotage"), T.gold);
       T.charge = Math.max(0, T.charge - 2); T.gold -= stolen; A.gold += stolen;
       Sound.play("shieldhit"); for (let k = 0; k < 3; k++) setTimeout(() => Sound.play("coin"), 150 + k * 110);
       renderCharges(); renderUpgrades(true);
@@ -1827,10 +1941,11 @@
     }
     if (key === "carpet") {
       const [r, c] = rc(opts.at), res = [];
-      const from = r * N + Math.max(0, c - 8), to = r * N + Math.min(N - 1, c + 8);
+      const ch = val(A, "carpet") >> 1;
+      const from = r * N + Math.max(0, c - ch - 1), to = r * N + Math.min(N - 1, c + ch + 1);
       flyOver(T, from, to, 2000, true);
-      setTimeout(() => flyOver(T, Math.max(0, r - 1) * N + Math.max(0, c - 8), Math.max(0, r - 1) * N + Math.min(N - 1, c + 8), 2000, true), 150);
-      for (let cc = c - 7; cc <= c + 7; cc++) {
+      setTimeout(() => flyOver(T, Math.max(0, r - 1) * N + Math.max(0, c - ch - 1), Math.max(0, r - 1) * N + Math.min(N - 1, c + ch + 1), 2000, true), 150);
+      for (let cc = c - ch; cc <= c + ch; cc++) {
         const col = rect(r - 1, r + 1, cc, cc);
         col.forEach(j => fxShell(T, j));
         setTimeout(() => col.forEach(j => { const rr = strike(T, j); res.push(rr); hitFx(T, j, rr); }), 380);
@@ -1843,7 +1958,7 @@
     }
     if (key === "barrage") {
       const zone = cardCells(A, key, opts.at), res = [];
-      for (let k = 0; k < 3; k++) {
+      for (let k = 0; k < val(A, "barrage"); k++) {
         const c0 = zone[lrand(zone.length)];
         res.push(...await blast(T, area(c0, 3), c0, 3));
         await wait(250);
@@ -1853,7 +1968,7 @@
     }
     if (key === "kraken") {
       // one unhit square on each of 2 different ships
-      const ships = lshuffle(alive(T).filter(sh => sh.cells.some((j, seg) => !sh.hits.has(seg) && !shielded(T, j)))).slice(0, 2);
+      const ships = lshuffle(alive(T).filter(sh => sh.cells.some((j, seg) => !sh.hits.has(seg) && !shielded(T, j)))).slice(0, val(A, "kraken"));
       const list = ships.map(sh => { const free = sh.cells.filter((j, seg) => !sh.hits.has(seg) && !shielded(T, j)); return free[lrand(free.length)]; });
       if (!list.length) return `${who}: ${name} — found nothing to grab`;
       Sound.play("kraken"); shake();
@@ -1873,43 +1988,47 @@
       const targets = [];
       alive(T).forEach(sh => sh.cells.forEach((j, seg) => { if (!sh.hits.has(seg) && !shielded(T, j)) targets.push(j); }));
       if (!targets.length) return `${who}: ${name} — no target`;
-      const j = targets[lrand(targets.length)];
-      const [x, y] = center(j);
-      Sound.play("whoosh");
-      fx(T, "homing", x, y, 700);
-      await wait(650);
-      const res = strike(T, j);
-      hitFx(T, j, res);
-      await wait(500);
-      return `${who}: ${name} — ` + summary([res]);
+      const picks = lshuffle(targets).slice(0, val(A, "homing")), res = [];
+      for (const j of picks) {
+        const [x, y] = center(j);
+        Sound.play("whoosh");
+        fx(T, "homing", x, y, 700);
+        await wait(650);
+        const r = strike(T, j); res.push(r);
+        hitFx(T, j, r);
+        await wait(250);
+      }
+      await wait(300);
+      return `${who}: ${name} — ` + summary(res);
     }
     if (key === "flare") {
       const hidden = alive(T).filter(sh => sh.cells.some((j, seg) => !sh.hits.has(seg) && !(A === sides.me && T.marks[j] && T.marks[j].kind === "detect")));
       if (!hidden.length) return `${who}: ${name} — nothing left to reveal`;
-      const ship = hidden[lrand(hidden.length)];
+      const shown = lshuffle(hidden).slice(0, val(A, "flare"));
       Sound.play("ping");
-      const mid = ship.cells[Math.floor(ship.cells.length / 2)];
-      fx(T, "flare", ...center(mid), 2200);
+      shown.forEach(ship => fx(T, "flare", ...center(ship.cells[Math.floor(ship.cells.length / 2)]), 2200));
       await wait(600);
-      ship.cells.forEach((j, seg) => {
-        if (ship.hits.has(seg)) return;
-        if (A === sides.me) setMark(T, j, "detect"); else botMem.detected.add(j);
+      shown.forEach(ship => {
+        ship.cells.forEach((j, seg) => {
+          if (ship.hits.has(seg)) return;
+          if (A === sides.me) setMark(T, j, "detect"); else botMem.detected.add(j);
+        });
+        flash(T, ship.cells, "flash-scan", 900);
       });
-      flash(T, ship.cells, "flash-scan", 900);
       await wait(500);
-      return `${who}: ${name} — revealed a ${ship.size}-square ship`;
+      return `${who}: ${name} — revealed ${shown.map(sh => "a " + sh.size + "-square ship").join(" and ")}`;
     }
     if (key === "double") {
-      A.extraShots++;
+      A.extraShots += val(A, "double") - 1;
       Sound.play("full");
-      return `${who}: ${name} — one extra shot this turn!`;
+      return `${who}: ${name} — ${val(A, "double")} shots this turn!`;
     }
     if (key === "plunder") {
-      A.gold += 60;
+      A.gold += val(A, "plunder");
       for (let k = 0; k < 4; k++) setTimeout(() => Sound.play("coin"), k * 110);
       if (A === sides.me) renderUpgrades(true);
       await wait(500);
-      return `${who}: ${name} — +60 gold`;
+      return `${who}: ${name} — +${val(A, "plunder")} gold`;
     }
     if (key === "smoke") {
       Sound.play("whoosh");
@@ -1930,11 +2049,11 @@
     }
     if (key === "armor") {
       const ship = opts.ship;
-      ship.armor = (ship.armor || 0) + 2;
+      ship.armor = (ship.armor || 0) + val(A, "armor");
       if (A === sides.me && ship.model) ship.model.classList.add("armored");
       Sound.play("upgrade");
       await wait(500);
-      return `${who}: ${name} — a ship is armored against 2 hits`;
+      return `${who}: ${name} — a ship is armored against ${val(A, "armor")} hits`;
     }
     if (key === "irondome") {
       const all = new Set(); for (let j = 0; j < N * N; j++) all.add(j);
@@ -1946,13 +2065,13 @@
       return `${who}: ${name} — every attack is blocked next turn`;
     }
     if (key === "mines") {
-      area(opts.at, CARDS.mines.area).forEach(j => { if (A.grid[j] === -1) { A.mines.add(j); if (A === sides.me) A.cells[j].classList.add("mined"); } });
+      area(opts.at, val(A, "mines")).forEach(j => { if (A.grid[j] === -1) { A.mines.add(j); if (A === sides.me) A.cells[j].classList.add("mined"); } });
       Sound.play("select");
       await wait(400);
       return `${who}: ${name} — ${A === sides.me ? "mines laid" : "the enemy laid something in the water…"}`;
     }
     if (key === "shield") {
-      const cells = area(opts.at, CARDS.shield.area);
+      const cells = area(opts.at, val(A, "shield"));
       A.shields.push({ cells: new Set(cells), turns: 2 });
       Sound.play("repair");
       renderShields(A);
@@ -1964,7 +2083,7 @@
 
   // ☢️ the big one
   async function nuke(A, T, at, who) {
-    const size = CARDS.nuke.area, list = area(at, size), [x, y] = center(at);
+    const size = val(A, "nuke"), list = area(at, size), [x, y] = center(at);
     Sound.play("siren");
     document.body.classList.add("nuke-warn");
     fx(T, "target", x, y, 1700, { "--r": size * 39 + "px" });
@@ -2148,7 +2267,7 @@
       return;
     }
     await wait(700);
-    nextTurn("bot");               // playing a card uses your turn
+    nextTurn(key === "timewarp" ? "me" : "bot");   // playing a card uses your turn (Time Warp gives you another)
   }
 
   // charges / draw pop-up -------------------------------------------------
@@ -2157,7 +2276,7 @@
     document.getElementById("chargeVal").innerHTML = c > MAX_CHARGE ? `${MAX_CHARGE}<small class="extra">+${c - MAX_CHARGE}</small>` : c;
     [...document.querySelectorAll("#pips i")].forEach((p, k) => p.classList.toggle("on", k < c));
     const cta = document.querySelector("#charges .cta");
-    if (cta) cta.textContent = c >= MAX_CHARGE * 2 ? `${Math.floor(c / MAX_CHARGE)} CARDS READY!` : "CARD READY!";
+    if (cta) cta.textContent = c >= MAX_CHARGE * 2 ? `${Math.floor(c / MAX_CHARGE)} UPGRADES READY!` : "UPGRADE READY!";
     document.getElementById("charges").classList.toggle("ready", c >= MAX_CHARGE && phase === "battle");
   }
   const cardHTML = (key, sd = sides.me) => {
@@ -2190,15 +2309,37 @@
     if (phase !== "battle" || sides.me.charge < MAX_CHARGE) return;
     openDraw();
   };
+  // which upgrades can still be taken
+  const upgradable = sd => Object.keys(UPGRADES).filter(k => level(sd, k) < UPGRADES[k].levels.length);
+  function upgradeOffer(sd) {
+    const pool = upgradable(sd), out = [];
+    if (pool.includes("shot") && Math.random() < 0.5) out.push("shot");      // shot range shows up often
+    lshuffle(pool.filter(k => !out.includes(k))).forEach(k => { if (out.length < 3) out.push(k); });
+    return out;
+  }
+  // a card showing an upgrade: now → after
+  function upgradeHTML(key, sd = sides.me) {
+    const isShot = key === "shot";
+    const c = isShot ? { name: "Shot Range", icon: "🎯", type: "attack" } : CARDS[key];
+    const rar = isShot ? "epic" : rarityOf(key), lv = level(sd, key);
+    const now = statText(key, val(sd, key)), next = statText(key, UPGRADES[key].levels[lv].v);
+    return `<div class="gcard ${c.type} r-${rar} upg"><div class="gc-rar">UPGRADE</div><div class="gc-name">${c.name}</div>` +
+           `<div class="gc-art">${c.icon}<span class="lvbadge">LV ${lv + 1} → ${lv + 2}</span></div>` +
+           `<div class="gc-text upg-text"><span class="was">${now}</span><span class="arrow">▼</span><span class="now">${next}</span></div></div>`;
+  }
   function openDraw() {
     const popup = document.getElementById("popup"), box = document.getElementById("popupCards");
     if (popup.classList.contains("show") || phase !== "battle" || whose !== "me") return;
+    const offer = upgradeOffer(sides.me);
+    if (!offer.length) return;
+    document.querySelector("#popup .popup-title").textContent = "CHOOSE AN UPGRADE";
+    document.querySelector("#popup .popup-hint").textContent = "Makes that card — or your shot — stronger for the rest of the game";
     box.innerHTML = "";
     let picked = false;
-    drawOffer().forEach((key, k) => {
+    offer.forEach((key, k) => {
       const f = document.createElement("div");
       f.className = "flip"; f.style.setProperty("--i", k);
-      f.innerHTML = `<div class="flip-in"><div class="face front">${cardHTML(key)}</div><div class="face back"><div class="gback">⚓</div></div></div>`;
+      f.innerHTML = `<div class="flip-in"><div class="face front">${upgradeHTML(key)}</div><div class="face back"><div class="gback">⚓</div></div></div>`;
       setTimeout(() => Sound.play("flip"), k * 150 + 200);
       setTimeout(() => { f.classList.add("open"); Sound.play("flip"); }, 700 + k * 180);
       // tilt toward the mouse
@@ -2218,11 +2359,12 @@
         [...box.children].forEach(o => o.classList.add(o === f ? "chosen" : "gone"));
         setTimeout(() => {
           popup.classList.remove("show");
-          sides.me.inv.push(key); sides.me.charge = Math.max(0, sides.me.charge - MAX_CHARGE); newCard = true;
+          sides.me.up[key] = level(sides.me, key) + 1; sides.me.charge = Math.max(0, sides.me.charge - MAX_CHARGE);
           if (sides.me.charge >= MAX_CHARGE) setTimeout(() => { if (phase === "battle") openDraw(); }, 900);
-          if (mode === "mp") Net.send({ t: "act", a: "draw" });
-          renderCharges(); renderPanel();
-          setLog("You drew " + CARDS[key].name);
+          if (mode === "mp") Net.send({ t: "act", a: "upg", key });
+          Sound.play("upgrade");
+          renderCharges(); renderPanel(); renderUpgrades(); refreshHover();
+          setLog(`Upgraded ${UPGRADES[key].name} → ${statText(key, val(sides.me, key))}`);
         }, 750);
       };
       box.appendChild(f);
@@ -2330,7 +2472,15 @@
     if (phase !== "battle") return;
     const A = sides.bot;
     // draw a card when charges are full
-    if (A.charge >= MAX_CHARGE) {
+    if (A.charge >= MAX_CHARGE && upgradable(A).length) {
+      const offer = upgradeOffer(A);
+      const best = ["shot", "homing", "aoe", "kraken", "barrage", "cluster", "nuke", "airstrike", "carpet", "cross", "chain", "armor", "shield"].find(k => offer.includes(k)) || offer[0];
+      A.up[best] = level(A, best) + 1;
+      A.charge = Math.max(0, A.charge - MAX_CHARGE);
+      setLog(`Enemy upgraded ${UPGRADES[best].name}`);
+      await wait(700);
+    }
+    if (false) {
       const offer = drawOffer();
       A.inv.push(["nuke", "kraken", "irondome", "homing", "barrage", "carpet", "aoe", "airstrike", "double", "flare", "satellite", "cluster", "scan", "depth", "broadside", "torpedo", "recon", "plunder", "sabotage", "supply", "shield", "armor", "mines", "decoy", "smoke", "repair", "move"].find(k => offer.includes(k)));
       A.charge = Math.max(0, A.charge - MAX_CHARGE);
@@ -2339,8 +2489,9 @@
     }
     const smart = botLevel === "hard" ? 1 : botLevel === "medium" ? 0.75 : 0.3;   // how often it follows up on hits
     // shop: buy the best card it can afford (easy bots never shop)
+    if (botLevel === "easy" && A.gold >= 30 && Math.random() < 0.5) { const cheap = SHOP_ORDER.filter(k => priceOf(k) === 30); A.inv.push(cheap[rand(cheap.length)]); A.gold -= 30; }
     if (botLevel !== "easy") {
-      const wish = ["nuke", "kraken", "homing", "barrage", "carpet", "irondome", "aoe", "airstrike", "flare", "cluster", "armor", "depth", "scan", "torpedo"];
+      const wish = ["nuke", "kraken", "timewarp", "homing", "barrage", "carpet", "irondome", "chain", "aoe", "cross", "airstrike", "flare", "cluster", "armor", "depth", "gamble", "scan", "torpedo"];
       const k = wish.find(c => A.gold >= priceOf(c) && (A.gold - priceOf(c) >= 30 || priceOf(c) >= 120));
       if (k) { A.gold -= priceOf(k); A.inv.push(k); setLog("Enemy bought a card from the shop"); await wait(600); }
     }
@@ -2373,7 +2524,8 @@
       if (opts) idx = pick("decoy");
     }
     if (idx < 0) {
-      for (const k of ["kraken", "barrage", "carpet", "airstrike", "depth", "broadside", "satellite", "recon", "supply", "sabotage"]) {
+      if (pick("timewarp") >= 0) { idx = pick("timewarp"); opts = {}; }
+      if (idx < 0) for (const k of ["kraken", "chain", "barrage", "carpet", "cross", "airstrike", "gamble", "depth", "broadside", "satellite", "recon", "supply", "sabotage"]) {
         if (pick(k) < 0) continue;
         if ((k === "satellite" || k === "recon") && hot >= 0) continue;
         idx = pick(k); opts = { at: hot >= 0 ? hot : randomUnshot() }; break;
@@ -2397,7 +2549,7 @@
       setLog(await playCard(A, key, opts));
       if (checkOver()) return;
       await wait(700);
-      if (key !== "double") { nextTurn("me"); return; }
+      if (key !== "double") { nextTurn(key === "timewarp" ? "bot" : "me"); return; }
     }
     // then fire one shot
     do {
@@ -2417,7 +2569,14 @@
   const panelBody = document.getElementById("panelBody");
   const panelHint = document.getElementById("panelHint");
 
+  function showPreview(key) {
+    const el = document.getElementById("cardPreview");
+    el.innerHTML = cardHTML(key);
+    el.classList.add("show");
+  }
+  function hidePreview() { document.getElementById("cardPreview").classList.remove("show"); }
   function renderPanel() {
+    hidePreview();
     panelBody.innerHTML = "";
     if (phase === "place") {
       panelTitle.textContent = "PLACE SHIPS";
@@ -2454,13 +2613,15 @@
     panelTitle.textContent = "YOUR CARDS" + (inv.length ? " (" + inv.length + ")" : "");
     const row = document.createElement("div"); row.className = "hand";
     if (!inv.length) {
-      row.innerHTML = '<div class="empty-hand">No cards yet — fill your CHARGES to draw one</div>';
+      row.innerHTML = '<div class="empty-hand">No cards yet — buy some in the 🛒 SHOP</div>';
     }
     inv.forEach((key, k) => {
       const ok = mine && canUse(sides.me, key);
       const slot = document.createElement("div");
       slot.className = "slot" + (k === active ? " sel" : "") + (!ok ? " off" : "") + (newCard && k === inv.length - 1 ? " new" : "");
       slot.innerHTML = cardHTML(key);
+      slot.onmouseenter = () => showPreview(key);
+      slot.onmouseleave = hidePreview;
       slot.title = CARDS[key].name + " — " + cardDesc(sides.me, key);
       if (ok) slot.onclick = () => {
         if (CARDS[key].target === "none") { Sound.play("select"); myCard(k, {}); return; }
@@ -2548,7 +2709,7 @@
         const ship = shipAt(me, i);
         if (ship && !ship.sunk) { picked = ship; ship.model.classList.add("pick"); }
       }
-      if (key === "shield" || key === "mines") area(i, CARDS[key].area).forEach(j => mark(me, j, "aim-scan"));
+      if (key === "shield" || key === "mines") area(i, val(me, key)).forEach(j => mark(me, j, "aim-scan"));
       if (key === "armor") { const ship = shipAt(me, i); if (ship && !ship.sunk && !ship.decoy) { picked = ship; ship.model.classList.add("pick"); } }
       if (key === "decoy") { const list = footprint(3, horizontal, i); const ok = !!list && fits(me, list); (list || [i]).forEach(j => mark(me, j, ok ? "ok" : "bad")); if (list) showGhost(3, horizontal, i, ok); }
     }
@@ -3044,12 +3205,13 @@
     const B = sides.bot;
     // no rounding to 0 here: the draw can arrive just before this screen adds their turn's charge, and the order must not matter
     if (m.a === "draw") { B.charge -= MAX_CHARGE; setLog("Enemy drew a card"); return; }
+    if (m.a === "upg") { B.up[m.key] = level(B, m.key) + 1; B.charge -= MAX_CHARGE; setLog(`Opponent upgraded ${UPGRADES[m.key].name}`); return; }
     if (m.a === "shop") { B.gold -= m.cost; setLog("Opponent bought a card from the shop"); return; }
     if (m.a === "card") {
       await showEnemyCard(m.key);
       setLog(await playSeeded(B, m.key, deserOpts(m.opts || {}, B), m.seed));
       if (checkOver()) return;
-      if (m.key !== "double") { await wait(700); nextTurn("me"); }
+      if (m.key !== "double") { await wait(700); nextTurn(m.key === "timewarp" ? "bot" : "me"); }
       return;
     }
     if (m.a === "shot") {
