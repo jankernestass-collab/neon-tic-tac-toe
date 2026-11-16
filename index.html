@@ -1000,6 +1000,57 @@
     background: radial-gradient(circle at 50% 50%, #fff6d0 0%, #ffc93ccc 30%, #ff8a0066 60%, transparent 85%); animation: legFlash 1.4s ease-out forwards; }
   @keyframes legFlash { 0% { opacity: 1; } 100% { opacity: 0; } }
   body.low-gfx .rburst i { display: none; }
+
+  /* =====================================================================
+     v24 — boards: deep water, steel rim with range ticks, light sweep, labels
+     ===================================================================== */
+  .zone {
+    --deep1: #34c4dc; --deep2: #1590bd; --deep3: #0b5f97; --deep4: #063f6c;
+    border: 2px solid #d4f1ff !important; border-radius: 14px !important;
+    background:
+      linear-gradient(90deg, #ffffff3a 3px, transparent 3px) 8px 0 / 195px 195px,
+      linear-gradient(0deg,  #ffffff3a 3px, transparent 3px) 0 8px / 195px 195px,
+      linear-gradient(90deg, #ffffff26 2px, transparent 2px) 8.5px 0 / 39px 39px,
+      linear-gradient(0deg,  #ffffff26 2px, transparent 2px) 0 8.5px / 39px 39px,
+      radial-gradient(ellipse 70% 60% at 50% 42%, var(--deep1) 0%, var(--deep2) 42%, var(--deep3) 78%, var(--deep4) 100%) !important;
+    box-shadow:
+      0 0 0 7px #17324b, 0 0 0 9px #8cc8e4, 0 0 0 11px #0a1d2e,
+      0 26px 0 11px #0b2338, 0 28px 0 11px #050f1a,
+      0 70px 110px #000000b0, 0 0 90px #58d0ff38 !important;
+  }
+  #zone2 { --deep1: #2aa5d2; --deep2: #126fa6; --deep3: #0a4b80; --deep4: #05305a; }
+  .zone.domed { box-shadow: 0 0 0 7px #17324b, 0 0 0 9px #7fe7ff, 0 0 0 11px #0a1d2e, 0 26px 0 11px #0b2338, 0 0 70px 14px #7fe7ffaa, 0 70px 110px #000000b0 !important; }
+  /* range ticks every 5 squares on the rim + corner rivets */
+  .zone::before {
+    content: ""; position: absolute; inset: -11px; border-radius: 22px; pointer-events: none; z-index: 0;
+    background:
+      radial-gradient(circle, #cfeaff 0 3px, #5d8fb0 4px, transparent 5px) 0 0 / 22px 22px no-repeat,
+      radial-gradient(circle, #cfeaff 0 3px, #5d8fb0 4px, transparent 5px) 100% 0 / 22px 22px no-repeat,
+      radial-gradient(circle, #cfeaff 0 3px, #5d8fb0 4px, transparent 5px) 0 100% / 22px 22px no-repeat,
+      radial-gradient(circle, #cfeaff 0 3px, #5d8fb0 4px, transparent 5px) 100% 100% / 22px 22px no-repeat,
+      repeating-linear-gradient(90deg, #9fd8f0 0 2px, transparent 2px 195px) 20px 2px / calc(100% - 40px) 5px no-repeat,
+      repeating-linear-gradient(90deg, #9fd8f0 0 2px, transparent 2px 195px) 20px calc(100% - 2px) / calc(100% - 40px) 5px no-repeat,
+      repeating-linear-gradient(0deg,  #9fd8f0 0 2px, transparent 2px 195px) 2px 20px / 5px calc(100% - 40px) no-repeat,
+      repeating-linear-gradient(0deg,  #9fd8f0 0 2px, transparent 2px 195px) calc(100% - 2px) 20px / 5px calc(100% - 40px) no-repeat;
+  }
+  /* name plate lying on the sea above each board */
+  .zone::after {
+    content: attr(data-label); position: absolute; left: 50%; bottom: 100%; margin-bottom: 46px; transform: translateX(-50%);
+    white-space: nowrap; pointer-events: none;
+    font-family: "Black Ops One", "Segoe UI", sans-serif; font-size: 78px; letter-spacing: 26px; color: #d8f4ff;
+    opacity: .55; text-shadow: 0 0 30px #5ad0e8, 0 6px 0 #00000055;
+  }
+  #zone2::after { color: #ffd2c8; text-shadow: 0 0 30px #ff6a4a, 0 6px 0 #00000055; }
+  /* water surface: soft edge shading + a slow sweep of sunlight */
+  .ripples { border-radius: 12px !important; box-shadow: inset 0 0 140px #021d3866, inset 0 0 22px #00000040; }
+  .ripples::before {
+    content: ""; position: absolute; inset: -30%; pointer-events: none;
+    background: linear-gradient(112deg, transparent 38%, #ffffff10 46%, #ffffff24 50%, #ffffff10 54%, transparent 62%);
+    animation: sunSweep 11s ease-in-out infinite alternate; will-change: transform;
+  }
+  @keyframes sunSweep { from { transform: translateX(-45%); } to { transform: translateX(45%); } }
+  .ripples::after { opacity: .55 !important; mix-blend-mode: screen; }
+  body.low-gfx .zone::before { display: none; }
 </style>
 </head>
 <body>
@@ -1013,8 +1064,8 @@
     <div id="world">
       <div class="sea"></div>
       <div class="life" id="life"></div>
-      <div class="zone" id="zone1"><div class="ripples"></div></div>
-      <div class="zone" id="zone2"><div class="ripples"></div></div>
+      <div class="zone" id="zone1" data-label="YOUR FLEET"><div class="ripples"></div></div>
+      <div class="zone" id="zone2" data-label="ENEMY WATERS"><div class="ripples"></div></div>
     </div>
   </div>
 
