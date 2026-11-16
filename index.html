@@ -1051,6 +1051,74 @@
   @keyframes sunSweep { from { transform: translateX(-45%); } to { transform: translateX(45%); } }
   .ripples::after { opacity: .55 !important; mix-blend-mode: screen; }
   body.low-gfx .zone::before { display: none; }
+
+  /* =====================================================================
+     v25 — main menu polish
+     ===================================================================== */
+  .home-bg { background: radial-gradient(ellipse 60% 55% at 50% 45%, #03294d88 0%, #021a33d9 55%, #000a14fa 100%),
+                         linear-gradient(180deg, #000d1acc, transparent 28%, transparent 70%, #000d1aee) !important; }
+  .home-fog { position: absolute; left: -10%; right: -10%; bottom: -5%; height: 40%; pointer-events: none;
+    background: radial-gradient(ellipse 50% 60% at 30% 100%, #5ad0e81c, transparent 70%), radial-gradient(ellipse 50% 60% at 75% 100%, #5ad0e814, transparent 70%);
+    animation: fogDrift 18s ease-in-out infinite alternate; }
+  @keyframes fogDrift { from { transform: translateX(-4%); } to { transform: translateX(4%); } }
+  /* radar sweep behind the menu */
+  .radar { position: absolute; left: 50%; top: 50%; width: min(92vh, 900px); aspect-ratio: 1; transform: translate(-50%, -50%); pointer-events: none; border-radius: 50%;
+    background: repeating-radial-gradient(circle, transparent 0 calc(12.5% - 1px), #5ad0e822 calc(12.5% - 1px) 12.5%),
+                linear-gradient(90deg, transparent calc(50% - .5px), #5ad0e81c 0 calc(50% + .5px), transparent 0),
+                linear-gradient(0deg, transparent calc(50% - .5px), #5ad0e81c 0 calc(50% + .5px), transparent 0);
+    -webkit-mask: radial-gradient(circle, #000 55%, transparent 71%); mask: radial-gradient(circle, #000 55%, transparent 71%); opacity: .9; }
+  .radar i { position: absolute; inset: 0; border-radius: 50%;
+    background: conic-gradient(from 0deg, #5ad0e855 0deg, #5ad0e81a 24deg, transparent 70deg, transparent 360deg); animation: radarSpin 6s linear infinite; }
+  @keyframes radarSpin { to { transform: rotate(360deg); } }
+  body.low-gfx .radar i, body.low-gfx .home-fog { display: none; }
+  /* title block */
+  .home-inner { gap: 4px !important; }
+  .home-badge { width: 54px; height: 54px; border-radius: 50%; display: grid; place-items: center; font-size: 1.6rem; margin-bottom: 8px;
+    background: radial-gradient(circle, #0d4378, #021a33); border: 2px solid #ffc93c; box-shadow: 0 0 0 4px #021a33, 0 0 0 5px #ffc93c55, 0 0 30px #ffc93c55;
+    animation: titleDrop 1s cubic-bezier(.2, 1.4, .4, 1) both; }
+  .home-title { position: relative; }
+  .home-title .t1, .home-title .t2 { background-size: 100% 100%; }
+  .home-sub { display: flex; align-items: center; gap: 14px; letter-spacing: 6px !important; font-size: .78rem !important; opacity: .75 !important; margin: 10px 0 24px !important; }
+  .home-sub i { width: 60px; height: 1px; background: linear-gradient(90deg, transparent, #bff3ff); }
+  .home-sub i:last-child { transform: scaleX(-1); }
+  /* menu card */
+  .menu { width: 380px !important; gap: 10px !important; padding: 22px; border-radius: 20px; position: relative;
+    background: linear-gradient(180deg, #0c3a66d9, #031b33ee); border: 1px solid #9fe6ff40;
+    box-shadow: 0 30px 60px #000c, inset 0 1px 0 #ffffff26; }
+  .menu::before { content: ""; position: absolute; left: 22px; right: 22px; top: -1px; height: 2px; border-radius: 2px;
+    background: linear-gradient(90deg, transparent, #5ad0e8, #ffc93c, #5ad0e8, transparent); }
+  /* buttons */
+  .mbtn { padding: 12px 18px !important; border-radius: 12px !important; font-size: 1.08rem !important; letter-spacing: 4px !important;
+    background: linear-gradient(90deg, #0f4a80, #06264a) !important; border: 1px solid #9fe6ff33 !important; box-shadow: 0 4px 14px #0008, inset 0 1px 0 #ffffff1f !important; }
+  .mbtn span { width: 36px !important; height: 36px; display: grid; place-items: center; font-size: 1.15rem !important; border-radius: 10px;
+    background: #ffffff10; border: 1px solid #ffffff1c; flex: none; transition: transform .2s; }
+  .mbtn:not(.small)::before { content: "›"; position: absolute; right: 18px; top: 50%; transform: translate(-6px, -50%); font-size: 1.6rem; opacity: 0; transition: .2s; color: #ffe45c; }
+  .mbtn:hover { transform: translateX(4px) !important; border-color: #5ad0e8aa !important; box-shadow: 0 6px 24px #000a, 0 0 24px #5ad0e844, inset 0 1px 0 #ffffff30 !important; }
+  .mbtn:hover::before { opacity: 1; transform: translate(0, -50%); }
+  .mbtn:hover span { transform: scale(1.12) rotate(-6deg); }
+  .mbtn.primary { background: linear-gradient(90deg, #ff9a3c, #d9531f) !important; border-color: #ffd29a !important; color: #fff; text-shadow: 0 2px 0 #7a2a0a;
+    box-shadow: 0 6px 20px #ff7a3c55, inset 0 1px 0 #ffffff66 !important; margin-bottom: 4px; }
+  .mbtn.primary span { background: #ffffff2a; border-color: #ffffff55; }
+  .mbtn.primary:hover { border-color: #fff !important; box-shadow: 0 8px 30px #ff7a3c88, 0 0 30px #ffb34766, inset 0 1px 0 #ffffff66 !important; }
+  .mbtn.primary::before { color: #fff; }
+  .mbtn.small { background: transparent !important; border-color: #9fe6ff33 !important; box-shadow: none !important; font-size: .85rem !important; opacity: .8; }
+  .mbtn.small:hover { opacity: 1; transform: none !important; background: #ffffff0d !important; }
+  /* difficulty */
+  .diff { gap: 8px !important; }
+  .diff.open { margin: 0 0 6px !important; }
+  .diff button { padding: 9px 0 !important; border-radius: 10px !important; font-size: .78rem; letter-spacing: 3px !important; background: #021a33cc !important; border-width: 1px; }
+  .d-easy { color: #8dffb0 !important; } .d-med { color: #ffe45c !important; } .d-hard { color: #ff7a5c !important; }
+  .d-easy:hover { background: #8dffb022 !important; box-shadow: 0 0 16px #8dffb055; }
+  .d-med:hover  { background: #ffe45c22 !important; box-shadow: 0 0 16px #ffe45c55; }
+  .d-hard:hover { background: #ff5a3c2a !important; box-shadow: 0 0 16px #ff5a3c66; }
+  /* sub screens */
+  .m-title { font-size: 1.3rem !important; letter-spacing: 6px !important; padding-bottom: 10px; margin-bottom: 4px !important; border-bottom: 1px solid #9fe6ff26; }
+  .set { background: #ffffff08 !important; border-color: #9fe6ff26 !important; transition: background .15s; }
+  .set:hover { background: #ffffff12 !important; }
+  .code { border-style: solid !important; border-color: #ffe45c44 !important; background: #021a33aa; }
+  .codein { background: #021a33cc !important; }
+  @media (max-height: 820px) { .home-inner { zoom: .82; } }
+  @media (max-height: 680px) { .home-inner { zoom: .68; } }
 </style>
 </head>
 <body>
@@ -1124,12 +1192,15 @@
     <div class="beam b1"></div><div class="beam b2"></div>
     <div class="horizon-flash"></div>
     <div class="embers"></div>
+    <div class="radar"><i></i></div>
+    <div class="home-fog"></div>
     <div class="home-inner">
+      <div class="home-badge">⚓</div>
       <div class="home-title"><span class="t1">BATTLE</span><span class="t2">SHIPS</span></div>
-      <div class="home-sub">NAVAL WARFARE · CARDS · UPGRADES</div>
+      <div class="home-sub"><i></i>NAVAL WARFARE · CARDS · UPGRADES<i></i></div>
 
       <div class="menu show" id="menuMain">
-        <button class="mbtn" data-go="bots"><span>⚔️</span>PLAY VS BOTS</button>
+        <button class="mbtn primary" data-go="bots"><span>⚔️</span>PLAY VS BOTS</button>
         <div class="diff" id="diff">
           <button class="d-easy" data-lvl="easy">EASY</button>
           <button class="d-med" data-lvl="medium">MEDIUM</button>
