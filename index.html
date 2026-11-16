@@ -1124,6 +1124,7 @@
   .demo { position: absolute; inset: 0; pointer-events: none; z-index: 3; }
   .home-bg { background: radial-gradient(ellipse 55% 50% at 50% 48%, #021a3355 0%, #021a3388 45%, #000a14e6 100%),
                          linear-gradient(180deg, #000d1acc, transparent 25%, transparent 75%, #000d1add) !important; }
+  body.banner-lock #zone2 .cell { cursor: wait; }
 </style>
 </head>
 <body>
@@ -2605,8 +2606,15 @@
     const tb = document.getElementById("turnbar");
     tb.classList.remove("pulse"); void tb.offsetWidth; tb.classList.add("pulse");
     turnBanner(who);
+    if (who === "me") {                       // wait for the YOUR TURN banner before you can act
+      busy = true; document.body.classList.add("banner-lock");
+      setTimeout(() => {
+        document.body.classList.remove("banner-lock");
+        if (whose === "me" && phase === "battle") { busy = false; renderPanel(); renderUpgrades(); refreshHover(); }
+      }, 1200);
+    }
     document.body.classList.toggle("my-turn", who === "me");
-    if (who === "me" && sd.charge >= MAX_CHARGE) setTimeout(() => { if (phase === "battle") openDraw(); }, 800);
+    if (who === "me" && sd.charge >= MAX_CHARGE) setTimeout(() => { if (phase === "battle") openDraw(); }, 1300);
     if (who === "bot") { busy = true; if (mode === "bot") setTimeout(botTurn, 900); }   // in multiplayer we wait for the opponent's moves
   }
 
