@@ -1189,6 +1189,11 @@
   .rb-drop { width: 14px; height: 14px; background: #e8fbff; box-shadow: 0 0 6px #ffffffaa; opacity: 0; animation: rbDrop 1.2s cubic-bezier(.2, .6, .4, 1) forwards; }
   @keyframes rbDrop { 0% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
                       100% { opacity: 0; transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(.4); } }
+
+  /* ---- v31: Rocket Strike card ---- */
+  .turnbanner.misfire { color: #ff4a3a !important; font-size: 4.2rem; text-shadow: 0 0 30px #ff2a1a, 0 4px 0 #000 !important; }
+  .warplane.rocket.wobble svg { animation: rkWobble .18s ease-in-out infinite alternate; }
+  @keyframes rkWobble { from { transform: translate(-50%, -50%) scale(3.2) rotate(-8deg); } to { transform: translate(-50%, -50%) scale(3.2) rotate(8deg); } }
 </style>
 </head>
 <body>
@@ -1490,6 +1495,7 @@
     cardthief: { name: "Card Thief",    icon: "🦹", type: "tactic", desc: "Steal a random card from the enemy's hand", target: "none" },
     jammer:    { name: "Jammer",        icon: "📡", type: "tactic", desc: "Destroy a random card in the enemy's hand", target: "none" },
     timewarp:  { name: "Time Warp",     icon: "⏳", type: "tactic", desc: "Take another turn right after this one", target: "none" },
+    rocket:    { name: "Rocket Strike", icon: "🚀", type: "attack", desc: "Blast a 7×7 area — but 30% chance it misfires onto your own fleet", target: "enemy" },
     kraken:    { name: "KRAKEN",        icon: "🐙", type: "attack", desc: "A sea monster hits 2 random enemy ships", target: "none" },
     flare:   { name: "Flare",        icon: "🔦", type: "intel",  desc: "Reveal one whole hidden enemy ship",       target: "none" },
     double:  { name: "Double Shot",  icon: "⚡", type: "tactic", desc: "Fire 2 shots this turn",                   target: "none" },
@@ -1507,7 +1513,7 @@
     common:    { label: "COMMON",    weight: 50, cards: ["satellite", "plunder", "move", "depth", "broadside", "supply", "smoke", "gamble", "pickpocket"] },
     rare:      { label: "RARE",      weight: 30, cards: ["scan", "torpedo", "recon", "aoe", "cluster", "repair", "shield", "airstrike", "sabotage", "decoy", "armor", "cross", "chain", "evade", "jammer"] },
     epic:      { label: "EPIC",      weight: 15, cards: ["flare", "homing", "double", "barrage", "carpet", "irondome", "mines", "timewarp", "cardthief"] },
-    legendary: { label: "LEGENDARY", weight: 5,  cards: ["nuke", "kraken"] },
+    legendary: { label: "LEGENDARY", weight: 5,  cards: ["nuke", "kraken", "rocket"] },
   };
   const rarityOf = key => Object.keys(RARITY).find(r => RARITY[r].cards.includes(key));
 
@@ -1564,6 +1570,7 @@
     pickpocket:{ name: "Pickpocket",     base: 30, levels: [{ v: 45 }, { v: 60 }] },
     cardthief: { name: "Card Thief",     base: 1,  levels: [{ v: 2 }] },
     jammer:    { name: "Jammer",         base: 1,  levels: [{ v: 2 }] },
+    rocket:    { name: "Rocket Strike",  base: 7,  levels: [{ v: 9 }] },
     cross:     { name: "Cross Strike",   base: 4,  levels: [{ v: 6 }, { v: 8 }] },
     chain:     { name: "Chain Reaction", base: 3,  levels: [{ v: 4 }, { v: 5 }] },
   };
@@ -1606,6 +1613,7 @@
       case "pickpocket": return `Steal ${v} gold from the enemy`;
       case "cardthief": return v === 1 ? "Steal a random card from the enemy's hand" : `Steal ${v} random cards from the enemy's hand`;
       case "jammer": return v === 1 ? "Destroy a random card in the enemy's hand" : `Destroy ${v} random cards in the enemy's hand`;
+      case "rocket": return `Blast a ${sq(v)} area — but 30% chance it misfires onto your own fleet`;
       case "cross": return `Hits a + shape, ${v} squares in every direction`;
       case "chain": return `Fire at a square — if it hits a ship, up to ${v} squares of that ship blow up`;
     }
@@ -1988,6 +1996,7 @@
   }
 
   const shielded = (sd, j) => sd.shields.some(sh => sh.cells.has(j));
+  let friendlyFire = false;                 // a misfired rocket hitting its own fleet gives nobody gold or charges
   function strike(T, j) {
     const st = stats[other(T).name];
     st.fired++;
@@ -2022,15 +2031,13 @@
       if (ship.hits.size === ship.size) { ship.sunk = true; if (ship.model) ship.model.remove(); ship.cells.forEach(k => T.grid[k] = -1); }
       return "hit";
     }
-    earnGold(other(T), j);
-    st.hits++;
-    gainCharge(other(T));
+    if (!friendlyFire) { earnGold(other(T), j); st.hits++; gainCharge(other(T)); }
     if (ship.hits.size === ship.size) {
       ship.sunk = true;
       drawModel(T, ship);
       st.sunk++;
       sunkMarker(T, ship);
-      sinkBonus(other(T), j);
+      if (!friendlyFire) sinkBonus(other(T), j);
       sunkToast(T === sides.bot, ship.size);
       ship.cells.forEach(k => { const m = T.marks[k]; if (m && m.el) m.el.classList.add("dead"); });   // stop fire animation on wrecks
       if (T === sides.bot) renderFleet(ship);
@@ -2089,6 +2096,7 @@
       case "nuke": return area(i, val(sd, "nuke"));
       case "depth": return area(i, val(sd, "depth"));
       case "gamble": return area(i, val(sd, "gamble"));
+      case "rocket": return area(i, val(sd, "rocket"));
       case "broadside": { const h = val(sd, "broadside") >> 1; return rect(r, r, c - h, c + h); }
       case "recon": { const h = val(sd, "recon") >> 1; return rect(0, N - 1, c - h, c + h); }
       case "airstrike": { const h = val(sd, "airstrike") >> 1; return rect(r - h, r + h, c, c); }
@@ -2248,6 +2256,29 @@
       return `${who}: ${name} — a ship slipped away`;
     }
     if (key === "nuke") return nuke(A, T, opts.at, who);
+    if (key === "rocket") {
+      const size = val(A, "rocket");
+      const misfire = LR() < 0.3;
+      let side = T, at = opts.at;
+      if (misfire) {                                          // it turns around and comes down on your own fleet
+        side = A;
+        const spots = [];
+        alive(A).forEach(sh => sh.cells.forEach((j, seg) => { if (!sh.hits.has(seg)) spots.push(j); }));
+        at = spots.length ? spots[lrand(spots.length)] : lrand(N * N);
+      }
+      await War.rocketTo(side.zone, at, misfire);
+      if (misfire) {
+        const b = document.createElement("div"); b.className = "turnbanner bot misfire"; b.textContent = "⚠ MISFIRE!";
+        document.body.appendChild(b); setTimeout(() => b.remove(), 1500);
+      }
+      friendlyFire = misfire;
+      const res = await blast(side, area(at, size), at, size);
+      friendlyFire = false;
+      War.rocketImpact(side.zone, at);
+      await wait(900);
+      if (misfire) return `${who}: ${name} — MISFIRE! it hit ${A === sides.me ? "your own" : "their own"} fleet: ` + summary(res);
+      return `${who}: ${name} — ` + summary(res);
+    }
 
     if (key === "gamble") {
       Sound.play("flip");
@@ -3041,7 +3072,7 @@
     // shop: buy the best card it can afford (easy bots never shop)
     if (botLevel === "easy" && A.gold >= 30 && Math.random() < 0.5) { const cheap = SHOP_ORDER.filter(k => priceOf(k) === 30 && A.unl.has(k)); if (cheap.length) { A.inv.push(cheap[rand(cheap.length)]); A.gold -= 30; } }
     if (botLevel !== "easy") {
-      const wish = ["nuke", "kraken", "timewarp", "homing", "barrage", "carpet", "irondome", "chain", "cardthief", "aoe", "cross", "evade", "jammer", "airstrike", "flare", "cluster", "armor", "depth", "gamble", "scan", "torpedo"];
+      const wish = ["nuke", "kraken", "rocket", "timewarp", "homing", "barrage", "carpet", "irondome", "chain", "cardthief", "aoe", "cross", "evade", "jammer", "airstrike", "flare", "cluster", "armor", "depth", "gamble", "scan", "torpedo"];
       const k = wish.concat(SHOP_ORDER).find(c => A.unl.has(c) && A.gold >= priceOf(c) && (A.gold - priceOf(c) >= 30 || priceOf(c) >= 120) && (wish.includes(c) || Math.random() < 0.3));
       if (k) { A.gold -= priceOf(k); A.inv.push(k); renderFleet(); setLog("Enemy bought a card from the shop"); await wait(600); }
     }
@@ -3058,6 +3089,7 @@
     else if (pick("jammer") >= 0 && sides.me.inv.length) { idx = pick("jammer"); opts = {}; }
     else if (pick("pickpocket") >= 0 && sides.me.gold >= 20) { idx = pick("pickpocket"); opts = {}; }
     else if (pick("double") >= 0) { idx = pick("double"); opts = {}; }
+    else if (pick("rocket") >= 0 && (hot >= 0 || Math.random() < 0.5)) { idx = pick("rocket"); opts = { at: clampCenter(hot >= 0 ? hot : randomUnshot(), val(A, "rocket")) }; }
     else if (pick("nuke") >= 0) { idx = pick("nuke"); opts = { at: clampCenter(hot >= 0 ? hot : randomUnshot(), CARDS.nuke.area) }; }
     else if (pick("homing") >= 0) { idx = pick("homing"); opts = {}; }
     else if (hot < 0 && pick("flare") >= 0) { idx = pick("flare"); opts = {}; }
@@ -3592,31 +3624,55 @@
         ], { duration: dur, easing: "cubic-bezier(.35, 0, .85, .9)" }).onfinish = () => el.remove();
       });
       Sound.play("rocket", dur / 1000);
-      setTimeout(() => {                                  // BOOM
-        if (document.hidden) return;
-        const el = document.createElement("div");
-        el.className = "farboom rocketboom"; el.style.left = ex + "px"; el.style.top = ey + "px";
-        let html = '<i class="rb-foam"></i><i class="rb-foam f2"></i><i class="rb-column"></i><i class="rb-column c2"></i><i class="rb-column c3"></i>' +
-                   '<i class="fb-flash"></i><i class="fb-flash f2"></i><i class="rb-ring"></i><i class="rb-ring r2"></i><i class="rb-fire"></i>' +
-                   '<i class="fb-smoke"></i><i class="fb-smoke s2"></i><i class="fb-smoke s3"></i>';
-        for (let k = 0; k < 16; k++) {
-          const a = Math.random() * Math.PI * 2, d = 250 + Math.random() * 450;
-          html += `<i class="rb-spark" style="--dx:${Math.cos(a) * d}px;--dy:${Math.sin(a) * d}px;animation-delay:${rand(120)}ms"></i>`;
-        }
-        for (let k = 0; k < 22; k++) {                   // water spray
-          const a = Math.random() * Math.PI * 2, d = 120 + Math.random() * 380;
-          html += `<i class="rb-drop" style="--dx:${Math.cos(a) * d}px;--dy:${Math.sin(a) * d * .7}px;animation-delay:${80 + rand(200)}ms"></i>`;
-        }
-        el.innerHTML = html;
-        world.appendChild(el);
-        setTimeout(() => el.remove(), 5000);
-        const fl = document.createElement("div"); fl.className = "rbflash " + (ltr ? "right" : "left");
-        document.body.appendChild(fl); setTimeout(() => fl.remove(), 900);
-        shake();
-        Sound.play("rocketboom");
-        setTimeout(() => Sound.play("splash"), 180);
-      }, dur - 40);
+      setTimeout(() => { if (!document.hidden) boomAt(ex, ey, ltr ? "right" : "left"); }, dur - 40);
     }
+
+    // the big rocket explosion (used by ambient rockets and the Rocket Strike card)
+    function boomAt(x, y, flashSide) {
+      const el = document.createElement("div");
+      el.className = "farboom rocketboom"; el.style.left = x + "px"; el.style.top = y + "px";
+      let html = '<i class="rb-foam"></i><i class="rb-foam f2"></i><i class="rb-column"></i><i class="rb-column c2"></i><i class="rb-column c3"></i>' +
+                 '<i class="fb-flash"></i><i class="fb-flash f2"></i><i class="rb-ring"></i><i class="rb-ring r2"></i><i class="rb-fire"></i>' +
+                 '<i class="fb-smoke"></i><i class="fb-smoke s2"></i><i class="fb-smoke s3"></i>';
+      for (let k = 0; k < 16; k++) {
+        const a = Math.random() * Math.PI * 2, d = 250 + Math.random() * 450;
+        html += `<i class="rb-spark" style="--dx:${Math.cos(a) * d}px;--dy:${Math.sin(a) * d}px;animation-delay:${rand(120)}ms"></i>`;
+      }
+      for (let k = 0; k < 22; k++) {
+        const a = Math.random() * Math.PI * 2, d = 120 + Math.random() * 380;
+        html += `<i class="rb-drop" style="--dx:${Math.cos(a) * d}px;--dy:${Math.sin(a) * d * .7}px;animation-delay:${80 + rand(200)}ms"></i>`;
+      }
+      el.innerHTML = html;
+      world.appendChild(el);
+      setTimeout(() => el.remove(), 5000);
+      const fl = document.createElement("div"); fl.className = "rbflash " + flashSide;
+      document.body.appendChild(fl); setTimeout(() => fl.remove(), 900);
+      shake();
+      Sound.play("rocketboom");
+      setTimeout(() => Sound.play("splash"), 180);
+    }
+    const cellWorld = (zoneId, j) => { const z = document.getElementById(zoneId), [x, y] = center(j); return [z.offsetLeft + x, z.offsetTop + y]; };
+    // fly a rocket onto a square of a board; resolves when it lands
+    function rocketTo(zoneId, j, wobble) {
+      const [ex, ey] = cellWorld(zoneId, j), w = W(), dur = 2300;
+      const fromLeft = ex > w / 2;
+      const sx = fromLeft ? -1600 : w + 1600, sy = ey - 500 - rand(400);
+      const deg = Math.atan2(ey - sy, ex - sx) * 180 / Math.PI;
+      if (!lowGfx()) ["rocket-shadow", "rocket"].forEach(cls => {
+        const el = document.createElement("div");
+        el.className = "warplane " + cls + (wobble ? " wobble" : "");
+        el.innerHTML = `<i class="rk-trail"></i>` + ROCKET;
+        world.appendChild(el);
+        const z = cls === "rocket" ? 520 : 1, sh = cls === "rocket" ? 0 : 90;
+        el.animate([
+          { transform: `translate3d(${sx + sh}px, ${sy + sh}px, ${z}px) rotate(${deg}deg)` },
+          { transform: `translate3d(${ex}px, ${ey}px, 2px) rotate(${deg}deg)` },
+        ], { duration: dur, easing: "cubic-bezier(.35, 0, .85, .9)" }).onfinish = () => el.remove();
+      });
+      Sound.play("rocket", dur / 1000);
+      return wait(lowGfx() ? 600 : dur - 300);
+    }
+    function rocketImpact(zoneId, j) { const [x, y] = cellWorld(zoneId, j); boomAt(x, y, x > W() / 2 ? "right" : "left"); }
 
     function farBoom() {
       if (document.hidden || !settings.ambient || lowGfx()) return;
@@ -3670,7 +3726,7 @@
         lastRocket = performance.now(); rocketPass();
       }, 30000);
     }
-    return { start, planePass, farBoom, rocketPass };
+    return { start, planePass, farBoom, rocketPass, rocketTo, rocketImpact };
   })();
   requestAnimationFrame(() => War.start());
 
