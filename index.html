@@ -1511,8 +1511,8 @@
   // rarity of each card + how often each rarity shows up in a draw
   const RARITY = {
     common:    { label: "COMMON",    weight: 50, cards: ["satellite", "plunder", "move", "depth", "broadside", "supply", "smoke", "gamble", "pickpocket"] },
-    rare:      { label: "RARE",      weight: 30, cards: ["scan", "torpedo", "recon", "aoe", "cluster", "repair", "shield", "airstrike", "sabotage", "decoy", "armor", "cross", "chain", "evade", "jammer"] },
-    epic:      { label: "EPIC",      weight: 15, cards: ["flare", "homing", "double", "barrage", "carpet", "irondome", "mines", "timewarp", "cardthief"] },
+    rare:      { label: "RARE",      weight: 30, cards: ["scan", "torpedo", "recon", "cluster", "repair", "shield", "airstrike", "sabotage", "decoy", "armor", "cross", "chain", "evade", "jammer"] },
+    epic:      { label: "EPIC",      weight: 15, cards: ["aoe", "flare", "homing", "double", "barrage", "carpet", "irondome", "mines", "timewarp", "cardthief"] },
     legendary: { label: "LEGENDARY", weight: 5,  cards: ["nuke", "kraken", "rocket"] },
   };
   const rarityOf = key => Object.keys(RARITY).find(r => RARITY[r].cards.includes(key));
@@ -1577,7 +1577,7 @@
   const level = (sd, key) => sd.up[key] || 0;
   const val = (sd, key) => level(sd, key) ? UPGRADES[key].levels[level(sd, key) - 1].v : UPGRADES[key].base;
   const valAt = (key, lv) => lv ? UPGRADES[key].levels[lv - 1].v : UPGRADES[key].base;
-  const clusterArea = sd => val(sd, "cluster") >= 20 ? 9 : 7;
+  const clusterArea = sd => val(sd, "cluster") >= 20 ? 7 : 5;
   // what each stat means, in words
   function statText(key, v) {
     const sq = n => `${n}×${n}`;
@@ -1588,10 +1588,10 @@
       case "overcharge": return `+1 extra charge every ${v} turns`;
       case "aoe": return `Blast a ${sq(v)} area`;
       case "scan": return `Reveal enemy ships in a ${sq(v)} area`;
-      case "cluster": return `${v} random hits in a ${v >= 20 ? "9×9" : "7×7"} area`;
+      case "cluster": return `${v} random hits in a ${v >= 20 ? "7×7" : "5×5"} area`;
       case "torpedo": return v === 1 ? "Runs along a row and hits the first ship" : `Runs along a row and hits the first ${v} ship squares`;
       case "repair": return v === 1 ? "Fix all damage on one of your ships" : `Fix all damage on ${v} of your ships`;
-      case "depth": return `Blast a ${sq(v)} area`;
+      case "depth": return `${v >= 5 ? 12 : 5} random hits inside a ${sq(v)} area`;
       case "broadside": return `${v} shells in a row, left to right`;
       case "airstrike": return `A bomber hits ${v} squares down a column`;
       case "carpet": return `Bombers flatten a 3×${v} strip`;
@@ -2324,7 +2324,8 @@
     }
 
     if (key === "depth") {
-      const res = await blast(T, cardCells(A, key, opts.at), opts.at, val(A, "depth"));
+      const n = val(A, "depth") >= 5 ? 12 : 5;              // 5 random squares of the 3×3 (12 of the 5×5 when upgraded)
+      const res = await blast(T, lshuffle(cardCells(A, key, opts.at)).slice(0, n), opts.at, val(A, "depth"));
       await wait(600);
       return `${who}: ${name} — ` + summary(res);
     }
@@ -2948,9 +2949,11 @@
   }
 
   // shop -----------------------------------------------------------------
-  const PRICE = { common: 30, rare: 60, epic: 120, legendary: 250 };
+  const PRICE = { common: 30, rare: 60, epic: 120, legendary: 220 };
   const TURN_INCOME = 5;                                    // a little gold every turn
-  const priceOf = key => PRICE[rarityOf(key)];
+  // legendaries get pricier every time that player buys one (+100% of the base price each time)
+  const priceOf = (key, sd) => { const r = rarityOf(key); return PRICE[r] + (r === "legendary" && sd ? PRICE[r] * ((sd.bought || {})[key] || 0) : 0); };
+  const noteBuy = (sd, key) => { if (rarityOf(key) === "legendary") { sd.bought = sd.bought || {}; sd.bought[key] = (sd.bought[key] || 0) + 1; } };
   const SHOP_ORDER = Object.keys(CARDS).sort((a, b) => priceOf(a) - priceOf(b) || CARDS[a].name.localeCompare(CARDS[b].name));
   function renderUpgrades(bump) {                          // the small SHOP panel (bottom left)
     const el = document.getElementById("upgrades"), me = sides.me;
@@ -2970,7 +2973,7 @@
     const grid = document.getElementById("shopGrid");
     grid.innerHTML = ""; hidePreview();
     SHOP_ORDER.forEach(key => {
-      const price = priceOf(key), open = me.unl.has(key), ok = open && canBuy && me.gold >= price;
+      const price = priceOf(key, me), open = me.unl.has(key), ok = open && canBuy && me.gold >= price;
       const item = document.createElement("div");
       if (!open) {
         item.className = "shopitem locked mystery-lock";
@@ -2986,9 +2989,9 @@
     });
   }
   function buyCard(key, item) {
-    const me = sides.me, price = priceOf(key);
+    const me = sides.me, price = priceOf(key, me);
     if (phase !== "battle" || whose !== "me" || busy || me.gold < price || !me.unl.has(key)) return;
-    me.gold -= price;
+    me.gold -= price; noteBuy(me, key);
     me.inv.push(key); newCard = true;
     if (mode === "mp") Net.send({ t: "act", a: "shop", cost: price, key });
     Sound.play("coin"); setTimeout(() => Sound.play("pick"), 80);
@@ -3073,8 +3076,12 @@
     if (botLevel === "easy" && A.gold >= 30 && Math.random() < 0.5) { const cheap = SHOP_ORDER.filter(k => priceOf(k) === 30 && A.unl.has(k)); if (cheap.length) { A.inv.push(cheap[rand(cheap.length)]); A.gold -= 30; } }
     if (botLevel !== "easy") {
       const wish = ["nuke", "kraken", "rocket", "timewarp", "homing", "barrage", "carpet", "irondome", "chain", "cardthief", "aoe", "cross", "evade", "jammer", "airstrike", "flare", "cluster", "armor", "depth", "gamble", "scan", "torpedo"];
-      const k = wish.concat(SHOP_ORDER).find(c => A.unl.has(c) && A.gold >= priceOf(c) && (A.gold - priceOf(c) >= 30 || priceOf(c) >= 120) && (wish.includes(c) || Math.random() < 0.3));
-      if (k) { A.gold -= priceOf(k); A.inv.push(k); renderFleet(); setLog("Enemy bought a card from the shop"); await wait(600); }
+      const dream = ["nuke", "kraken", "rocket"].find(c => A.unl.has(c));
+      if (A.saveFor === undefined || (A.saveFor && !A.unl.has(A.saveFor))) A.saveFor = null;
+      if (dream && !A.saveFor && Math.random() < 0.04) A.saveFor = dream;            // now and then it starts saving for a big one
+      const saving = A.saveFor && A.gold < priceOf(A.saveFor, A);
+      const k = saving ? null : wish.concat(SHOP_ORDER).find(c => A.unl.has(c) && A.gold >= priceOf(c, A) && (A.gold - priceOf(c, A) >= 30 || priceOf(c, A) >= 120) && (wish.includes(c) || Math.random() < 0.3));
+      if (k) { if (k === A.saveFor) A.saveFor = null; A.gold -= priceOf(k, A); noteBuy(A, k); A.inv.push(k); renderFleet(); setLog("Enemy bought a card from the shop"); await wait(600); }
     }
     // maybe play a card first
     const hot = Math.random() < smart ? botTarget() : -1;
@@ -3905,7 +3912,7 @@
     // no rounding to 0 here: the draw can arrive just before this screen adds their turn's charge, and the order must not matter
     if (m.a === "draw") { B.charge -= MAX_CHARGE; setLog("Enemy drew a card"); return; }
     if (m.a === "upg") { const what = applyPick(B, m.key); B.charge -= MAX_CHARGE; setLog(what === "unlock" ? "Opponent unlocked a new card" : `Opponent upgraded ${UPGRADES[m.key].name}`); return; }
-    if (m.a === "shop") { B.gold -= m.cost; if (m.key) B.inv.push(m.key); renderFleet(); setLog("Opponent bought a card from the shop"); return; }
+    if (m.a === "shop") { B.gold -= m.cost; if (m.key) { B.inv.push(m.key); noteBuy(B, m.key); } renderFleet(); setLog("Opponent bought a card from the shop"); return; }
     if (m.a === "card") {
       { const i = B.inv.indexOf(m.key); if (i >= 0) B.inv.splice(i, 1); }
       await showEnemyCard(m.key);
