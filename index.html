@@ -1257,6 +1257,14 @@
   .fstip.show { display: block; }
   body.touch .fstip { right: auto; left: 16px; }
   @media (max-height: 520px) { .fstip { zoom: .85; } }
+
+  /* ---- v35: drag cards on touch ---- */
+  .dragghost { position: fixed; z-index: 45; pointer-events: none; transform: translate(-50%, -20%) scale(.62) rotate(-4deg); opacity: .95;
+    filter: drop-shadow(0 12px 18px #000c); transition: opacity .15s, transform .15s; }
+  .dragghost.over { opacity: .55; transform: translate(-50%, -10%) scale(.45) rotate(0); }
+  .dragghost::before { content: ""; position: absolute; left: 50%; top: -60px; width: 2px; height: 50px; background: linear-gradient(#ffe45c, transparent); opacity: 0; transition: .15s; }
+  .dragghost.over::before { opacity: 1; }
+  .hand .slot.dragging { opacity: .35; }
 </style>
 </head>
 <body>
@@ -1322,7 +1330,7 @@
     <button id="tbCancel" class="tb small">✕</button>
     <button id="tbRotate" class="tb">⟳ ROTATE</button>
     <button id="tbAct" class="tb main">🔥 FIRE</button>
-    <div class="tb-hint">tap to aim · tap again to fire<br>pinch to zoom</div>
+    <div class="tb-hint">tap to aim · tap again to fire<br>drag a card onto the board<br>pinch to zoom</div>
   </div>
   <button class="tb viewreset" id="tbView" title="Reset view">⤢</button>
   <div class="turnphone" id="turnphone"><div class="tp-ic">📱</div><div class="tp-t">TURN YOUR PHONE SIDEWAYS</div><div class="tp-s">Battleships plays in landscape</div></div>
@@ -3300,6 +3308,7 @@
       const slot = document.createElement("div");
       slot.className = "slot" + (k === active ? " sel" : "") + (!ok ? " off" : "") + (newCard && k === inv.length - 1 ? " new" : "");
       slot.innerHTML = cardHTML(key);
+      slot.dataset.k = k; slot.dataset.ok = ok ? 1 : 0;
       slot.onmouseenter = () => showPreview(key);
       slot.onmouseleave = hidePreview;
       slot.title = CARDS[key].name + " — " + cardDesc(sides.me, key);
@@ -4371,6 +4380,57 @@
     bAct.disabled = hover.i < 0;
     bView.classList.toggle("show", game && zoom > baseZoom * 1.05);
   }, 150);
+
+
+  // ---- drag a card from your hand onto a board: shows its range while you drag, drop to use it ----
+  let cd = null;                                    // { k, x, y, slot, ghost, on }
+  const AIM_UP = 38;                                // aim a little above the finger so you can see the range
+  document.addEventListener("touchstart", e => {
+    const slot = e.target.closest(".hand .slot");
+    if (!slot || e.touches.length !== 1) return;
+    const t = e.touches[0];
+    cd = { k: +slot.dataset.k, ok: slot.dataset.ok === "1", x: t.clientX, y: t.clientY, slot, ghost: null, on: false };
+  }, { passive: true });
+  document.addEventListener("touchmove", e => {
+    if (!cd || e.touches.length !== 1) return;
+    const t = e.touches[0];
+    if (!cd.on) {
+      if (Math.hypot(t.clientX - cd.x, t.clientY - cd.y) < 12) return;
+      if (!cd.ok || phase !== "battle" || whose !== "me" || busy) { cd = null; return; }
+      cd.on = true;                                 // start dragging this card
+      hidePreview();
+      active = cd.k; moving = null; clearPick();
+      cd.slot.classList.add("dragging");
+      const key = sides.me.inv[cd.k];
+      cd.ghost = document.createElement("div"); cd.ghost.className = "dragghost"; cd.ghost.innerHTML = cardHTML(key);
+      document.body.appendChild(cd.ghost);
+      Sound.play("select");
+    }
+    cd.ghost.style.left = t.clientX + "px"; cd.ghost.style.top = t.clientY + "px";
+    const el = document.elementFromPoint(t.clientX, t.clientY - AIM_UP), c = el && el.closest(".cell");
+    if (c) {
+      const z = c.closest(".zone").id, i = +c.dataset.i;
+      if (hover.zone !== z || hover.i !== i) { hover = { zone: z, i }; refreshHover(); }
+      cd.ghost.classList.add("over");
+    } else if (hover.i >= 0) { hover = { zone: null, i: -1 }; clearAim(); clearPick(); cd.ghost.classList.remove("over"); }
+    e.preventDefault();
+  }, { passive: false });
+  const dropCard = e => {
+    if (!cd) return;
+    const d = cd; cd = null;
+    if (!d.on) return;
+    if (e.cancelable) e.preventDefault();          // no tap-click on the card after a drag
+    d.ghost.remove(); d.slot.classList.remove("dragging");
+    const key = sides.me.inv[d.k];
+    if (hover.i < 0) { active = -1; moving = null; renderPanel(); refreshHover(); return; }   // dropped off the boards: cancel
+    if (CARDS[key].target === "none") { myCard(d.k, {}); return; }
+    const before = sides.me.inv.length;
+    act(hover.zone, hover.i);
+    // not used (wrong board / needs a second tap like Move)? keep it selected so you can finish with a tap
+    if (sides.me.inv.length === before && !busy) { renderPanel(); refreshHover(); }
+  };
+  document.addEventListener("touchend", dropCard, { passive: false });
+  document.addEventListener("touchcancel", dropCard, { passive: false });
 
   // ---- long-press a card to see it big ----
   function longPress(el, show) {
