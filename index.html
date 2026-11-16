@@ -3530,8 +3530,8 @@
       zones.forEach(z => {
         const el = document.createElement("div");
         el.className = "swell";
-        z.appendChild(el);
-        el.animate([{ transform: "translateY(-300px) skewY(-4deg)" }, { transform: `translateY(${z.offsetHeight + 300}px) skewY(-4deg)` }],
+        (z.querySelector(".ripples") || z).appendChild(el);      // inside the water layer, so it's clipped to the board
+        el.animate([{ transform: "translateY(-170px) skewY(-4deg)" }, { transform: `translateY(${z.offsetHeight + 10}px) skewY(-4deg)` }],
                    { duration: 9000, easing: "linear" }).onfinish = () => el.remove();
       });
     }, 7000);
