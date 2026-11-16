@@ -1246,8 +1246,13 @@
 
   /* ---- v34: no pull-to-refresh, lighter phones, full screen button ---- */
   html, body { overscroll-behavior: none; }
-  body.touch { position: fixed; inset: 0; overflow: hidden; }
-  body.touch #world { zoom: .35; }                 /* same picture, ~8× less memory on phones */
+  /* phones: flat boards, no giant sea layer, no 3D compositing (keeps iPhone Safari from crashing) */
+  @media (pointer: coarse) {
+    #world { transform-style: flat !important; will-change: auto !important; }
+    #world .sea, #world .life { display: none !important; }
+    body { background: #0b5a8c; }
+    .zone { box-shadow: 0 0 0 7px #17324b, 0 0 0 9px #8cc8e4, 0 0 0 11px #0a1d2e, 0 12px 30px #000a !important; }
+  }
   .fsbtn { right: 66px !important; z-index: 60 !important; opacity: 1 !important; pointer-events: auto !important; }
   .fstip { z-index: 61 !important; }
   body.touch .fsbtn { right: auto !important; left: 112px !important; top: 14px !important; }
@@ -1413,7 +1418,9 @@
 
 <script>
   const N = 50;
-  const TILT = 34;                           // camera tilt in degrees
+  // phones get a flat top-down view: tilted 3D boards make phone browsers (iPhone Safari) run out of memory
+  const PHONE = matchMedia("(pointer: coarse)").matches;
+  const TILT = PHONE ? 0 : 34;               // camera tilt in degrees
   const world = document.getElementById("world");
 
   // ---- Build the two separate zones ----
@@ -4345,7 +4352,7 @@
       const mx = (a.clientX + b.clientX) / 2, my = (a.clientY + b.clientY) / 2;
       zoom = Math.max(baseZoom, Math.min(baseZoom * 6, pinch.z * d / pinch.d));
       cam.x = pinch.cx - (mx - pinch.mx) / (zoom * WZ());
-      cam.y = pinch.cy - (my - pinch.my) * 1.3 / (zoom * WZ());
+      cam.y = pinch.cy - (my - pinch.my) * (TILT ? 1.3 : 1) / (zoom * WZ());
       if (zoom <= baseZoom * 1.01) { cam.x = pinch.cx; cam.y = pinch.cy; }
       applyCamera(); e.preventDefault(); return;
     }
