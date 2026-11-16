@@ -2,7 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <title>Battleships</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Ops+One&display=swap">
 <style>
@@ -1194,6 +1196,53 @@
   .turnbanner.misfire { color: #ff4a3a !important; font-size: 4.2rem; text-shadow: 0 0 30px #ff2a1a, 0 4px 0 #000 !important; }
   .warplane.rocket.wobble svg { animation: rkWobble .18s ease-in-out infinite alternate; }
   @keyframes rkWobble { from { transform: translate(-50%, -50%) scale(3.2) rotate(-8deg); } to { transform: translate(-50%, -50%) scale(3.2) rotate(8deg); } }
+
+  /* =====================================================================
+     v33 — MOBILE (touch) + small landscape screens
+     ===================================================================== */
+  body.touch { touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
+  body.touch input { -webkit-user-select: text; user-select: text; touch-action: manipulation; }
+  .touchbar { position: fixed; right: 12px; bottom: 50%; transform: translateY(50%); z-index: 22; display: none; flex-direction: column; gap: 8px; align-items: stretch; }
+  .touchbar.show { display: flex; }
+  .tb { font: bold .8rem "Segoe UI", sans-serif; letter-spacing: 2px; color: #fff; padding: 12px 14px; border-radius: 14px; cursor: pointer;
+    background: linear-gradient(180deg, #0e3f6ef2, #05223ff5); border: 1px solid #9fe6ff55; box-shadow: 0 8px 20px #0009; max-width: 170px; }
+  .tb.main { background: linear-gradient(180deg, #ff9a3c, #d9531f); border-color: #ffd29a; font-size: .9rem; padding: 16px 14px; text-shadow: 0 2px 0 #7a2a0a; }
+  .tb.main:disabled { filter: grayscale(.8) brightness(.7); }
+  .tb.small { align-self: flex-end; padding: 8px 12px; }
+  .tb:active { transform: scale(.95); }
+  .tb-hint { font-size: .62rem; opacity: .6; text-align: center; line-height: 1.3; text-shadow: 0 1px 2px #000; }
+  body.touch .soundbtn { right: auto !important; left: 64px !important; top: 14px !important; }
+  .viewreset { position: fixed; left: 112px; top: 14px; z-index: 22; display: none; font-size: 1.2rem; padding: 8px 12px; }
+  .viewreset.show { display: block; }
+  .turnphone { position: fixed; inset: 0; z-index: 999; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+    background: radial-gradient(circle, #0b3a66, #010d1a); color: #e8fbff; text-align: center; padding: 20px; }
+  .tp-ic { font-size: 4rem; animation: tpTurn 2s ease-in-out infinite; }
+  @keyframes tpTurn { 0%, 30% { transform: rotate(0); } 60%, 100% { transform: rotate(-90deg); } }
+  .tp-t { font-family: "Black Ops One", "Segoe UI", sans-serif; letter-spacing: 3px; font-size: 1.2rem; }
+  .tp-s { opacity: .7; font-size: .85rem; }
+  @media (orientation: portrait) and (pointer: coarse) { .turnphone { display: flex; } }
+  /* hover-only bits don't apply on touch */
+  body.touch .hand .slot:hover { transform: none; }
+  body.touch .mbtn:hover { transform: none !important; }
+
+  /* phones held sideways (short screens) */
+  @media (max-height: 520px) {
+    body > h1 { display: none; }
+    .turnbar { zoom: .62; top: 4px !important; }
+    .charges, .upgrades, .passives { zoom: .52; }
+    .panel { zoom: .55; }
+    .fleetpanel { zoom: .5 !important; top: 8px !important; }
+    .soundbtn, .menubtn { zoom: .75; }
+    .leavebox { zoom: .7; }
+    .popup, .shop, .overlay { zoom: .6; }
+    .turnbanner { zoom: .55; }
+    .cardpreview.show { transform: translate(-50%, -50%) scale(1.1); }
+    .home-inner { zoom: .5 !important; }
+    .radar { width: 120vh; }
+    .touchbar { zoom: .85; }
+    .zone::after { display: none; }
+  }
+  @media (max-height: 380px) { .charges, .upgrades, .passives { zoom: .45; } .panel { zoom: .48; } .home-inner { zoom: .42 !important; } }
 </style>
 </head>
 <body>
@@ -1255,6 +1304,14 @@
     <div class="popup-hint">It goes to your hand — use it whenever you want</div>
   </div>
 
+  <div class="touchbar" id="touchbar">
+    <button id="tbCancel" class="tb small">✕</button>
+    <button id="tbRotate" class="tb">⟳ ROTATE</button>
+    <button id="tbAct" class="tb main">🔥 FIRE</button>
+    <div class="tb-hint">tap to aim · tap again to fire<br>pinch to zoom</div>
+  </div>
+  <button class="tb viewreset" id="tbView" title="Reset view">⤢</button>
+  <div class="turnphone" id="turnphone"><div class="tp-ic">📱</div><div class="tp-t">TURN YOUR PHONE SIDEWAYS</div><div class="tp-s">Battleships plays in landscape</div></div>
   <button class="soundbtn" id="soundbtn" title="Sound on/off">🔊</button>
   <button class="menubtn" id="menubtn" title="Menu">☰</button>
   <div class="leavebox" id="leaveBox">
@@ -1409,8 +1466,9 @@
       const r = el.getBoundingClientRect();
       if (r.height > 0) bottom = Math.min(bottom, r.top - 10);
     });
-    const top = 112, left = 14, right = window.innerWidth - 14;
-    const boxW = right - left, boxH = Math.max(200, bottom - top), midY = (top + bottom) / 2;
+    const short = window.innerHeight <= 520;              // phones held sideways: no big title on top
+    const top = short ? 34 : 112, left = 14, right = window.innerWidth - 14;
+    const boxW = right - left, boxH = Math.max(short ? 100 : 200, bottom - top), midY = (top + bottom) / 2;
     const bounds = () => {
       const a = document.getElementById("zone1").getBoundingClientRect(), b = document.getElementById("zone2").getBoundingClientRect();
       return { l: Math.min(a.left, b.left), r: Math.max(a.right, b.right), t: Math.min(a.top, b.top), btm: Math.max(a.bottom, b.bottom) };
@@ -1431,7 +1489,7 @@
       if (!tr) { tr = document.createElement("i"); tr.className = "cm-tr"; br = document.createElement("i"); br.className = "cm-br"; z2.append(tr, br); }
       for (let k = 0; k < 25; k++) {
         const fr = fp.getBoundingClientRect(), a = tr.getBoundingClientRect(), b = br.getBoundingClientRect();
-        const tf = getComputedStyle(fp).transform, slide = tf && tf !== "none" ? new DOMMatrix(tf).m41 : 0;   // ignore the slide-in animation
+        const tf = getComputedStyle(fp).transform, slide = tf && tf !== "none" ? new DOMMatrix(tf).m41 * (parseFloat(getComputedStyle(fp).zoom) || 1) : 0;   // ignore the slide-in animation
         const f = { left: fr.left - slide, bottom: fr.bottom };
         const t = Math.min(1, Math.max(0, (f.bottom - a.top) / Math.max(1, b.top - a.top)));
         if (a.left + (b.left - a.left) * t < f.left - 10) break;
@@ -2689,6 +2747,7 @@
     renderFleet(); renderPassives();
     setTimeout(fitCamera, 50);
     setTimeout(fitCamera, 900);          // again once the side panels have slid in
+    setTimeout(fitCamera, 1800);
     setLog("Battle started!");
     if (mode === "mp" && !Net.state.isHost) { setLog("Battle started! The host fires first"); nextTurn("bot"); }
     else nextTurn("me");
@@ -3335,7 +3394,11 @@
     if (e.button !== 0 || moved > 5 || hover.i < 0) return;
     const onZone = e.target.closest("#zone1") ? "zone1" : e.target.closest("#zone2") ? "zone2" : null;
     if (!onZone || onZone !== hover.zone) return;
-    const i = hover.i, me = sides.me;
+    act(onZone, hover.i);
+  });
+  // do whatever a click on square i of a board means right now (place / shoot / use card)
+  function act(onZone, i) {
+    const me = sides.me;
 
     if (phase === "place") {
       if (onZone !== "zone1" || selected < 0 || mp.myReady) return;
@@ -3386,7 +3449,7 @@
       const ship = shipAt(me, i);
       if (ship && !ship.sunk && ship.hits.size > 0) myCard(active, { ship });
     }
-  });
+  }
 
   window.addEventListener("keydown", e => {
     if (e.target.tagName === "INPUT") return;
@@ -4187,6 +4250,118 @@
 
   window.addEventListener("resize", () => { if (document.body.classList.contains("in-menu")) applyCamera(); else fitCamera(); });
   applyCamera();
+</script>
+
+<script>
+// =====================================================================
+//  MOBILE: touch aiming, pinch zoom, buttons, long-press card previews
+// =====================================================================
+(() => {
+  const isTouch = matchMedia("(pointer: coarse)").matches || "ontouchstart" in window;
+  if (!isTouch) return;
+  document.body.classList.add("touch");
+
+  // remember the "fit both boards" zoom so pinch can't go further out than that
+  let baseZoom = 1;
+  const fit0 = fitCamera;
+  fitCamera = function () { fit0.apply(this, arguments); baseZoom = zoom; };
+
+  const inGame = () => !document.body.classList.contains("in-menu") && (phase === "place" || phase === "battle");
+  const blocked = t => t.closest(".panel, .charges, .overlay, .popup, .soundbtn, .fleetpanel, .upgrades, .passives, .home, .menubtn, .leavebox, .shop, .touchbar, .tb");
+
+  // ---- aiming with one finger, pinch/pan with two ----
+  let pinch = null, aimTouch = false, tapStart = null, aimedBefore = -1;
+  function aimAt(x, y) {
+    const el = document.elementFromPoint(x, y), c = el && el.closest(".cell");
+    if (!c) return;
+    const z = c.closest(".zone").id, i = +c.dataset.i;
+    if (hover.zone !== z || hover.i !== i) { hover = { zone: z, i }; refreshHover(); }
+  }
+  window.addEventListener("touchstart", e => {
+    if (!inGame() || blocked(e.target)) return;
+    if (e.touches.length === 2) {
+      const [a, b] = e.touches;
+      pinch = { d: Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY), mx: (a.clientX + b.clientX) / 2, my: (a.clientY + b.clientY) / 2, z: zoom, cx: cam.x, cy: cam.y };
+      aimTouch = false; e.preventDefault(); return;
+    }
+    if (e.touches.length === 1 && e.target.closest("#zone1, #zone2")) {
+      e.preventDefault();                       // no fake mouse clicks: aiming and firing are separate on touch
+      const t = e.touches[0];
+      aimedBefore = hover.i; const prevZone = hover.zone;
+      aimTouch = true; tapStart = { x: t.clientX, y: t.clientY, time: performance.now(), zone: prevZone };
+      aimAt(t.clientX, t.clientY);
+    }
+  }, { passive: false });
+  window.addEventListener("touchmove", e => {
+    if (pinch && e.touches.length === 2) {
+      const [a, b] = e.touches;
+      const d = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+      const mx = (a.clientX + b.clientX) / 2, my = (a.clientY + b.clientY) / 2;
+      zoom = Math.max(baseZoom, Math.min(baseZoom * 6, pinch.z * d / pinch.d));
+      cam.x = pinch.cx - (mx - pinch.mx) / zoom;
+      cam.y = pinch.cy - (my - pinch.my) * 1.3 / zoom;
+      if (zoom <= baseZoom * 1.01) { cam.x = pinch.cx; cam.y = pinch.cy; }
+      applyCamera(); e.preventDefault(); return;
+    }
+    if (aimTouch && e.touches.length === 1) { const t = e.touches[0]; aimAt(t.clientX, t.clientY); e.preventDefault(); }
+  }, { passive: false });
+  window.addEventListener("touchend", e => {
+    if (pinch) { if (e.touches.length < 2) pinch = null; return; }
+    if (!aimTouch) return;
+    aimTouch = false;
+    const t = e.changedTouches[0];
+    // tapping the square that was already aimed at = fire / place
+    const still = tapStart && Math.hypot(t.clientX - tapStart.x, t.clientY - tapStart.y) < 12 && performance.now() - tapStart.time < 400;
+    if (still && aimedBefore === hover.i && tapStart.zone === hover.zone && hover.i >= 0) act(hover.zone, hover.i);
+  });
+
+  // ---- buttons ----
+  const bar = document.getElementById("touchbar"), bAct = document.getElementById("tbAct"),
+        bRot = document.getElementById("tbRotate"), bCan = document.getElementById("tbCancel"), bView = document.getElementById("tbView");
+  bAct.onclick = () => { if (hover.i >= 0) act(hover.zone, hover.i); };
+  bRot.onclick = () => { horizontal = !horizontal; Sound.play("select"); refreshHover(); };
+  bCan.onclick = () => { if (active >= 0 && !busy) { active = -1; moving = null; renderPanel(); refreshHover(); } };
+  bView.onclick = () => fitCamera();
+  setInterval(() => {
+    const game = inGame();
+    const key = active >= 0 && sides.me.inv ? sides.me.inv[active] : null;
+    const myTurn = phase === "battle" && whose === "me" && !busy;
+    const rot = phase === "place" || key === "move" || key === "decoy";
+    bar.classList.toggle("show", game && (phase === "place" || myTurn));
+    bRot.style.display = rot ? "" : "none";
+    bCan.style.display = key ? "" : "none";
+    bAct.textContent = phase === "place" ? "✔ PLACE" : key ? "▶ USE " + CARDS[key].name.toUpperCase() : "🔥 FIRE";
+    bAct.disabled = hover.i < 0;
+    bView.classList.toggle("show", game && zoom > baseZoom * 1.05);
+  }, 150);
+
+  // ---- long-press a card to see it big ----
+  function longPress(el, show) {
+    let tm = null, fired = false;
+    el.addEventListener("touchstart", () => { fired = false; tm = setTimeout(() => { fired = true; show(); }, 380); }, { passive: true });
+    const end = e => { clearTimeout(tm); if (fired) { hidePreview(); if (e.cancelable) e.preventDefault(); } };
+    el.addEventListener("touchend", end); el.addEventListener("touchcancel", end);
+    el.addEventListener("touchmove", () => clearTimeout(tm), { passive: true });
+  }
+  const hint = document.getElementById("panelHint");
+  new MutationObserver(() => {
+    if (hint && /<kbd>R<\/kbd>|Click/.test(hint.innerHTML))
+      hint.innerHTML = hint.innerHTML.replace("Press <kbd>R</kbd> to rotate", "Tap ⟳ ROTATE to turn the ship").replace(/<kbd>R<\/kbd> to rotate/g, "⟳ ROTATE to turn").replace(/Click/g, "Tap");
+    document.querySelectorAll(".hand .slot:not([data-lp]), .si-card:not([data-lp]), .pas:not([data-lp]), .eh:not([data-lp])").forEach(el => {
+      el.dataset.lp = 1;
+      const f = el.onmouseenter;
+      if (f) { el.onmouseenter = null; longPress(el, f); }
+    });
+  }).observe(document.body, { childList: true, subtree: true });
+
+  // ---- full screen + landscape when you start (works on Android; iPhone keeps the browser bars) ----
+  document.getElementById("home").addEventListener("click", e => {
+    if (!e.target.closest("button") || document.fullscreenElement) return;
+    const el = document.documentElement;
+    (el.requestFullscreen ? el.requestFullscreen({ navigationUI: "hide" }) : Promise.reject())
+      .then(() => screen.orientation && screen.orientation.lock && screen.orientation.lock("landscape")).catch(() => {});
+  });
+})();
 </script>
 </body>
 </html>
