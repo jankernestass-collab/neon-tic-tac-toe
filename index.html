@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0b5a8c">
 <title>Battleships</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Ops+One&display=swap">
 <style>
@@ -1294,6 +1296,19 @@
     .panel:has(.ships) h2 { margin-bottom: 4px !important; }
   }
   @media (max-height: 380px) { .panel:has(.ships) { transform: translateX(-50%) scale(.36) !important; } }
+
+  /* ---- v39: phones — no black strip, cheaper zooming ---- */
+  html { background: #0b5a8c; }
+  @media (pointer: coarse) {
+    html, body { height: 100%; }
+    #world { will-change: transform !important; }            /* keep the boards as one ready GPU picture */
+    body.pinching .zone { background-image: none !important; } /* skip redrawing thousands of grid lines mid-pinch */
+    body.pinching .shipmodel { filter: none !important; }
+  }
+  .menubtn, .soundbtn, .fsbtn { margin-top: env(safe-area-inset-top, 0px); }
+  .fleetpanel { margin-top: env(safe-area-inset-top, 0px); }
+  .menubtn, body.touch .soundbtn, body.touch .fsbtn, .charges, .upgrades { margin-left: env(safe-area-inset-left, 0px); }
+  .passives, .fleetpanel, .touchbar { margin-right: env(safe-area-inset-right, 0px); }
 </style>
 </head>
 <body>
@@ -4406,12 +4421,15 @@
     const key = active >= 0 && sides.me.inv ? sides.me.inv[active] : null;
     const myTurn = phase === "battle" && whose === "me" && !busy;
     const rot = phase === "place" || key === "move" || key === "decoy";
-    bar.classList.toggle("show", game && (phase === "place" || myTurn));
-    bRot.style.display = rot ? "" : "none";
-    bCan.style.display = key ? "" : "none";
-    bAct.textContent = phase === "place" ? "✔ PLACE" : key ? "▶ USE " + CARDS[key].name.toUpperCase() : "🔥 FIRE";
-    bAct.disabled = hover.i < 0;
-    bView.classList.toggle("show", game && zoom > baseZoom * 1.05);
+    const set = (el, prop, v) => { if (el[prop] !== v) el[prop] = v; };
+    const show = game && (phase === "place" || myTurn);
+    if (bar.classList.contains("show") !== show) bar.classList.toggle("show", show);
+    set(bRot.style, "display", rot ? "" : "none");
+    set(bCan.style, "display", key ? "" : "none");
+    set(bAct, "textContent", phase === "place" ? "✔ PLACE" : key ? "▶ USE " + CARDS[key].name.toUpperCase() : "🔥 FIRE");
+    set(bAct, "disabled", hover.i < 0);
+    const vs = game && zoom > baseZoom * 1.05;
+    if (bView.classList.contains("show") !== vs) bView.classList.toggle("show", vs);
   }, 150);
 
 
