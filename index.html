@@ -1138,6 +1138,19 @@
     background: linear-gradient(90deg, transparent, #ffffff22 40%, #ffffffaa 92%, #ffe0a0); filter: blur(2px); }
   .rocketboom .fb-flash { width: 520px !important; height: 520px !important; }
   .rocketboom .fb-smoke { width: 260px; height: 260px; }
+
+  /* ---- v28: card text always fits ---- */
+  .gc-text { min-height: 0; overflow: hidden; word-break: break-word; }
+  .gc-text.long { font-size: .64rem !important; line-height: 1.18; padding: 5px 4px; }
+  .gcard.upg .gc-art { flex-basis: 62px !important; font-size: 2.3rem; }
+  .gcard.upg .gc-text { padding: 4px; }
+  .gc-text.xlong { font-size: .58rem !important; line-height: 1.15; padding: 4px; }
+  .gcard:has(.gc-text.xlong) .gc-art { flex-basis: 66px; font-size: 2.4rem; }
+  .gcard:has(.gc-text.long) .gc-art { flex-basis: 76px; }
+  .popup .gc-text.long { font-size: .8rem !important; }
+  .popup .gc-text.xlong { font-size: .72rem !important; }
+  .upg-text.long { font-size: .74rem !important; }
+  .upg-text.xlong { font-size: .58rem !important; line-height: 1.1; }
 </style>
 </head>
 <body>
@@ -2705,12 +2718,14 @@
     if (cta) cta.textContent = c >= MAX_CHARGE * 2 ? `${Math.floor(c / MAX_CHARGE)} MYSTERY CARDS!` : "MYSTERY CARD!";
     document.getElementById("charges").classList.toggle("ready", c >= MAX_CHARGE && phase === "battle");
   }
+  // longer descriptions get a smaller font so they always fit on the card
+  const txtCls = t => { const n = String(t).replace(/<[^>]*>/g, "").length; return n > 64 ? " xlong" : n > 44 ? " long" : ""; };
   const cardHTML = (key, sd = sides.me) => {
     const c = CARDS[key];
     const rar = rarityOf(key);
     return `<div class="gcard ${c.type} r-${rar}"><div class="gc-rar">${RARITY[rar].label}</div><div class="gc-name">${c.name}</div><div class="gc-art">${c.icon}</div>` +
            `<div class="gc-type">${c.type.toUpperCase()}${UPGRADES[key] && level(sd, key) ? " · LV " + (level(sd, key) + 1) : ""}</div>` +
-           `<div class="gc-text">${cardDesc(sd, key)}</div></div>`;
+           `<div class="gc-text${txtCls(cardDesc(sd, key))}">${cardDesc(sd, key)}</div></div>`;
   };
 
   // ---- show the card the enemy just played ----
@@ -2756,7 +2771,7 @@
   function passiveHTML(key, sd = sides.me, label = "PASSIVE") {
     const c = PASSIVES[key], lv = Math.max(1, level(sd, key));
     return `<div class="gcard ${c.type} r-epic passive"><div class="gc-rar">${label}</div><div class="gc-name">${c.name}</div><div class="gc-art">${c.icon}</div>` +
-           `<div class="gc-type">PASSIVE · LV ${lv}</div><div class="gc-text">${statText(key, valAt(key, lv))}</div></div>`;
+           `<div class="gc-type">PASSIVE · LV ${lv}</div><div class="gc-text${txtCls(statText(key, valAt(key, lv)))}">${statText(key, valAt(key, lv))}</div></div>`;
   }
   function upgradeHTML(key, sd = sides.me) {
     const pas = isPassive(key);
@@ -2765,7 +2780,7 @@
     const now = statText(key, val(sd, key)), next = statText(key, UPGRADES[key].levels[lv].v);
     return `<div class="gcard ${c.type} r-${rar} upg"><div class="gc-rar">UPGRADE</div><div class="gc-name">${c.name}</div>` +
            `<div class="gc-art">${c.icon}<span class="lvbadge">LV ${pas ? lv : lv + 1} → ${pas ? lv + 1 : lv + 2}</span></div>` +
-           `<div class="gc-text upg-text"><span class="was">${now}</span><span class="arrow">▼</span><span class="now">${next}</span></div></div>`;
+           `<div class="gc-text upg-text${txtCls(now + next)}"><span class="was">${now}</span><span class="arrow">▼</span><span class="now">${next}</span></div></div>`;
   }
   // spin the mystery card faster and faster in its rarity colour, then BOOM — returns how long it all takes (ms)
   const RAR_COLOR = { common: "#d6e2ee", rare: "#4fa8ff", epic: "#c77dff", legendary: "#ffc93c" };
