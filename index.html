@@ -1119,6 +1119,11 @@
   .codein { background: #021a33cc !important; }
   @media (max-height: 820px) { .home-inner { zoom: .82; } }
   @media (max-height: 680px) { .home-inner { zoom: .68; } }
+
+  /* ---- v26: pretend battle behind the menu ---- */
+  .demo { position: absolute; inset: 0; pointer-events: none; z-index: 3; }
+  .home-bg { background: radial-gradient(ellipse 55% 50% at 50% 48%, #021a3355 0%, #021a3388 45%, #000a14e6 100%),
+                         linear-gradient(180deg, #000d1acc, transparent 25%, transparent 75%, #000d1add) !important; }
 </style>
 </head>
 <body>
@@ -3701,13 +3706,109 @@
   function showMenu(id) {
     document.querySelectorAll(".home .menu").forEach(m => m.classList.toggle("show", m.id === id));
   }
+  // ---- a pretend battle playing behind the menu (only visuals, no game state is touched) ----
+  const Demo = { on: false, timers: [], zones: [] };
+  function demoLater(fn, ms) { const id = setTimeout(() => { if (Demo.on) fn(); }, ms); Demo.timers.push(id); if (Demo.timers.length > 400) Demo.timers.splice(0, 200); }
+  function demoShip(z) {
+    for (let t = 0; t < 200; t++) {
+      const size = 1 + rand(6), horiz = Math.random() < 0.5, at = rand(N * N), cells = footprint(size, horiz, at);
+      if (!cells || cells.some(j => z.used.has(j))) continue;
+      cells.forEach(j => z.used.add(j));
+      const el = document.createElement("div"), [r, c] = rc(at);
+      el.innerHTML = shipSVG(size);
+      el.className = "shipmodel appear" + (horiz ? "" : " vertical");
+      el.style.left = (10 + c * 39) + "px"; el.style.top = (10 + r * 39) + "px"; el.style.width = (size * 39 - 1) + "px";
+      z.box.appendChild(el);
+      z.ships.push({ cells, hits: new Set(), el, marks: [] });
+      return;
+    }
+  }
+  function demoShoot() {
+    const z = Demo.zones[rand(2)], sd = { zone: z.id };
+    const live = z.ships.filter(sh => sh.hits.size < sh.cells.length);
+    let j, ship = null;
+    if (live.length && Math.random() < 0.5) { ship = live[rand(live.length)]; const left = ship.cells.filter(k => !ship.hits.has(k)); j = left[rand(left.length)]; }
+    else j = rand(N * N);
+    fxShell(sd, j);
+    demoLater(() => demoImpact(z, j, ship), 380);
+  }
+  function demoImpact(z, j, ship) {
+    const sd = { zone: z.id };
+    if (!ship) ship = z.ships.find(sh => sh.cells.includes(j) && !sh.hits.has(j)) || null;
+    if (!ship) { fxSplash(sd, j); return; }
+    ship.hits.add(j);
+    const sunk = ship.hits.size === ship.cells.length;
+    fxBoom(sd, j, sunk);
+    const m = document.createElement("div"), [r, c] = rc(j);
+    m.className = "mark hit"; m.style.left = (10 + c * 39) + "px"; m.style.top = (10 + r * 39) + "px";
+    z.box.appendChild(m); ship.marks.push(m);
+    if (sunk) {
+      ship.el.classList.add("sunk");
+      ship.marks.forEach(k => k.classList.add("dead"));
+      ship.cells.forEach((k, n) => demoLater(() => fxBoom(sd, k, true), 120 + n * 140));
+      demoLater(() => {                                  // sink, clear and send a fresh ship in
+        ship.el.remove(); ship.marks.forEach(k => k.remove());
+        ship.cells.forEach(k => z.used.delete(k));
+        z.ships.splice(z.ships.indexOf(ship), 1);
+        demoShip(z);
+      }, 5000);
+    }
+  }
+  function demoPlanes() {
+    const z = Demo.zones[rand(2)], sd = { zone: z.id };
+    const row = 3 + rand(N - 6), ltr = Math.random() < 0.5;
+    const from = row * N + (ltr ? 0 : N - 1), to = row * N + (ltr ? N - 1 : 0);
+    const [x1, y1] = center(from), [x2, y2] = center(to), dur = 3600;
+    const deg = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
+    [0, 1].forEach(w => {                               // two bombers in formation
+      const el = document.createElement("div");
+      el.className = "fx strikeplane";
+      el.innerHTML = `<svg viewBox="-35 -30 70 60" width="110" height="94"><g fill="#56626d" stroke="#2b333b" stroke-width="1.5">
+        <path d="M-30 -3 L24 -3 Q34 0 24 3 L-30 3 Z"/><path d="M4 -3 L-6 -28 L-14 -28 L-8 -3 Z"/><path d="M4 3 L-6 28 L-14 28 L-8 3 Z"/>
+        <path d="M-26 -2 L-32 -11 L-35 -11 L-32 -2 Z"/><path d="M-26 2 L-32 11 L-35 11 L-32 2 Z"/></g></svg>`;
+      z.box.appendChild(el);
+      const off = w ? 90 : 0;
+      el.animate([{ transform: `translate(${x1 - (ltr ? 160 + off : -160 - off)}px, ${y1 + off}px) translate(-50%, -50%) rotate(${deg}deg)` },
+                  { transform: `translate(${x2 + (ltr ? 160 - off : -160 + off)}px, ${y2 + off}px) translate(-50%, -50%) rotate(${deg}deg)` }],
+                 { duration: dur, delay: w * 180, easing: "linear" }).onfinish = () => el.remove();
+    });
+    // bombs fall along the path
+    for (let k = 0; k < 9; k++) {
+      const col = Math.round((k + 1) * (N - 1) / 10), c2 = ltr ? col : N - 1 - col;
+      const rr = Math.min(N - 1, row + rand(4));
+      demoLater(() => demoImpact(z, rr * N + c2, null), 500 + (col / (N - 1)) * (dur - 700) + 250);
+    }
+  }
+  function startDemo() {
+    if (Demo.on) return;
+    Demo.on = true;
+    Demo.zones = ["zone1", "zone2"].map(id => {
+      const box = document.createElement("div"); box.className = "demo";
+      document.getElementById(id).appendChild(box);
+      return { id, box, ships: [], used: new Set() };
+    });
+    Demo.zones.forEach(z => { for (let k = 0; k < 16; k++) demoShip(z); });
+    const low = () => document.body.classList.contains("low-gfx");
+    const shootLoop = () => { demoShoot(); demoLater(shootLoop, (low() ? 900 : 380) + rand(500)); };
+    const planeLoop = () => { demoPlanes(); demoLater(planeLoop, 6000 + rand(5000)); };
+    demoLater(shootLoop, 600); demoLater(planeLoop, 2500);
+  }
+  function stopDemo() {
+    Demo.on = false;
+    Demo.timers.forEach(clearTimeout); Demo.timers = [];
+    Demo.zones.forEach(z => z.box.remove()); Demo.zones = [];
+    document.querySelectorAll(".zone > .fx").forEach(e => e.remove());
+  }
+
   function enterMenu() {
     document.body.classList.add("in-menu");
     home.classList.add("show");
     showMenu("menuMain");
     requestAnimationFrame(menuDrift);
+    startDemo();
   }
   function leaveMenu() {
+    stopDemo();
     document.body.classList.remove("in-menu");
     home.classList.add("hide");
     setTimeout(() => { home.classList.remove("show", "hide"); }, 600);
