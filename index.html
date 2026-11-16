@@ -1151,6 +1151,26 @@
   .popup .gc-text.xlong { font-size: .72rem !important; }
   .upg-text.long { font-size: .74rem !important; }
   .upg-text.xlong { font-size: .58rem !important; line-height: 1.1; }
+
+  /* ---- v29: bigger rocket, bigger boom ---- */
+  .warplane.rocket svg, .warplane.rocket-shadow svg { transform: translate(-50%, -50%) scale(3.2) !important; }
+  .rk-trail { width: 1400px !important; height: 18px !important; top: -9px !important; right: 70px !important; }
+  .rocketboom .fb-flash { width: 1100px !important; height: 1100px !important; }
+  .rocketboom .fb-flash.f2 { width: 520px !important; height: 520px !important; animation-duration: .5s; background: radial-gradient(circle, #fff 0 15%, #fff3c4cc 35%, transparent 70%); }
+  .rocketboom .fb-smoke { width: 420px !important; height: 420px !important; animation-duration: 5s; }
+  .rocketboom .fb-smoke.s2 { margin-left: -120px; margin-top: 60px; animation-delay: .25s; }
+  .rocketboom .fb-smoke.s3 { margin-left: 130px; margin-top: 40px; animation-delay: .45s; }
+  .rb-ring { width: 160px; height: 160px; border: 10px solid #ffd9a0; box-shadow: 0 0 30px #ffb347; animation: rbRing 1s ease-out forwards; }
+  .rb-ring.r2 { border-color: #ffffff88; animation-delay: .15s; animation-duration: 1.4s; opacity: 0; }
+  @keyframes rbRing { 0% { transform: translate(-50%, -50%) scale(.2); opacity: 1; } 100% { transform: translate(-50%, -50%) scale(6); opacity: 0; border-width: 1px; } }
+  .rb-fire { width: 300px; height: 300px; background: radial-gradient(circle, #fff6d0 0 10%, #ffb347 30%, #ff6a1f 50%, #8a1d1400 72%); animation: rbFire 1.6s ease-out forwards; }
+  @keyframes rbFire { 0% { transform: translate(-50%, -50%) scale(.3); opacity: 1; } 40% { transform: translate(-50%, -60%) scale(1.2); opacity: .95; } 100% { transform: translate(-50%, -90%) scale(1.6); opacity: 0; } }
+  .rb-spark { width: 12px; height: 12px; background: #ffe0a0; box-shadow: 0 0 12px #ffb347; opacity: 0; animation: rbSpark 1.3s cubic-bezier(.1, .7, .3, 1) forwards; }
+  @keyframes rbSpark { 0% { opacity: 1; transform: translate(-50%, -50%); } 100% { opacity: 0; transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(.3); } }
+  .rbflash { position: fixed; top: 0; bottom: 0; width: 60%; pointer-events: none; z-index: 19; animation: rbScreen .9s ease-out forwards; }
+  .rbflash.right { right: 0; background: radial-gradient(ellipse at 100% 50%, #ffc98ccc, #ff8a3c44 40%, transparent 75%); }
+  .rbflash.left  { left: 0;  background: radial-gradient(ellipse at 0% 50%, #ffc98ccc, #ff8a3c44 40%, transparent 75%); }
+  @keyframes rbScreen { 0% { opacity: 1; } 100% { opacity: 0; } }
 </style>
 </head>
 <body>
@@ -1704,8 +1724,9 @@
                     const g = ctx.createGain(); g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(.32, t + d * .62); g.gain.exponentialRampToValueAtTime(.0001, t + d);
                     src.connect(bp).connect(g).connect(sfx); src.start(t); src.stop(t + d + .1);
                     tone(t, d * .62, 900, 1700, .03, "sawtooth", d * .6); tone(t + d * .62, d * .38, 1500, 500, .03, "sawtooth", .02); },
-      rocketboom() { const t = ctx.currentTime + .15; tone(t, 1.4, 85, 28, .35); noise(t, 1.8, "lowpass", 600, 60, .35, .5, .01, true);
-                    noise(t, .25, "bandpass", 1800, 600, .08, .9, .005); },
+      rocketboom() { const t = ctx.currentTime + .05; tone(t, 2.2, 78, 24, .8); tone(t, 1.2, 140, 40, .3, "triangle");
+                    noise(t, 2.6, "lowpass", 1400, 50, .75, .5, .006, true); noise(t, .35, "bandpass", 2400, 500, .2, .9, .003);
+                    for (let k = 0; k < 7; k++) noise(t + .25 + k * .13 + Math.random() * .08, .12, "bandpass", 1600 + Math.random() * 1200, 600, .06, 1.2, .004); },
       farboom()   { const t = ctx.currentTime + .3; tone(t, 1.2, 70, 28, .18); noise(t, 1.5, "lowpass", 350, 60, .18, .5, .05, true); },
       kraken()    { const t = ctx.currentTime; tone(t, 1.8, 65, 38, .35, "sine", .2); tone(t + .15, 1.5, 98, 55, .12, "triangle", .2); noise(t, 1.8, "lowpass", 400, 80, .3, .5, .3, true); },
       shieldhit() { const t = ctx.currentTime; bell(t, 880, .4, .1); tone(t, .25, 440, 330, .08); },
@@ -3536,34 +3557,41 @@
     function rocketPass() {
       if (document.hidden || !settings.ambient || lowGfx()) return;
       const w = W(), h = H();
-      // end: a spot just outside the boards; start: far away on the other side
-      const side = rand(2);                                  // left or right of the boards, where you can see it
-      const ex = side === 0 ? -200 - rand(350) : w + 200 + rand(350);
-      const ey = h * (0.15 + Math.random() * 0.6);
-      const ang = Math.atan2(ey - h / 2, ex - w / 2) + (Math.random() - 0.5) * 0.9;
-      const R = Math.max(w, h) + 2500, sx = ex - Math.cos(ang) * R, sy = ey - Math.sin(ang) * R;
-      const deg = ang * 180 / Math.PI, dur = 3200;
+      // flies right over the boards from one side of the screen to the other, then hits just beside them
+      const ltr = Math.random() < 0.5;
+      const sx = ltr ? -1400 : w + 1400, ex = ltr ? w + 220 + rand(260) : -220 - rand(260);
+      const sy = h * (0.2 + Math.random() * 0.5), ey = h * (0.2 + Math.random() * 0.5);
+      const deg = Math.atan2(ey - sy, ex - sx) * 180 / Math.PI, dur = 4300;
       ["rocket-shadow", "rocket"].forEach(cls => {
         const el = document.createElement("div");
         el.className = "warplane " + cls;
         el.innerHTML = `<i class="rk-trail"></i>` + ROCKET;
         world.appendChild(el);
-        const z = cls === "rocket" ? 200 : 1, sh = cls === "rocket" ? 0 : 55;
+        const z = cls === "rocket" ? 520 : 1, sh = cls === "rocket" ? 0 : 90;
         el.animate([
           { transform: `translate3d(${sx + sh}px, ${sy + sh}px, ${z}px) rotate(${deg}deg)` },
-          { transform: `translate3d(${ex + sh}px, ${ey + sh}px, ${z * 0.3}px) rotate(${deg}deg)` },
-        ], { duration: dur, easing: "cubic-bezier(.3, 0, .7, 1)" }).onfinish = () => el.remove();
+          { transform: `translate3d(${ex + sh * .2}px, ${ey + sh * .2}px, ${cls === "rocket" ? 40 : 1}px) rotate(${deg}deg)` },
+        ], { duration: dur, easing: "cubic-bezier(.35, 0, .85, .9)" }).onfinish = () => el.remove();
       });
       Sound.play("rocket", dur / 1000);
-      setTimeout(() => {                                  // impact
+      setTimeout(() => {                                  // BOOM
         if (document.hidden) return;
         const el = document.createElement("div");
         el.className = "farboom rocketboom"; el.style.left = ex + "px"; el.style.top = ey + "px";
-        el.innerHTML = '<i class="fb-flash"></i><i class="fb-smoke"></i>';
+        let html = '<i class="fb-flash"></i><i class="fb-flash f2"></i><i class="rb-ring"></i><i class="rb-ring r2"></i><i class="rb-fire"></i>' +
+                   '<i class="fb-smoke"></i><i class="fb-smoke s2"></i><i class="fb-smoke s3"></i>';
+        for (let k = 0; k < 16; k++) {
+          const a = Math.random() * Math.PI * 2, d = 250 + Math.random() * 450;
+          html += `<i class="rb-spark" style="--dx:${Math.cos(a) * d}px;--dy:${Math.sin(a) * d}px;animation-delay:${rand(120)}ms"></i>`;
+        }
+        el.innerHTML = html;
         world.appendChild(el);
-        setTimeout(() => el.remove(), 4000);
+        setTimeout(() => el.remove(), 5000);
+        const fl = document.createElement("div"); fl.className = "rbflash " + (ltr ? "right" : "left");
+        document.body.appendChild(fl); setTimeout(() => fl.remove(), 900);
+        shake();
         Sound.play("rocketboom");
-      }, dur - 50);
+      }, dur - 40);
     }
 
     function farBoom() {
@@ -3611,7 +3639,7 @@
       setTimeout(planePass, 3000);
       setInterval(() => { if (Math.random() < 0.55) planePass(); }, 11000);
       setInterval(() => { if (Math.random() < 0.6) farBoom(); }, 4500);
-      setInterval(() => { if (Math.random() < 0.35) rocketPass(); }, 10000);   // now and then, not too often
+      setInterval(() => { if (Math.random() < 0.3) rocketPass(); }, 20000);   // rare: about once a minute
     }
     return { start, planePass, farBoom, rocketPass };
   })();
