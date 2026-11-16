@@ -1225,24 +1225,38 @@
   body.touch .hand .slot:hover { transform: none; }
   body.touch .mbtn:hover { transform: none !important; }
 
-  /* phones held sideways (short screens) */
+  /* phones held sideways (short screens): shrink the HUD with transforms (works the same in every browser) */
   @media (max-height: 520px) {
     body > h1 { display: none; }
-    .turnbar { zoom: .62; top: 4px !important; }
-    .charges, .upgrades, .passives { zoom: .52; }
-    .panel { zoom: .55; }
-    .fleetpanel { zoom: .5 !important; top: 8px !important; }
-    .soundbtn, .menubtn { zoom: .75; }
-    .leavebox { zoom: .7; }
-    .popup, .shop, .overlay { zoom: .6; }
-    .turnbanner { zoom: .55; }
-    .cardpreview.show { transform: translate(-50%, -50%) scale(1.1); }
-    .home-inner { zoom: .5 !important; }
-    .radar { width: 120vh; }
-    .touchbar { zoom: .85; }
     .zone::after { display: none; }
+    .turnbar { transform: translateX(-50%) scale(.62) !important; transform-origin: 50% 0; top: 4px !important; }
+    .charges { transform: scale(.52); transform-origin: 0 100%; left: 8px !important; bottom: 8px !important; }
+    .upgrades { transform: scale(.52); transform-origin: 0 100%; left: 96px !important; bottom: 8px !important; }
+    .passives { transform: scale(.52); transform-origin: 100% 100%; right: 8px !important; bottom: 8px !important; }
+    .panel { transform: translateX(-50%) scale(.55) !important; transform-origin: 50% 100%; bottom: 8px !important; }
+    .fleetpanel { transform: scale(.5) !important; transform-origin: 100% 0; top: 8px !important; right: 8px !important; zoom: 1 !important; }
+    .soundbtn, .menubtn, .fsbtn { transform: scale(.72); transform-origin: 0 0; top: 8px !important; }
+    .menubtn { left: 8px !important; }
+    body.touch .soundbtn { left: 44px !important; }
+    body.touch .fsbtn { left: 80px !important; }
+    body.touch .viewreset { left: 118px; top: 8px; transform: scale(.72); transform-origin: 0 0; }
+    .leavebox { transform: scale(.7); transform-origin: 0 0; top: 44px; left: 8px; }
+    .popup, .shop, .overlay { inset: -42% !important; transform: scale(.58); }
+    .shop.show { animation: none; }
+    .turnbanner { font-size: 1.9rem; letter-spacing: 7px; padding: 8px 0; }
+    .home-inner { zoom: 1 !important; transform: scale(.5); }
+    .radar { width: 120vh; }
+    .touchbar { transform: translateY(50%) scale(.8); transform-origin: 100% 50%; right: 8px; }
+    .fstip { transform: scale(.85); transform-origin: 0 0; }
+    .passives, .fleetpanel, .charges, .upgrades, .panel, .turnbar { animation: none !important; }
+    .passives, .charges, .upgrades, .panel, .turnbar, .touchbar, .soundbtn, .menubtn { zoom: 1 !important; }
   }
-  @media (max-height: 380px) { .charges, .upgrades, .passives { zoom: .45; } .panel { zoom: .48; } .home-inner { zoom: .42 !important; } }
+  @media (max-height: 380px) {
+    .charges, .upgrades, .passives { transform: scale(.45); }
+    .upgrades { left: 84px !important; }
+    .panel { transform: translateX(-50%) scale(.48) !important; }
+    .home-inner { transform: scale(.42); }
+  }
 
   /* ---- v34: no pull-to-refresh, lighter phones, full screen button ---- */
   html, body { overscroll-behavior: none; }
@@ -4107,7 +4121,7 @@
     }
   }
   function startDemo() {
-    if (Demo.on) return;
+    if (Demo.on || PHONE) return;              // phones: skip the pretend battle (saves battery and keeps it smooth)
     Demo.on = true;
     Demo.zones = ["zone1", "zone2"].map(id => {
       const box = document.createElement("div"); box.className = "demo";
@@ -4143,6 +4157,7 @@
   }
   function menuDrift(t) {
     if (!document.body.classList.contains("in-menu")) return;
+    if (PHONE) { fixedCam = false; zoom = 0.6 / WZ(); cam.x = 0; cam.y = -300; applyCamera(); return; }   // phones: still picture
     fixedCam = false;
     zoom = 0.6 / WZ();
     cam.x = Math.sin(t / 14000) * 1600;
@@ -4448,7 +4463,7 @@
     el.addEventListener("touchmove", () => clearTimeout(tm), { passive: true });
   }
   const hint = document.getElementById("panelHint");
-  new MutationObserver(() => {
+  const mo = new MutationObserver(() => {
     if (hint && /<kbd>R<\/kbd>|Click/.test(hint.innerHTML))
       hint.innerHTML = hint.innerHTML.replace("Press <kbd>R</kbd> to rotate", "Tap ⟳ ROTATE to turn the ship").replace(/<kbd>R<\/kbd> to rotate/g, "⟳ ROTATE to turn").replace(/Click/g, "Tap");
     document.querySelectorAll(".hand .slot:not([data-lp]), .si-card:not([data-lp]), .pas:not([data-lp]), .eh:not([data-lp])").forEach(el => {
@@ -4456,7 +4471,9 @@
       const f = el.onmouseenter;
       if (f) { el.onmouseenter = null; longPress(el, f); }
     });
-  }).observe(document.body, { childList: true, subtree: true });
+  });
+  [document.getElementById("panelBody"), document.getElementById("shopGrid"), document.getElementById("passives"), document.getElementById("fleet"), document.getElementById("panelHint")]
+    .forEach(el => el && mo.observe(el, { childList: true, subtree: true }));
 
 })();
 </script>
