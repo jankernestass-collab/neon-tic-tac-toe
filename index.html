@@ -1125,6 +1125,19 @@
   .home-bg { background: radial-gradient(ellipse 55% 50% at 50% 48%, #021a3355 0%, #021a3388 45%, #000a14e6 100%),
                          linear-gradient(180deg, #000d1acc, transparent 25%, transparent 75%, #000d1add) !important; }
   body.banner-lock #zone2 .cell { cursor: wait; }
+
+  /* ---- v27: more aircraft, rockets ---- */
+  .warplane .rotor { transform-box: fill-box; transform-origin: center; animation: rotor .12s linear infinite; }
+  @keyframes rotor { to { transform: rotate(360deg); } }
+  .warplane.rocket svg, .warplane.rocket-shadow svg { transform: translate(-50%, -50%) scale(2.2); }
+  .warplane.rocket svg { filter: drop-shadow(0 0 6px #ffb347); }
+  .warplane.rocket-shadow { opacity: .25; }
+  .warplane.rocket-shadow svg g { fill: #001428; stroke: none; }
+  .warplane.rocket-shadow svg ellipse, .warplane.rocket-shadow .rk-trail { display: none; }
+  .rk-trail { position: absolute; right: 50px; top: -7px; width: 900px; height: 14px; border-radius: 7px; transform: translateY(0);
+    background: linear-gradient(90deg, transparent, #ffffff22 40%, #ffffffaa 92%, #ffe0a0); filter: blur(2px); }
+  .rocketboom .fb-flash { width: 520px !important; height: 520px !important; }
+  .rocketboom .fb-smoke { width: 260px; height: 260px; }
 </style>
 </head>
 <body>
@@ -1665,6 +1678,21 @@
                       lp.type = "lowpass"; lp.frequency.value = 400;
                       g.gain.setValueAtTime(.0001, t); g.gain.linearRampToValueAtTime(big ? .05 : .035, t + d * .45); g.gain.linearRampToValueAtTime(.0001, t + d);
                       o.connect(lp).connect(g).connect(sfx); o.start(t); o.stop(t + d + .1); }); },
+      jet(big)    { const t = ctx.currentTime, d = 6;
+                    noise(t, d, "bandpass", 900, 500, .14, .9, d * .45, true); noise(t, d, "highpass", 2500, 1800, .05, .7, d * .45); },
+      heli()      { const t = ctx.currentTime, d = 8;
+                    for (let k = 0; k < d * 9; k++) { const tt = t + k / 9, v = .07 * Math.sin(Math.PI * k / (d * 9)) + .002;
+                      noise(tt, .07, "lowpass", 260, 140, v, .7, .005, true); } },
+      // rocket: whine coming in, roaring past, fading away
+      rocket(d)   { const t = ctx.currentTime;
+                    const src = ctx.createBufferSource(); src.buffer = pinkBuf;
+                    const bp = ctx.createBiquadFilter(); bp.type = "bandpass"; bp.Q.value = 1.4;
+                    bp.frequency.setValueAtTime(700, t); bp.frequency.exponentialRampToValueAtTime(2600, t + d * .62); bp.frequency.exponentialRampToValueAtTime(500, t + d);
+                    const g = ctx.createGain(); g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(.32, t + d * .62); g.gain.exponentialRampToValueAtTime(.0001, t + d);
+                    src.connect(bp).connect(g).connect(sfx); src.start(t); src.stop(t + d + .1);
+                    tone(t, d * .62, 900, 1700, .03, "sawtooth", d * .6); tone(t + d * .62, d * .38, 1500, 500, .03, "sawtooth", .02); },
+      rocketboom() { const t = ctx.currentTime + .15; tone(t, 1.4, 85, 28, .35); noise(t, 1.8, "lowpass", 600, 60, .35, .5, .01, true);
+                    noise(t, .25, "bandpass", 1800, 600, .08, .9, .005); },
       farboom()   { const t = ctx.currentTime + .3; tone(t, 1.2, 70, 28, .18); noise(t, 1.5, "lowpass", 350, 60, .18, .5, .05, true); },
       kraken()    { const t = ctx.currentTime; tone(t, 1.8, 65, 38, .35, "sine", .2); tone(t + .15, 1.5, 98, 55, .12, "triangle", .2); noise(t, 1.8, "lowpass", 400, 80, .3, .5, .3, true); },
       shieldhit() { const t = ctx.currentTime; bell(t, 880, .4, .1); tone(t, .25, 440, 330, .08); },
@@ -3427,24 +3455,48 @@
   // =====================================================================
   const War = (() => {
     const W = () => world.offsetWidth, H = () => world.offsetHeight;
-    const planeSVG = (big) => big
-      ? `<svg viewBox="-60 -50 120 100" width="120" height="100"><g fill="#4a5560" stroke="#2b333b" stroke-width="2">
-           <path d="M-50 -6 L40 -6 Q58 0 40 6 L-50 6 Z"/><path d="M5 -6 L-10 -48 L-22 -48 L-14 -6 Z"/><path d="M5 6 L-10 48 L-22 48 L-14 6 Z"/>
-           <path d="M-42 -5 L-52 -20 L-58 -20 L-52 -4 Z"/><path d="M-42 5 L-52 20 L-58 20 L-52 4 Z"/>
-           <circle cx="-5" cy="-28" r="4" fill="#2b333b"/><circle cx="-5" cy="28" r="4" fill="#2b333b"/></g></svg>`
-      : `<svg viewBox="-35 -30 70 60" width="70" height="60"><g fill="#56626d" stroke="#2b333b" stroke-width="1.5">
+    const PLANES = {
+      fighter: `<svg viewBox="-35 -30 70 60" width="70" height="60"><g fill="#56626d" stroke="#2b333b" stroke-width="1.5">
            <path d="M-30 -3 L24 -3 Q34 0 24 3 L-30 3 Z"/><path d="M4 -3 L-6 -28 L-14 -28 L-8 -3 Z"/><path d="M4 3 L-6 28 L-14 28 L-8 3 Z"/>
            <path d="M-26 -2 L-32 -11 L-35 -11 L-32 -2 Z"/><path d="M-26 2 L-32 11 L-35 11 L-32 2 Z"/>
-           <ellipse cx="14" cy="0" rx="5" ry="2" fill="#9fd4ff"/></g></svg>`;
+           <ellipse cx="14" cy="0" rx="5" ry="2" fill="#9fd4ff"/></g></svg>`,
+      bomber: `<svg viewBox="-60 -50 120 100" width="120" height="100"><g fill="#4a5560" stroke="#2b333b" stroke-width="2">
+           <path d="M-50 -6 L40 -6 Q58 0 40 6 L-50 6 Z"/><path d="M5 -6 L-10 -48 L-22 -48 L-14 -6 Z"/><path d="M5 6 L-10 48 L-22 48 L-14 6 Z"/>
+           <path d="M-42 -5 L-52 -20 L-58 -20 L-52 -4 Z"/><path d="M-42 5 L-52 20 L-58 20 L-52 4 Z"/>
+           <circle cx="-5" cy="-28" r="4" fill="#2b333b"/><circle cx="-5" cy="28" r="4" fill="#2b333b"/></g></svg>`,
+      // swept-wing jet
+      jet: `<svg viewBox="-40 -30 80 60" width="80" height="60"><g fill="#6b7783" stroke="#2b333b" stroke-width="1.5">
+           <path d="M-32 -2.5 L28 -2.5 Q38 0 28 2.5 L-32 2.5 Z"/><path d="M14 -2 L-14 -26 L-20 -26 L-6 -2 Z"/><path d="M14 2 L-14 26 L-20 26 L-6 2 Z"/>
+           <path d="M-24 -2 L-34 -12 L-37 -12 L-31 -2 Z"/><path d="M-24 2 L-34 12 L-37 12 L-31 2 Z"/>
+           <ellipse cx="18" cy="0" rx="6" ry="1.8" fill="#ffd27a"/></g></svg>`,
+      // four-engine heavy transport
+      heavy: `<svg viewBox="-75 -65 150 130" width="150" height="130"><g fill="#5d6a58" stroke="#2b333b" stroke-width="2">
+           <path d="M-62 -8 L50 -8 Q70 0 50 8 L-62 8 Z"/><path d="M12 -8 L2 -62 L-12 -62 L-8 -8 Z"/><path d="M12 8 L2 62 L-12 62 L-8 8 Z"/>
+           <path d="M-52 -7 L-64 -26 L-72 -26 L-66 -6 Z"/><path d="M-52 7 L-64 26 L-72 26 L-66 6 Z"/>
+           <rect x="0" y="-24" width="16" height="6" rx="2" fill="#3b4440"/><rect x="-4" y="-46" width="16" height="6" rx="2" fill="#3b4440"/>
+           <rect x="0" y="18" width="16" height="6" rx="2" fill="#3b4440"/><rect x="-4" y="40" width="16" height="6" rx="2" fill="#3b4440"/></g></svg>`,
+      // helicopter with a spinning rotor
+      heli: `<svg viewBox="-45 -45 90 90" width="90" height="90"><g fill="#4f5b4a" stroke="#2b333b" stroke-width="1.5">
+           <ellipse cx="6" cy="0" rx="16" ry="9"/><path d="M-8 -2 L-38 -1.5 L-38 1.5 L-8 2 Z"/><path d="M-36 -8 L-32 -8 L-32 8 L-36 8 Z"/>
+           <ellipse cx="16" cy="0" rx="5" ry="5" fill="#9fd4ff"/></g>
+           <g class="rotor"><rect x="-42" y="-2" width="84" height="4" rx="2" fill="#2b333b" opacity=".75"/><rect x="-2" y="-42" width="4" height="84" rx="2" fill="#2b333b" opacity=".75"/></g></svg>`,
+    };
+    const ROCKET = `<svg viewBox="-30 -10 60 20" width="60" height="20"><g stroke="#2b333b" stroke-width="1">
+           <path d="M-20 -3.5 L16 -3.5 Q26 0 16 3.5 L-20 3.5 Z" fill="#c9ced3"/><path d="M-20 -3.5 L-26 -9 L-22 -3.5 Z M-20 3.5 L-26 9 L-22 3.5 Z" fill="#8a1d14"/>
+           <path d="M10 -3.5 L16 -3.5 Q26 0 16 3.5 L10 3.5 Z" fill="#8a1d14"/></g>
+           <ellipse cx="-24" cy="0" rx="6" ry="3" fill="#ffd27a"/><ellipse cx="-23" cy="0" rx="3" ry="1.6" fill="#fff"/></svg>`;
 
     function planePass() {
       if (document.hidden || !settings.ambient || lowGfx()) return;
-      const big = Math.random() < 0.35, count = big ? 1 + rand(2) : 1 + rand(3);
+      const type = ["fighter", "fighter", "bomber", "jet", "jet", "heavy", "heli"][rand(7)];
+      const big = type === "bomber" || type === "heavy";
+      const count = type === "heavy" ? 1 : type === "heli" ? 1 + rand(2) : big ? 1 + rand(2) : 1 + rand(3);
       // fly across the whole battlefield
       const ang = Math.random() * Math.PI * 2, R = Math.max(W(), H()) + 3000;
       const cx = W() / 2 + (Math.random() - 0.5) * W(), cy = H() / 2 + (Math.random() - 0.5) * H();
       const x1 = cx - Math.cos(ang) * R / 2, y1 = cy - Math.sin(ang) * R / 2, x2 = cx + Math.cos(ang) * R / 2, y2 = cy + Math.sin(ang) * R / 2;
-      const deg = ang * 180 / Math.PI, dur = (big ? 26000 : 15000) + rand(5000);
+      const deg = ang * 180 / Math.PI;
+      const dur = ({ fighter: 15000, bomber: 26000, jet: 9000, heavy: 32000, heli: 38000 })[type] + rand(5000);
       for (let k = 0; k < count; k++) {
         const ox = -k * 140, oy = (k % 2 ? 1 : -1) * k * 90;          // V formation
         const off = (x, y) => [x + Math.cos(ang) * ox - Math.sin(ang) * oy, y + Math.sin(ang) * ox + Math.cos(ang) * oy];
@@ -3452,16 +3504,51 @@
         ["plane-shadow", "plane"].forEach(cls => {
           const el = document.createElement("div");
           el.className = "warplane " + cls;
-          el.innerHTML = planeSVG(big);
+          el.innerHTML = PLANES[type];
           world.appendChild(el);
-          const z = cls === "plane" ? 260 : 1, sh = cls === "plane" ? 0 : 70;
+          const low = type === "heli";
+          const z = cls === "plane" ? (low ? 140 : 260) : 1, sh = cls === "plane" ? 0 : (low ? 38 : 70);
           el.animate([
             { transform: `translate3d(${ax + sh}px, ${ay + sh}px, ${z}px) rotate(${deg}deg)` },
             { transform: `translate3d(${bx + sh}px, ${by + sh}px, ${z}px) rotate(${deg}deg)` },
           ], { duration: dur, easing: "linear" }).onfinish = () => el.remove();
         });
       }
-      Sound.play("planes", big);
+      Sound.play(type === "jet" ? "jet" : type === "heli" ? "heli" : "planes", big);
+    }
+
+    // a rocket streaks over the battlefield, then hits something out at sea
+    function rocketPass() {
+      if (document.hidden || !settings.ambient || lowGfx()) return;
+      const w = W(), h = H();
+      // end: a spot just outside the boards; start: far away on the other side
+      const side = rand(2);                                  // left or right of the boards, where you can see it
+      const ex = side === 0 ? -200 - rand(350) : w + 200 + rand(350);
+      const ey = h * (0.15 + Math.random() * 0.6);
+      const ang = Math.atan2(ey - h / 2, ex - w / 2) + (Math.random() - 0.5) * 0.9;
+      const R = Math.max(w, h) + 2500, sx = ex - Math.cos(ang) * R, sy = ey - Math.sin(ang) * R;
+      const deg = ang * 180 / Math.PI, dur = 3200;
+      ["rocket-shadow", "rocket"].forEach(cls => {
+        const el = document.createElement("div");
+        el.className = "warplane " + cls;
+        el.innerHTML = `<i class="rk-trail"></i>` + ROCKET;
+        world.appendChild(el);
+        const z = cls === "rocket" ? 200 : 1, sh = cls === "rocket" ? 0 : 55;
+        el.animate([
+          { transform: `translate3d(${sx + sh}px, ${sy + sh}px, ${z}px) rotate(${deg}deg)` },
+          { transform: `translate3d(${ex + sh}px, ${ey + sh}px, ${z * 0.3}px) rotate(${deg}deg)` },
+        ], { duration: dur, easing: "cubic-bezier(.3, 0, .7, 1)" }).onfinish = () => el.remove();
+      });
+      Sound.play("rocket", dur / 1000);
+      setTimeout(() => {                                  // impact
+        if (document.hidden) return;
+        const el = document.createElement("div");
+        el.className = "farboom rocketboom"; el.style.left = ex + "px"; el.style.top = ey + "px";
+        el.innerHTML = '<i class="fb-flash"></i><i class="fb-smoke"></i>';
+        world.appendChild(el);
+        setTimeout(() => el.remove(), 4000);
+        Sound.play("rocketboom");
+      }, dur - 50);
     }
 
     function farBoom() {
@@ -3509,8 +3596,9 @@
       setTimeout(planePass, 3000);
       setInterval(() => { if (Math.random() < 0.55) planePass(); }, 11000);
       setInterval(() => { if (Math.random() < 0.6) farBoom(); }, 4500);
+      setInterval(() => { if (Math.random() < 0.35) rocketPass(); }, 10000);   // now and then, not too often
     }
-    return { start, planePass, farBoom };
+    return { start, planePass, farBoom, rocketPass };
   })();
   requestAnimationFrame(() => War.start());
 
