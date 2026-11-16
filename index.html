@@ -1284,6 +1284,16 @@
   .dragghost::before { content: ""; position: absolute; left: 50%; top: -60px; width: 2px; height: 50px; background: linear-gradient(#ffe45c, transparent); opacity: 0; transition: .15s; }
   .dragghost.over::before { opacity: 1; }
   .hand .slot.dragging { opacity: .35; }
+
+  /* ---- v38: smoother pinch, smaller placement panel on phones ---- */
+  body.pinching #world { will-change: transform !important; }
+  body.pinching .mark.hit, body.pinching .fx { animation-play-state: paused !important; }
+  @media (max-height: 520px) {
+    .panel:has(.ships) { transform: translateX(-50%) scale(.42) !important; }
+    .panel:has(.ships) .shipbtn .size, .panel:has(.ships) .rotate-hint { display: none; }
+    .panel:has(.ships) h2 { margin-bottom: 4px !important; }
+  }
+  @media (max-height: 380px) { .panel:has(.ships) { transform: translateX(-50%) scale(.36) !important; } }
 </style>
 </head>
 <body>
@@ -4350,6 +4360,7 @@
     if (e.touches.length === 2) {
       const [a, b] = e.touches;
       pinch = { d: Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY), mx: (a.clientX + b.clientX) / 2, my: (a.clientY + b.clientY) / 2, z: zoom, cx: cam.x, cy: cam.y };
+      document.body.classList.add("pinching");
       aimTouch = false; e.preventDefault(); return;
     }
     if (e.touches.length === 1 && e.target.closest("#zone1, #zone2")) {
@@ -4369,12 +4380,12 @@
       cam.x = pinch.cx - (mx - pinch.mx) / (zoom * WZ());
       cam.y = pinch.cy - (my - pinch.my) * (TILT ? 1.3 : 1) / (zoom * WZ());
       if (zoom <= baseZoom * 1.01) { cam.x = pinch.cx; cam.y = pinch.cy; }
-      applyCamera(); e.preventDefault(); return;
+      scheduleCamera(); e.preventDefault(); return;
     }
     if (aimTouch && e.touches.length === 1) { const t = e.touches[0]; aimAt(t.clientX, t.clientY); e.preventDefault(); }
   }, { passive: false });
   window.addEventListener("touchend", e => {
-    if (pinch) { if (e.touches.length < 2) pinch = null; return; }
+    if (pinch) { if (e.touches.length < 2) { pinch = null; setTimeout(() => document.body.classList.remove("pinching"), 120); } return; }
     if (!aimTouch) return;
     aimTouch = false;
     const t = e.changedTouches[0];
