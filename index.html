@@ -1377,6 +1377,34 @@
     opacity: 0; transition: opacity .3s; pointer-events: none; text-shadow: 0 0 12px #ffb347; }
   .po-tap.show { opacity: 1; animation: tsPulse 1.2s ease-in-out infinite; }
   @media (max-height: 520px) { .po-stage { transform: scale(.6); top: 62%; } .pack-grid .pack { transform: scale(.85); } }
+
+  /* ---- v43: playful CARD PACKS tab ---- */
+  .shop-tabs { align-items: center; }
+  .shop-tabs .packtab { position: relative; display: inline-flex; align-items: center; gap: 12px; padding: 10px 22px 10px 16px; font-size: .95rem;
+    color: #fff6d0 !important; -webkit-text-fill-color: #fff6d0; overflow: visible;
+    background: linear-gradient(90deg, #6a2bb8, #c0392b 50%, #e8a10b) !important; border: 1px solid #ffe9a8 !important;
+    box-shadow: 0 0 18px #c77dff66, 0 0 26px #ffc93c44; animation: ptGlow 1.8s ease-in-out infinite; }
+  .shop-tabs .packtab:hover { transform: translateY(-2px) scale(1.04); }
+  .shop-tabs .packtab.on { color: #3a2400 !important; -webkit-text-fill-color: #3a2400; background: linear-gradient(90deg, #ffe45c, #ffb02e) !important; animation: none; }
+  @keyframes ptGlow { 50% { box-shadow: 0 0 28px #c77dffaa, 0 0 40px #ffc93c88; } }
+  /* three tiny foil packs fanned out */
+  .mini-packs { position: relative; width: 34px; height: 26px; flex: none; }
+  .mini-packs i { position: absolute; bottom: 0; width: 16px; height: 22px; border-radius: 3px; border: 1px solid #ffffffaa;
+    background: linear-gradient(135deg, var(--a), var(--b) 45%, #fff 52%, var(--b) 60%, var(--a));
+    box-shadow: 0 2px 4px #0008; transform-origin: 50% 100%; }
+  .mini-packs i::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 3px; background: repeating-linear-gradient(90deg, #0004 0 2px, #fff6 2px 4px); }
+  .mini-packs .mp1 { left: 0;   --a: #123d7a; --b: #4fa8ff; transform: rotate(-18deg); }
+  .mini-packs .mp2 { left: 9px; --a: #4a1d7a; --b: #c77dff; transform: rotate(0deg); z-index: 1; }
+  .mini-packs .mp3 { left: 18px; --a: #8a4b00; --b: #ffc93c; transform: rotate(18deg); z-index: 2; }
+  .packtab:not(.on) .mini-packs i { animation: mpWiggle 2.4s ease-in-out infinite; }
+  .packtab:not(.on) .mini-packs .mp2 { animation-delay: .12s; } .packtab:not(.on) .mini-packs .mp3 { animation-delay: .24s; }
+  @keyframes mpWiggle { 0%, 70%, 100% { translate: 0 0; } 78% { translate: 0 -5px; } 86% { translate: 0 0; } 92% { translate: 0 -2px; } }
+  .packtab:hover .mini-packs .mp1 { transform: rotate(-30deg) translateX(-3px); }
+  .packtab:hover .mini-packs .mp3 { transform: rotate(30deg) translateX(3px); }
+  .mini-packs i { transition: transform .2s; }
+  .pt-spark { position: absolute; top: -9px; right: -7px; font-size: 1rem; color: #fff6d0; text-shadow: 0 0 8px #ffc93c; animation: spk 1.4s ease-in-out infinite; }
+  .packtab.on .pt-spark { display: none; }
+  @keyframes spk { 0%, 100% { transform: scale(.6) rotate(0); opacity: .5; } 50% { transform: scale(1.2) rotate(90deg); opacity: 1; } }
 </style>
 </head>
 <body>
@@ -1428,7 +1456,7 @@
         <button class="shop-close" id="shopClose">✕</button>
       </div>
       <div class="shop-note" id="shopNote"></div>
-      <div class="shop-tabs"><button data-tab="cards" class="on">🃏 CARDS</button><button data-tab="packs">📦 CARD PACKS</button></div>
+      <div class="shop-tabs"><button data-tab="cards" class="on">🃏 CARDS</button><button data-tab="packs" class="packtab"><span class="mini-packs"><i class="mp1"></i><i class="mp2"></i><i class="mp3"></i></span>CARD PACKS<b class="pt-spark">✦</b></button></div>
       <div class="shop-grid" id="shopGrid"></div>
       <div class="pack-grid" id="packGrid"></div>
     </div>
