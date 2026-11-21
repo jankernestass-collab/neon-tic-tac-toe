@@ -1311,7 +1311,7 @@
   .passives, .fleetpanel, .touchbar { margin-right: env(safe-area-inset-right, 0px); }
 
   /* ---- v40: quick turn banner + turn reminder on the middle right ---- */
-  .turnbanner.quick { animation: bannerQuick .15s linear forwards; }
+  .turnbanner.quick { animation: bannerQuick .3s linear forwards; }
   @keyframes bannerQuick { 0% { transform: translateX(-20%); opacity: 0; } 33% { transform: translateX(0); opacity: 1; }
                            67% { transform: translateX(0); opacity: 1; } 100% { transform: translateX(20%); opacity: 0; } }
   .turnside { position: fixed; right: 16px; top: 50%; z-index: 15; display: none; align-items: center; gap: 10px; pointer-events: none;
@@ -2806,7 +2806,7 @@
     document.body.appendChild(el);
     setTimeout(() => el.remove(), 2600);
   }
-  const BANNER_MS = 150;                     // the big turn banner: 0.05s in, 0.05s hold, 0.05s out
+  const BANNER_MS = 300;                     // the big turn banner: 0.1s in, 0.1s hold, 0.1s out
   function turnBanner(who) {
     const text = who === "me" ? "YOUR TURN" : mode === "mp" ? "OPPONENT'S TURN" : "ENEMY TURN";
     const el = document.createElement("div");
