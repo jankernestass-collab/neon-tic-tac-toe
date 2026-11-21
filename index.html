@@ -1311,9 +1311,9 @@
   .passives, .fleetpanel, .touchbar { margin-right: env(safe-area-inset-right, 0px); }
 
   /* ---- v40: quick turn banner + turn reminder on the middle right ---- */
-  .turnbanner.quick { animation: bannerQuick .55s cubic-bezier(.2, .9, .3, 1) forwards; }
-  @keyframes bannerQuick { 0% { transform: translateX(-40%) skewX(-12deg); opacity: 0; } 25% { transform: translateX(0) skewX(0); opacity: 1; }
-                           70% { transform: translateX(0); opacity: 1; } 100% { transform: translateX(40%) skewX(12deg); opacity: 0; } }
+  .turnbanner.quick { animation: bannerQuick .15s linear forwards; }
+  @keyframes bannerQuick { 0% { transform: translateX(-20%); opacity: 0; } 33% { transform: translateX(0); opacity: 1; }
+                           67% { transform: translateX(0); opacity: 1; } 100% { transform: translateX(20%); opacity: 0; } }
   .turnside { position: fixed; right: 16px; top: 50%; z-index: 15; display: none; align-items: center; gap: 10px; pointer-events: none;
     font-family: "Black Ops One", "Segoe UI", sans-serif; font-size: 1rem; letter-spacing: 3px; padding: 10px 16px; border-radius: 12px;
     background: linear-gradient(180deg, #0e3f6ef2, #05223ff5); border: 1px solid #9fe6ff3d; box-shadow: 0 10px 26px #0008;
@@ -2806,7 +2806,7 @@
     document.body.appendChild(el);
     setTimeout(() => el.remove(), 2600);
   }
-  const BANNER_MS = 550;                     // the big turn banner is a quick flash now
+  const BANNER_MS = 150;                     // the big turn banner: 0.05s in, 0.05s hold, 0.05s out
   function turnBanner(who) {
     const text = who === "me" ? "YOUR TURN" : mode === "mp" ? "OPPONENT'S TURN" : "ENEMY TURN";
     const el = document.createElement("div");
