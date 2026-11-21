@@ -1309,6 +1309,24 @@
   .fleetpanel { margin-top: env(safe-area-inset-top, 0px); }
   .menubtn, body.touch .soundbtn, body.touch .fsbtn, .charges, .upgrades { margin-left: env(safe-area-inset-left, 0px); }
   .passives, .fleetpanel, .touchbar { margin-right: env(safe-area-inset-right, 0px); }
+
+  /* ---- v40: quick turn banner + turn reminder on the middle right ---- */
+  .turnbanner.quick { animation: bannerQuick .55s cubic-bezier(.2, .9, .3, 1) forwards; }
+  @keyframes bannerQuick { 0% { transform: translateX(-40%) skewX(-12deg); opacity: 0; } 25% { transform: translateX(0) skewX(0); opacity: 1; }
+                           70% { transform: translateX(0); opacity: 1; } 100% { transform: translateX(40%) skewX(12deg); opacity: 0; } }
+  .turnside { position: fixed; right: 16px; top: 50%; z-index: 15; display: none; align-items: center; gap: 10px; pointer-events: none;
+    font-family: "Black Ops One", "Segoe UI", sans-serif; font-size: 1rem; letter-spacing: 3px; padding: 10px 16px; border-radius: 12px;
+    background: linear-gradient(180deg, #0e3f6ef2, #05223ff5); border: 1px solid #9fe6ff3d; box-shadow: 0 10px 26px #0008;
+    transform: translateY(-50%); }
+  .turnside.show { display: flex; animation: tsIn .3s cubic-bezier(.2, 1.4, .4, 1); }
+  @keyframes tsIn { from { opacity: 0; transform: translate(30px, -50%); } }
+  .turnside i { width: 10px; height: 10px; border-radius: 50%; animation: tsPulse 1.2s ease-in-out infinite; }
+  .turnside.me { color: #8dffb0; border-color: #8dffb066; } .turnside.me i { background: #8dffb0; box-shadow: 0 0 10px #8dffb0; }
+  .turnside.bot { color: #ff7a5c; border-color: #ff7a5c66; } .turnside.bot i { background: #ff7a5c; box-shadow: 0 0 10px #ff7a5c; }
+  @keyframes tsPulse { 50% { opacity: .35; } }
+  body.in-menu .turnside { display: none; }
+  body.touch .turnside { top: 24%; }
+  @media (max-height: 520px) { .turnside { transform: translateY(-50%) scale(.7); transform-origin: 100% 50%; right: 8px; } }
 </style>
 </head>
 <body>
@@ -1370,6 +1388,7 @@
     <div class="popup-hint">It goes to your hand — use it whenever you want</div>
   </div>
 
+  <div class="turnside" id="turnside"></div>
   <div class="touchbar" id="touchbar">
     <button id="tbCancel" class="tb small">✕</button>
     <button id="tbRotate" class="tb">⟳ ROTATE</button>
@@ -2787,12 +2806,22 @@
     document.body.appendChild(el);
     setTimeout(() => el.remove(), 2600);
   }
+  const BANNER_MS = 550;                     // the big turn banner is a quick flash now
   function turnBanner(who) {
+    const text = who === "me" ? "YOUR TURN" : mode === "mp" ? "OPPONENT'S TURN" : "ENEMY TURN";
     const el = document.createElement("div");
-    el.className = "turnbanner " + who;
-    el.textContent = who === "me" ? "YOUR TURN" : mode === "mp" ? "OPPONENT'S TURN" : "ENEMY TURN";
+    el.className = "turnbanner quick " + who;
+    el.textContent = text;
     document.body.appendChild(el);
-    setTimeout(() => el.remove(), 1400);
+    setTimeout(() => el.remove(), BANNER_MS);
+    // then it stays on the middle right as a small reminder
+    const side = document.getElementById("turnside");
+    side.classList.remove("show");
+    setTimeout(() => {
+      if (phase !== "battle" || whose !== who) return;
+      side.className = "turnside show " + who;
+      side.innerHTML = `<i></i>${text}`;
+    }, BANNER_MS);
   }
   function checkOver() {
     if (!alive(sides.bot).length) { gameOver(true); return true; }
@@ -2853,15 +2882,16 @@
       setTimeout(() => {
         document.body.classList.remove("banner-lock");
         if (whose === "me" && phase === "battle") { busy = false; renderPanel(); renderUpgrades(); refreshHover(); }
-      }, 1200);
+      }, BANNER_MS);
     }
     document.body.classList.toggle("my-turn", who === "me");
-    if (who === "me" && sd.charge >= MAX_CHARGE) setTimeout(() => { if (phase === "battle") openDraw(); }, 1300);
+    if (who === "me" && sd.charge >= MAX_CHARGE) setTimeout(() => { if (phase === "battle") openDraw(); }, BANNER_MS + 100);
     if (who === "bot") { busy = true; if (mode === "bot") setTimeout(botTurn, 900); }   // in multiplayer we wait for the opponent's moves
   }
 
+  function gameOverHideTurn() { document.getElementById("turnside").classList.remove("show"); }
   function gameOver(win) {
-    phase = "over"; busy = true;
+    phase = "over"; busy = true; gameOverHideTurn();
     const t = document.getElementById("endText");
     t.textContent = win ? "VICTORY" : "DEFEAT";
     t.style.color = win ? "#8dffb0" : "#ff7a5c";
