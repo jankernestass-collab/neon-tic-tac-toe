@@ -1642,7 +1642,7 @@
     pickpocket:{ name: "Pickpocket",    icon: "👛", type: "tactic", desc: "Steal 30 gold from the enemy", target: "none" },
     cardthief: { name: "Card Thief",    icon: "🦹", type: "tactic", desc: "Steal a random card from the enemy's hand", target: "none" },
     jammer:    { name: "Jammer",        icon: "📡", type: "tactic", desc: "Destroy a random card in the enemy's hand", target: "none" },
-    timewarp:  { name: "Time Warp",     icon: "⏳", type: "tactic", desc: "Take another turn right after this one", target: "none" },
+    rush:      { name: "Card Rush",     icon: "⚡", type: "tactic", desc: "Play 2 more cards this turn", target: "none" },
     rocket:    { name: "Rocket Strike", icon: "🚀", type: "attack", desc: "Blast a 7×7 area — but 30% chance it misfires onto your own fleet", target: "enemy" },
     kraken:    { name: "KRAKEN",        icon: "🐙", type: "attack", desc: "A sea monster hits 2 random enemy ships", target: "none" },
     flare:   { name: "Flare",        icon: "🔦", type: "intel",  desc: "Reveal one whole hidden enemy ship",       target: "none" },
@@ -1660,7 +1660,7 @@
   const RARITY = {
     common:    { label: "COMMON",    weight: 50, cards: ["satellite", "plunder", "move", "depth", "broadside", "supply", "smoke", "gamble", "pickpocket"] },
     rare:      { label: "RARE",      weight: 30, cards: ["scan", "torpedo", "recon", "cluster", "repair", "shield", "airstrike", "sabotage", "decoy", "armor", "cross", "chain", "evade", "jammer"] },
-    epic:      { label: "EPIC",      weight: 15, cards: ["aoe", "flare", "homing", "double", "barrage", "carpet", "irondome", "mines", "timewarp", "cardthief"] },
+    epic:      { label: "EPIC",      weight: 15, cards: ["aoe", "flare", "homing", "double", "barrage", "carpet", "irondome", "mines", "rush", "cardthief"] },
     legendary: { label: "LEGENDARY", weight: 5,  cards: ["nuke", "kraken", "rocket"] },
   };
   const rarityOf = key => Object.keys(RARITY).find(r => RARITY[r].cards.includes(key));
@@ -1754,7 +1754,7 @@
       case "plunder": return `Get ${v} gold right away`;
       case "supply": return `Get ${v} charges right away`;
       case "recon": return v === 1 ? "Reveal enemy ships in a whole column" : `Reveal enemy ships in ${v} whole columns`;
-      case "double": return `Fire ${v} shots this turn`;
+      case "double": return `Fire ${v} basic shots this turn (no cards until they're done)`;
       case "nuke": return `Obliterate a ${sq(v)} area`;
       case "sabotage": return `Enemy loses 2 charges · steal ${v} of their gold`;
       case "gamble": return `50% chance: blast a ${sq(v)} area · 50%: nothing`;
@@ -2210,7 +2210,15 @@
   const revealedShips = sd => alive(sd).filter(sh => sh.hits.size > 0 || sh.cells.some(j => isRevealed(sd, j)));
   const canMoveTo = (sd, ship, list) => fits(sd, list, ship.id) && list.every(j => ship.cells.includes(j) || !shotAt(sd, j));
 
+  // Card Rush: the next 2 cards don't end your turn. Double Shot: fire its shots (no more cards until they're done).
+  function cardEndsTurn(A, key) {
+    if (key === "double") { A.cardsLeft = 0; A.shotsOnly = true; return false; }
+    if (A.cardsLeft > 0) { A.cardsLeft--; return A.cardsLeft === 0; }
+    if (key === "rush") { A.cardsLeft = 2; return false; }
+    return true;
+  }
   function canUse(sd, key) {
+    if (sd.shotsOnly) return false;                     // Double Shot: shoot first
     if (key === "move" || key === "armor") return alive(sd).length > 0;
     if (key === "repair") return alive(sd).some(s => s.hits.size > 0);
     return true;
@@ -2465,10 +2473,10 @@
       await wait(500);
       return `${who}: ${name} — ` + summary(res);
     }
-    if (key === "timewarp") {
-      Sound.play("ping");
-      await wait(500);
-      return `${who}: ${name} — ${A === sides.me ? "you take another turn!" : "the enemy takes another turn!"}`;
+    if (key === "rush") {
+      Sound.play("full");
+      await wait(400);
+      return `${who}: ${name} — ${A === sides.me ? "play 2 more cards this turn!" : "the enemy can play 2 more cards!"}`;
     }
 
     if (key === "depth") {
@@ -2856,7 +2864,7 @@
   function nextTurn(who) {
     whose = who; busy = false; active = -1; moving = null;
     const sd = sides[who];
-    sd.extraShots = 0;
+    sd.extraShots = 0; sd.shotsOnly = false; sd.cardsLeft = 0;
     const income = TURN_INCOME + val(sd, "warchest");
     sd.gold += income; stats[sd.name].gold += income;   // same on both screens in multiplayer
     sd.turns = (sd.turns || 0) + 1;
@@ -2931,13 +2939,13 @@
     if (mode === "mp") Net.send({ t: "act", a: "card", key, opts: serOpts(opts), seed });
     setLog(await playSeeded(sides.me, key, opts, seed));
     if (checkOver()) return;
-    if (key === "double") {        // Double Shot: now fire your 2 shots
+    if (!cardEndsTurn(sides.me, key)) {      // Double Shot / Card Rush: your turn keeps going
       busy = false;
       renderPanel(); renderUpgrades(); refreshHover();
       return;
     }
     await wait(700);
-    nextTurn(key === "timewarp" ? "me" : "bot");   // playing a card uses your turn (Time Warp gives you another)
+    nextTurn("bot");                         // playing a card uses your turn
   }
 
   // charges / draw pop-up -------------------------------------------------
@@ -3235,7 +3243,7 @@
     // shop: buy the best card it can afford (easy bots never shop)
     if (botLevel === "easy" && A.gold >= 30 && Math.random() < 0.5) { const cheap = SHOP_ORDER.filter(k => priceOf(k) === 30 && A.unl.has(k)); if (cheap.length) { A.inv.push(cheap[rand(cheap.length)]); A.gold -= 30; } }
     if (botLevel !== "easy") {
-      const wish = ["nuke", "kraken", "rocket", "timewarp", "homing", "barrage", "carpet", "irondome", "chain", "cardthief", "aoe", "cross", "evade", "jammer", "airstrike", "flare", "cluster", "armor", "depth", "gamble", "scan", "torpedo"];
+      const wish = ["nuke", "kraken", "rocket", "rush", "homing", "barrage", "carpet", "irondome", "chain", "cardthief", "aoe", "cross", "evade", "jammer", "airstrike", "flare", "cluster", "armor", "depth", "gamble", "scan", "torpedo"];
       const dream = ["nuke", "kraken", "rocket"].find(c => A.unl.has(c));
       if (A.saveFor === undefined || (A.saveFor && !A.unl.has(A.saveFor))) A.saveFor = null;
       if (dream && !A.saveFor && Math.random() < 0.04) A.saveFor = dream;            // now and then it starts saving for a big one
@@ -3277,7 +3285,7 @@
       if (opts) idx = pick("decoy");
     }
     if (idx < 0) {
-      if (pick("timewarp") >= 0) { idx = pick("timewarp"); opts = {}; }
+      if (pick("rush") >= 0 && A.inv.length >= 3 && !(A.cardsLeft > 0)) { idx = pick("rush"); opts = {}; }
       if (idx < 0) for (const k of ["kraken", "chain", "barrage", "carpet", "cross", "airstrike", "gamble", "depth", "broadside", "satellite", "recon", "supply", "sabotage"]) {
         if (pick(k) < 0) continue;
         if ((k === "satellite" || k === "recon") && hot >= 0) continue;
@@ -3302,7 +3310,8 @@
       setLog(await playCard(A, key, opts));
       if (checkOver()) return;
       await wait(700);
-      if (key !== "double") { nextTurn(key === "timewarp" ? "bot" : "me"); return; }
+      if (!cardEndsTurn(A, key)) { if (key !== "double") return botTurn(); }    // Card Rush: keep playing cards
+      else { nextTurn("me"); return; }
     }
     // then fire one shot
     do {
@@ -3404,7 +3413,9 @@
     if (phase !== "battle") panelHint.textContent = "";
     else if (whose !== "me") panelHint.textContent = "Enemy is taking its turn…";
     else if (busy) panelHint.textContent = "…";
-    else if (active < 0) panelHint.textContent = sides.me.extraShots > 0 ? "⚡ Bonus shot — fire again!" : "Fire at the enemy zone · or play a card (a card uses your turn)";
+    else if (active < 0) panelHint.textContent = sides.me.shotsOnly ? `🎯 Double Shot — fire ${sides.me.extraShots + 1} more shot${sides.me.extraShots ? "s" : ""}` :
+      sides.me.cardsLeft > 0 ? `⚡ Card Rush — play ${sides.me.cardsLeft} more card${sides.me.cardsLeft > 1 ? "s" : ""} (shooting ends your turn)` :
+      "Fire at the enemy zone · or play a card (a card uses your turn)";
     else {
       const key = inv[active];
       if (key === "repair") panelHint.textContent = "Click one of your damaged ships";
@@ -4083,7 +4094,7 @@
       await showEnemyCard(m.key);
       setLog(await playSeeded(B, m.key, deserOpts(m.opts || {}, B), m.seed));
       if (checkOver()) return;
-      if (m.key !== "double") { await wait(700); nextTurn(m.key === "timewarp" ? "bot" : "me"); }
+      if (cardEndsTurn(B, m.key)) { await wait(700); nextTurn("me"); }
       return;
     }
     if (m.a === "shot") {
