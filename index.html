@@ -1327,6 +1327,56 @@
   body.in-menu .turnside { display: none; }
   body.touch .turnside { top: 24%; }
   @media (max-height: 520px) { .turnside { transform: translateY(-50%) scale(.7); transform-origin: 100% 50%; right: 8px; } }
+
+  /* ---- v42: CARD PACKS ---- */
+  .shop-tabs { display: flex; gap: 8px; margin: 0 0 10px; }
+  .shop-tabs button { flex: 0 0 auto; font: bold .85rem "Segoe UI", sans-serif; letter-spacing: 3px; color: #cdeeff !important; -webkit-text-fill-color: #cdeeff; padding: 9px 18px; border-radius: 10px; cursor: pointer;
+    background: #021a33cc; border: 1px solid #9fe6ff33; transition: .15s; }
+  .shop-tabs button:hover { border-color: #9fe6ff88; }
+  .shop-tabs button.on { background: linear-gradient(180deg, #ffd84a, #ff9a3c); color: #3a2400 !important; -webkit-text-fill-color: #3a2400; border-color: #ffe9a8; box-shadow: 0 0 16px #ffb34755; }
+  .pack-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 26px; padding: 14px 4px 12px; overflow-y: auto; }
+  .packitem { display: flex; flex-direction: column; align-items: center; gap: 10px; transition: transform .15s; }
+  .packitem:not(.locked):hover { transform: translateY(-6px) rotate(-1.5deg); }
+  .packitem.locked .pack { filter: grayscale(.6) brightness(.7); }
+  .pack { --pc: #d6e2ee; --pd: #5b6b7a; position: relative; width: 170px; height: 236px; border-radius: 10px; overflow: hidden;
+    background: linear-gradient(135deg, var(--pd) 0%, var(--pc) 45%, #ffffff 52%, var(--pc) 60%, var(--pd) 100%);
+    box-shadow: 0 14px 30px #000b, 0 0 24px color-mix(in srgb, var(--pc) 45%, transparent), inset 0 0 0 2px #ffffff55; }
+  .pack.r-rare { --pc: #4fa8ff; --pd: #123d7a; } .pack.r-epic { --pc: #c77dff; --pd: #4a1d7a; } .pack.r-legendary { --pc: #ffc93c; --pd: #8a4b00; }
+  .pack::after { content: ""; position: absolute; inset: 0; background: linear-gradient(115deg, transparent 30%, #ffffff66 45%, transparent 60%); background-size: 250% 100%;
+    animation: foil 3.5s ease-in-out infinite; pointer-events: none; }
+  @keyframes foil { 0%, 50% { background-position: 120% 0; } 100% { background-position: -40% 0; } }
+  .pk-crimp { position: absolute; left: 0; right: 0; height: 16px; background: repeating-linear-gradient(90deg, #00000033 0 4px, #ffffff33 4px 8px); }
+  .pk-crimp.top { top: 0; } .pk-crimp.bottom { bottom: 0; }
+  .pk-body { position: absolute; inset: 16px 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; text-align: center; color: #fff; }
+  .pk-emblem { width: 76px; height: 76px; border-radius: 50%; display: grid; place-items: center; font-size: 2.4rem; background: radial-gradient(circle, #ffffff44, #00000044);
+    border: 3px solid #ffffffaa; box-shadow: 0 0 20px var(--pc); }
+  .pk-name { font-family: "Black Ops One", "Segoe UI", sans-serif; font-size: 1.15rem; letter-spacing: 2px; text-shadow: 0 2px 0 #0008, 0 0 12px var(--pc); }
+  .pk-sub { font: bold .6rem "Segoe UI", sans-serif; letter-spacing: 1px; background: #00000055; padding: 3px 7px; border-radius: 6px; }
+  /* opening */
+  .packopen { position: fixed; inset: 0; z-index: 56; display: none; background: radial-gradient(ellipse at center, #021a33ee, #000e); cursor: default; }
+  .packopen.show { display: block; }
+  .po-stage { position: absolute; left: 50%; top: 58%; width: 0; height: 0; }
+  .po-pack { position: absolute; left: -85px; top: -118px; z-index: 2; }
+  .po-pack .pack { width: 170px; height: 236px; }
+  .po-pack.shake { animation: poShake .08s linear infinite; }
+  @keyframes poShake { 0% { translate: 0 0; rotate: -2deg; } 50% { translate: 3px -2px; rotate: 2deg; } 100% { translate: -3px 1px; rotate: -1deg; } }
+  .po-pack.torn .pk-crimp.top { animation: tearOff .6s cubic-bezier(.3, .7, .4, 1) forwards; }
+  @keyframes tearOff { to { transform: translate(140px, -160px) rotate(35deg); opacity: 0; } }
+  .po-card { position: absolute; left: 0; top: -100px; z-index: 1; opacity: 0; transform: translate(-50%, 40px) scale(.62); }
+  .po-card .gcard { transition: box-shadow .3s; }
+  .po-card.shown .gcard { box-shadow: 0 0 0 2px #fff, 0 0 30px var(--rc, #fff), 0 16px 30px #000b; }
+  .po-card.shown { z-index: 3; }
+  .po-card.r-common { --rc: #d6e2ee; } .po-card.r-rare { --rc: #4fa8ff; } .po-card.r-epic { --rc: #c77dff; } .po-card.r-legendary { --rc: #ffc93c; }
+  .po-card.shown.r-legendary .gcard { animation: legGlow 1s ease-in-out infinite alternate; }
+  @keyframes legGlow { to { box-shadow: 0 0 0 3px #fff6d0, 0 0 60px #ffc93c, 0 16px 30px #000b; } }
+  .po-flash { position: absolute; left: -300px; top: -420px; width: 600px; height: 600px; border-radius: 50%; pointer-events: none; z-index: 0;
+    background: radial-gradient(circle, #ffffffcc 0%, var(--fc, #d6e2ee) 25%, transparent 65%); animation: poFlash .9s ease-out forwards; }
+  .po-flash.r-rare { --fc: #4fa8ff; } .po-flash.r-epic { --fc: #c77dff; } .po-flash.r-legendary { --fc: #ffc93c; }
+  @keyframes poFlash { 0% { opacity: 1; transform: scale(.3); } 100% { opacity: 0; transform: scale(1.4); } }
+  .po-tap { position: absolute; left: 50%; bottom: 8%; transform: translateX(-50%); font: bold 1rem "Segoe UI", sans-serif; letter-spacing: 5px; color: #ffe45c;
+    opacity: 0; transition: opacity .3s; pointer-events: none; text-shadow: 0 0 12px #ffb347; }
+  .po-tap.show { opacity: 1; animation: tsPulse 1.2s ease-in-out infinite; }
+  @media (max-height: 520px) { .po-stage { transform: scale(.6); top: 62%; } .pack-grid .pack { transform: scale(.85); } }
 </style>
 </head>
 <body>
@@ -1378,9 +1428,13 @@
         <button class="shop-close" id="shopClose">✕</button>
       </div>
       <div class="shop-note" id="shopNote"></div>
+      <div class="shop-tabs"><button data-tab="cards" class="on">🃏 CARDS</button><button data-tab="packs">📦 CARD PACKS</button></div>
       <div class="shop-grid" id="shopGrid"></div>
+      <div class="pack-grid" id="packGrid"></div>
     </div>
   </div>
+
+  <div class="packopen" id="packOpen"><div class="po-stage" id="poStage"></div><div class="po-tap" id="poTap">TAP TO COLLECT</div></div>
 
   <div class="popup" id="popup">
     <div class="popup-title">CHOOSE A CARD</div>
@@ -1852,6 +1906,7 @@
       flip()      { const t = ctx.currentTime; noise(t, .045, "bandpass", 3200, 2400, .14, 2, .002); },
       tick(k)     { const t = ctx.currentTime; noise(t, .03, "bandpass", 2600 + k * 90, 2000, .1, 3, .002); tone(t, .05, 900 + k * 40, 0, .04, "triangle"); },
       // hype build-up while a mystery card spins (lvl 0 common … 3 legendary)
+      rip()       { const t = ctx.currentTime; noise(t, .32, "highpass", 2500, 5200, .35, .8, .004, true); noise(t + .05, .2, "bandpass", 1400, 900, .15, 1.4, .003); },
       riser(dur, lvl) { const t = ctx.currentTime;
                     noise(t, dur, "bandpass", 250, 2600 + lvl * 900, .18 + lvl * .06, 1.6, dur * .92, true);
                     tone(t, dur, 98, 196 * (1 + lvl * .5), .07 + lvl * .02, "sawtooth", dur * .92);
@@ -2984,6 +3039,7 @@
     await wait(250);
   }
   document.getElementById("shopClose").onclick = closeShop;
+  document.querySelectorAll(".shop-tabs button").forEach(b => b.onclick = () => { shopTab = b.dataset.tab; Sound.play("select"); renderShop(); });
   document.getElementById("shop").addEventListener("mousedown", e => { if (e.target.id === "shop") closeShop(); });
   document.getElementById("charges").onclick = () => {
     if (phase !== "battle" || sides.me.charge < MAX_CHARGE) return;
@@ -3138,8 +3194,16 @@
     const me = sides.me, canBuy = phase === "battle" && whose === "me" && !busy;
     document.getElementById("shopGold").textContent = me.gold;
     document.getElementById("shopNote").textContent = canBuy ? "Buying doesn't use your turn · bought cards go to your hand" : "You can buy on your turn";
+    document.querySelectorAll(".shop-tabs button").forEach(b => b.classList.toggle("on", b.dataset.tab === shopTab));
     const grid = document.getElementById("shopGrid");
+    grid.style.display = shopTab === "cards" ? "" : "none";
+    document.getElementById("packGrid").style.display = shopTab === "packs" ? "" : "none";
+    if (shopTab === "packs") {
+      document.getElementById("shopNote").textContent = canBuy ? "3 random cards per pack · one is guaranteed to be the pack's rarity · cards go to your hand" : "You can buy on your turn";
+      renderPacks(canBuy);
+    }
     grid.innerHTML = ""; hidePreview();
+    if (shopTab !== "cards") return;
     SHOP_ORDER.forEach(key => {
       const price = priceOf(key, me), open = me.unl.has(key), ok = open && canBuy && me.gold >= price;
       const item = document.createElement("div");
@@ -3156,6 +3220,94 @@
       grid.appendChild(item);
     });
   }
+  // ---- CARD PACKS: 3 random cards, one of them guaranteed to be the pack's rarity ----
+  const PACKS = [
+    { rar: "common",    price: 50,  name: "COMMON PACK" },
+    { rar: "rare",      price: 100, name: "RARE PACK" },
+    { rar: "epic",      price: 190, name: "EPIC PACK" },
+    { rar: "legendary", price: 380, name: "LEGENDARY PACK" },
+  ];
+  let shopTab = "cards";
+  function rollPack(rar) {
+    const pickFrom = list => list[Math.floor(Math.random() * list.length)];
+    const anyCard = () => {                                     // the 2 extra cards: weighted by rarity
+      const total = Object.values(RARITY).reduce((a, r) => a + r.weight, 0);
+      let x = Math.random() * total;
+      for (const r of Object.values(RARITY)) { if ((x -= r.weight) < 0) return pickFrom(r.cards); }
+      return pickFrom(RARITY.common.cards);
+    };
+    const cards = [anyCard(), anyCard(), pickFrom(RARITY[rar].cards)];   // the guaranteed one is revealed last
+    return cards.filter(k => CARDS[k]);
+  }
+  function packHTML(p) {
+    return `<div class="pack r-${p.rar}"><div class="pk-crimp top"></div><div class="pk-body"><div class="pk-emblem">⚓</div>` +
+           `<div class="pk-name">${p.name}</div><div class="pk-sub">3 CARDS · 1 ${p.rar.toUpperCase()} GUARANTEED</div></div><div class="pk-crimp bottom"></div></div>`;
+  }
+  function renderPacks(canBuy) {
+    const grid = document.getElementById("packGrid"), me = sides.me;
+    grid.innerHTML = "";
+    PACKS.forEach(p => {
+      const ok = canBuy && me.gold >= p.price;
+      const item = document.createElement("div");
+      item.className = "packitem" + (ok ? "" : " locked");
+      item.innerHTML = packHTML(p) + `<button class="si-buy" ${ok ? "" : "disabled"}>🪙 ${p.price}</button>`;
+      item.querySelector(".si-buy").onclick = () => buyPack(p);
+      grid.appendChild(item);
+    });
+  }
+  function buyPack(p) {
+    const me = sides.me;
+    if (phase !== "battle" || whose !== "me" || busy || me.gold < p.price) return;
+    const keys = rollPack(p.rar);
+    me.gold -= p.price;
+    me.inv.push(...keys); newCard = true;
+    if (mode === "mp") Net.send({ t: "act", a: "pack", rar: p.rar, cost: p.price, keys });
+    Sound.play("coin");
+    setLog(`You opened a ${p.name.toLowerCase()}: ${keys.map(k => CARDS[k].name).join(", ")}`);
+    renderUpgrades(true);
+    openPackAnim(p, keys);
+  }
+  // the pack shakes, tears open and the cards slide out of the top
+  function openPackAnim(p, keys) {
+    const ov = document.getElementById("packOpen"), stage = document.getElementById("poStage"), tap = document.getElementById("poTap");
+    stage.innerHTML = "";
+    ov.classList.add("show"); tap.classList.remove("show");
+    const pack = document.createElement("div"); pack.className = "po-pack"; pack.innerHTML = packHTML(p);
+    const cards = keys.map((k, n) => {
+      const c = document.createElement("div"); c.className = "po-card r-" + rarityOf(k); c.innerHTML = cardHTML(k); stage.appendChild(c); return c;
+    });
+    stage.appendChild(pack);
+    const lvlOf = k => ["common", "rare", "epic", "legendary"].indexOf(rarityOf(k));
+    pack.animate([{ transform: "translateY(60px) scale(.5)", opacity: 0 }, { transform: "translateY(0) scale(1)", opacity: 1 }], { duration: 350, easing: "cubic-bezier(.2,1.4,.4,1)", fill: "both" });
+    setTimeout(() => { pack.classList.add("shake"); Sound.play("riser", 0.9, lvlOf(keys[2])); }, 380);
+    setTimeout(() => {                                          // RIP
+      pack.classList.remove("shake"); pack.classList.add("torn");
+      Sound.play("rip");
+      const flash = document.createElement("div"); flash.className = "po-flash r-" + p.rar; stage.appendChild(flash);
+      setTimeout(() => flash.remove(), 900);
+    }, 1300);
+    const spread = [-230, 0, 230];
+    cards.forEach((c, n) => {
+      const t0 = 1550 + n * 420;
+      setTimeout(() => {
+        Sound.play("flip");
+        // slide up out of the pack, then fly to its spot in the row
+        c.animate([
+          { transform: "translate(-50%, 40px) scale(.62)", opacity: 1, offset: 0 },
+          { transform: "translate(-50%, -330px) scale(.7)", opacity: 1, offset: .45 },
+          { transform: `translate(calc(-50% + ${spread[n]}px), -120px) scale(1)`, opacity: 1, offset: 1 },
+        ], { duration: 650, easing: "cubic-bezier(.3,.7,.3,1)", fill: "forwards" });
+        setTimeout(() => { c.classList.add("shown"); Sound.play("reveal", lvlOf(keys[n])); if (lvlOf(keys[n]) >= 2) shake(); }, 600);
+      }, t0);
+    });
+    const done = 1550 + keys.length * 420 + 700;
+    setTimeout(() => {
+      pack.animate([{ opacity: 1, transform: "translateY(0)" }, { opacity: 0, transform: "translateY(120px) rotate(6deg)" }], { duration: 400, fill: "forwards" });
+      tap.classList.add("show");
+      ov.onclick = () => { ov.onclick = null; ov.classList.remove("show"); stage.innerHTML = ""; renderPanel(); renderShop(); refreshHover(); };
+    }, done);
+  }
+
   function buyCard(key, item) {
     const me = sides.me, price = priceOf(key, me);
     if (phase !== "battle" || whose !== "me" || busy || me.gold < price || !me.unl.has(key)) return;
@@ -3249,6 +3401,8 @@
       if (dream && !A.saveFor && Math.random() < 0.04) A.saveFor = dream;            // now and then it starts saving for a big one
       const saving = A.saveFor && A.gold < priceOf(A.saveFor, A);
       const k = saving ? null : wish.concat(SHOP_ORDER).find(c => A.unl.has(c) && A.gold >= priceOf(c, A) && (A.gold - priceOf(c, A) >= 30 || priceOf(c, A) >= 120) && (wish.includes(c) || Math.random() < 0.3));
+      const pk = !saving && !k && Math.random() < 0.3 ? [...PACKS].reverse().find(p => A.gold >= p.price && A.gold - p.price >= 20) : null;
+      if (pk) { const got = rollPack(pk.rar); A.gold -= pk.price; A.inv.push(...got); renderFleet(); setLog(`Enemy opened a ${pk.rar} card pack`); await wait(600); }
       if (k) { if (k === A.saveFor) A.saveFor = null; A.gold -= priceOf(k, A); noteBuy(A, k); A.inv.push(k); renderFleet(); setLog("Enemy bought a card from the shop"); await wait(600); }
     }
     // maybe play a card first
@@ -4088,6 +4242,7 @@
     // no rounding to 0 here: the draw can arrive just before this screen adds their turn's charge, and the order must not matter
     if (m.a === "draw") { B.charge -= MAX_CHARGE; setLog("Enemy drew a card"); return; }
     if (m.a === "upg") { const what = applyPick(B, m.key); B.charge -= MAX_CHARGE; setLog(what === "unlock" ? "Opponent unlocked a new card" : `Opponent upgraded ${UPGRADES[m.key].name}`); return; }
+    if (m.a === "pack") { B.gold -= m.cost; B.inv.push(...(m.keys || []).filter(k => CARDS[k])); renderFleet(); setLog(`Opponent opened a ${m.rar} card pack`); return; }
     if (m.a === "shop") { B.gold -= m.cost; if (m.key) { B.inv.push(m.key); noteBuy(B, m.key); } renderFleet(); setLog("Opponent bought a card from the shop"); return; }
     if (m.a === "card") {
       { const i = B.inv.indexOf(m.key); if (i >= 0) B.inv.splice(i, 1); }
