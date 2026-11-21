@@ -1353,28 +1353,44 @@
   .pk-name { font-family: "Black Ops One", "Segoe UI", sans-serif; font-size: 1.15rem; letter-spacing: 2px; text-shadow: 0 2px 0 #0008, 0 0 12px var(--pc); }
   .pk-sub { font: bold .6rem "Segoe UI", sans-serif; letter-spacing: 1px; background: #00000055; padding: 3px 7px; border-radius: 6px; }
   /* opening */
-  .packopen { position: fixed; inset: 0; z-index: 56; display: none; background: radial-gradient(ellipse at center, #021a33ee, #000e); cursor: default; }
-  .packopen.show { display: block; }
-  .po-stage { position: absolute; left: 50%; top: 58%; width: 0; height: 0; }
-  .po-pack { position: absolute; left: -85px; top: -118px; z-index: 2; }
+  .packopen { position: fixed; inset: 0; z-index: 56; display: none; background: radial-gradient(ellipse at center, #0a2c52ee, #000c 75%); cursor: pointer; overflow: hidden; }
+  .packopen.show { display: block; animation: homeIn .25s ease-out; }
+  .po-stage { position: absolute; left: 50%; top: 56%; width: 0; height: 0; }
+  .po-glow { position: absolute; left: -330px; top: -330px; width: 660px; height: 660px; border-radius: 50%; pointer-events: none; --gs: 1;
+    background: repeating-conic-gradient(from 0deg, color-mix(in srgb, var(--pc) 38%, transparent) 0 9deg, transparent 9deg 24deg);
+    -webkit-mask: radial-gradient(circle, #000 20%, transparent 68%); mask: radial-gradient(circle, #000 20%, transparent 68%);
+    animation: poSpin 9s linear infinite; transform: scale(var(--gs)); transition: transform .25s; opacity: .9; }
+  @keyframes poSpin { to { rotate: 360deg; } }
+  .po-pack { position: absolute; left: -85px; top: -118px; z-index: 2; filter: drop-shadow(0 18px 24px #000a); }
   .po-pack .pack { width: 170px; height: 236px; }
-  .po-pack.shake { animation: poShake .08s linear infinite; }
-  @keyframes poShake { 0% { translate: 0 0; rotate: -2deg; } 50% { translate: 3px -2px; rotate: 2deg; } 100% { translate: -3px 1px; rotate: -1deg; } }
-  .po-pack.torn .pk-crimp.top { animation: tearOff .6s cubic-bezier(.3, .7, .4, 1) forwards; }
-  @keyframes tearOff { to { transform: translate(140px, -160px) rotate(35deg); opacity: 0; } }
-  .po-card { position: absolute; left: 0; top: -100px; z-index: 1; opacity: 0; transform: translate(-50%, 40px) scale(.62); }
-  .po-card .gcard { transition: box-shadow .3s; }
-  .po-card.shown .gcard { box-shadow: 0 0 0 2px #fff, 0 0 30px var(--rc, #fff), 0 16px 30px #000b; }
-  .po-card.shown { z-index: 3; }
-  .po-card.r-common { --rc: #d6e2ee; } .po-card.r-rare { --rc: #4fa8ff; } .po-card.r-epic { --rc: #c77dff; } .po-card.r-legendary { --rc: #ffc93c; }
-  .po-card.shown.r-legendary .gcard { animation: legGlow 1s ease-in-out infinite alternate; }
-  @keyframes legGlow { to { box-shadow: 0 0 0 3px #fff6d0, 0 0 60px #ffc93c, 0 16px 30px #000b; } }
-  .po-flash { position: absolute; left: -300px; top: -420px; width: 600px; height: 600px; border-radius: 50%; pointer-events: none; z-index: 0;
-    background: radial-gradient(circle, #ffffffcc 0%, var(--fc, #d6e2ee) 25%, transparent 65%); animation: poFlash .9s ease-out forwards; }
-  .po-flash.r-rare { --fc: #4fa8ff; } .po-flash.r-epic { --fc: #c77dff; } .po-flash.r-legendary { --fc: #ffc93c; }
-  @keyframes poFlash { 0% { opacity: 1; transform: scale(.3); } 100% { opacity: 0; transform: scale(1.4); } }
-  .po-tap { position: absolute; left: 50%; bottom: 8%; transform: translateX(-50%); font: bold 1rem "Segoe UI", sans-serif; letter-spacing: 5px; color: #ffe45c;
-    opacity: 0; transition: opacity .3s; pointer-events: none; text-shadow: 0 0 12px #ffb347; }
+  .po-pack.torn .pk-crimp.top { animation: tearOff .7s cubic-bezier(.3, .7, .4, 1) forwards; height: 30px; }
+  @keyframes tearOff { 30% { transform: translate(20px, -40px) rotate(-12deg); } 100% { transform: translate(220px, -260px) rotate(70deg); opacity: 0; } }
+  .po-card { position: absolute; left: 0; top: -107px; z-index: 1; opacity: 0; perspective: 900px; }
+  .po-in { position: relative; width: 150px; height: 214px; transform-style: preserve-3d; transform: rotateY(180deg); transition: transform .45s cubic-bezier(.3, 1.5, .5, 1); }
+  .po-card.flipped .po-in { transform: rotateY(0deg); }
+  .po-face { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+  .po-back { transform: rotateY(180deg); }
+  .po-back .gback { width: 100%; height: 100%; border-radius: 12px; display: grid; place-items: center; font-size: 3rem; }
+  .po-card.flipped .po-front .gcard { box-shadow: 0 0 0 3px var(--rc), 0 0 34px var(--rc), 0 18px 30px #000b; }
+  .po-card.float { animation: poFloat 2.2s ease-in-out infinite; }
+  .po-card:nth-child(3n).float { animation-delay: -.7s; } .po-card:nth-child(3n+1).float { animation-delay: -1.4s; }
+  @keyframes poFloat { 50% { translate: 0 -10px; } }
+  .po-rays { position: absolute; left: 50%; top: 50%; width: 420px; height: 420px; margin: -210px 0 0 -210px; border-radius: 50%; opacity: 0; pointer-events: none; z-index: -1;
+    background: repeating-conic-gradient(from 0deg, var(--rc) 0 7deg, transparent 7deg 22deg);
+    -webkit-mask: radial-gradient(circle, transparent 22%, #000 32%, transparent 68%); mask: radial-gradient(circle, transparent 22%, #000 32%, transparent 68%); }
+  .po-card.big .po-rays { opacity: .55; animation: poSpin 6s linear infinite; }
+  .po-card.r-legendary.big .po-front .gcard { animation: legGlow .9s ease-in-out infinite alternate; }
+  @keyframes legGlow { to { box-shadow: 0 0 0 3px #fff6d0, 0 0 70px #ffc93c, 0 18px 30px #000b; } }
+  .po-flash { position: absolute; left: -340px; top: -460px; width: 680px; height: 680px; border-radius: 50%; pointer-events: none; z-index: 3;
+    background: radial-gradient(circle, #ffffffee 0%, var(--fc) 26%, transparent 64%); animation: poFlash .8s ease-out forwards; }
+  @keyframes poFlash { 0% { opacity: 1; transform: scale(.25); } 100% { opacity: 0; transform: scale(1.5); } }
+  .po-conf { position: absolute; left: -4px; top: -120px; width: 9px; height: 14px; border-radius: 2px; z-index: 4; pointer-events: none; opacity: 0;
+    animation: poConf 2.1s cubic-bezier(.15, .7, .4, 1) forwards; }
+  @keyframes poConf { 0% { opacity: 1; transform: translate(0, 0) rotate(0); }
+                      45% { opacity: 1; transform: translate(var(--dx), var(--dy)) rotate(calc(var(--rot) * .5)); }
+                      100% { opacity: 0; transform: translate(calc(var(--dx) * 1.15), calc(var(--dy) + var(--fall))) rotate(var(--rot)); } }
+  .po-tap { position: absolute; left: 50%; bottom: 7%; transform: translateX(-50%); font: bold 1.05rem "Segoe UI", sans-serif; letter-spacing: 5px; color: #ffe45c;
+    opacity: 0; transition: opacity .3s; pointer-events: none; text-shadow: 0 0 12px #ffb347; padding: 10px 22px; border-radius: 30px; border: 1px solid #ffe45c66; background: #00000055; }
   .po-tap.show { opacity: 1; animation: tsPulse 1.2s ease-in-out infinite; }
   @media (max-height: 520px) { .po-stage { transform: scale(.6); top: 62%; } .pack-grid .pack { transform: scale(.85); } }
 
@@ -3295,45 +3311,91 @@
     renderUpgrades(true);
     openPackAnim(p, keys);
   }
-  // the pack shakes, tears open and the cards slide out of the top
+  // pack opening: drop in → wobble harder and harder → RIP + confetti → cards pop out face-down, flip, float → tap: they fly to your hand
   function openPackAnim(p, keys) {
     const ov = document.getElementById("packOpen"), stage = document.getElementById("poStage"), tap = document.getElementById("poTap");
-    stage.innerHTML = "";
+    stage.innerHTML = ""; ov.onclick = null;
     ov.classList.add("show"); tap.classList.remove("show");
+    const lvlOf = k => ["common", "rare", "epic", "legendary"].indexOf(rarityOf(k));
+    const COL = { common: "#d6e2ee", rare: "#4fa8ff", epic: "#c77dff", legendary: "#ffc93c" };
+    const glow = document.createElement("div"); glow.className = "po-glow"; glow.style.setProperty("--pc", COL[p.rar]); stage.appendChild(glow);
     const pack = document.createElement("div"); pack.className = "po-pack"; pack.innerHTML = packHTML(p);
+    const slots = [{ x: -250, y: -95, r: -9 }, { x: 0, y: -135, r: 0 }, { x: 250, y: -95, r: 9 }];
     const cards = keys.map((k, n) => {
-      const c = document.createElement("div"); c.className = "po-card r-" + rarityOf(k); c.innerHTML = cardHTML(k); stage.appendChild(c); return c;
+      const c = document.createElement("div"); c.className = "po-card r-" + rarityOf(k); c.style.setProperty("--rc", COL[rarityOf(k)]);
+      c.innerHTML = `<div class="po-rays"></div><div class="po-in"><div class="po-face po-front">${cardHTML(k)}</div><div class="po-face po-back"><div class="gback">⚓</div></div></div>`;
+      stage.appendChild(c); return c;
     });
     stage.appendChild(pack);
-    const lvlOf = k => ["common", "rare", "epic", "legendary"].indexOf(rarityOf(k));
-    pack.animate([{ transform: "translateY(60px) scale(.5)", opacity: 0 }, { transform: "translateY(0) scale(1)", opacity: 1 }], { duration: 350, easing: "cubic-bezier(.2,1.4,.4,1)", fill: "both" });
-    setTimeout(() => { pack.classList.add("shake"); Sound.play("riser", 0.9, lvlOf(keys[2])); }, 380);
-    setTimeout(() => {                                          // RIP
-      pack.classList.remove("shake"); pack.classList.add("torn");
-      Sound.play("rip");
-      const flash = document.createElement("div"); flash.className = "po-flash r-" + p.rar; stage.appendChild(flash);
-      setTimeout(() => flash.remove(), 900);
-    }, 1300);
-    const spread = [-230, 0, 230];
-    cards.forEach((c, n) => {
-      const t0 = 1550 + n * 420;
-      setTimeout(() => {
-        Sound.play("flip");
-        // slide up out of the pack, then fly to its spot in the row
-        c.animate([
-          { transform: "translate(-50%, 40px) scale(.62)", opacity: 1, offset: 0 },
-          { transform: "translate(-50%, -330px) scale(.7)", opacity: 1, offset: .45 },
-          { transform: `translate(calc(-50% + ${spread[n]}px), -120px) scale(1)`, opacity: 1, offset: 1 },
-        ], { duration: 650, easing: "cubic-bezier(.3,.7,.3,1)", fill: "forwards" });
-        setTimeout(() => { c.classList.add("shown"); Sound.play("reveal", lvlOf(keys[n])); if (lvlOf(keys[n]) >= 2) shake(); }, 600);
-      }, t0);
+    const T = (ms, fn) => setTimeout(fn, ms);
+    // 1. drop in with a bounce
+    pack.animate([{ transform: "translateY(-420px) rotate(-14deg) scale(.7)", opacity: 0 }, { transform: "translateY(18px) rotate(3deg) scale(1.04, .94)", opacity: 1, offset: .65 },
+                  { transform: "translateY(-8px) rotate(-1deg) scale(.98, 1.03)", offset: .82 }, { transform: "translateY(0) rotate(0) scale(1)", opacity: 1 }],
+                 { duration: 620, easing: "ease-out", fill: "both" });
+    T(80, () => Sound.play("whoosh"));
+    // 2. three wobbles, each one bigger
+    [0, 1, 2].forEach(n => T(700 + n * 290, () => {
+      Sound.play("tick", 4 + n * 6);
+      pack.animate([{ transform: "rotate(0) scale(1)" }, { transform: `rotate(${-5 - n * 4}deg) scale(${1.04 + n * .04})` }, { transform: `rotate(${5 + n * 4}deg) scale(${1.04 + n * .04})` }, { transform: "rotate(0) scale(1)" }],
+                   { duration: 260, easing: "ease-in-out" });
+      glow.style.setProperty("--gs", 1 + n * .35);
+    }));
+    // 3. RIP
+    T(1600, () => {
+      Sound.play("rip"); Sound.play("full");
+      pack.classList.add("torn");
+      const flash = document.createElement("div"); flash.className = "po-flash"; flash.style.setProperty("--fc", COL[p.rar]); stage.appendChild(flash); T(900, () => flash.remove());
+      const conf = ["#ff5a5a", "#ffe45c", "#4fa8ff", "#8dffb0", "#c77dff", COL[p.rar], "#ffffff"];
+      for (let k = 0; k < 46; k++) {
+        const c = document.createElement("i"); c.className = "po-conf";
+        const a = -Math.PI / 2 + (Math.random() - .5) * 2.4, d = 220 + Math.random() * 320;
+        c.style.background = conf[k % conf.length];
+        c.style.setProperty("--dx", Math.cos(a) * d + "px"); c.style.setProperty("--dy", Math.sin(a) * d + "px");
+        c.style.setProperty("--fall", 380 + Math.random() * 260 + "px"); c.style.setProperty("--rot", (Math.random() * 1080 - 540) + "deg");
+        c.style.animationDelay = Math.random() * 90 + "ms";
+        stage.appendChild(c); T(2400, () => c.remove());
+      }
+      // the pack sinks so the cards have room
+      pack.animate([{ transform: "translateY(0) scale(1)" }, { transform: "translateY(170px) scale(.78)" }], { duration: 420, delay: 120, easing: "cubic-bezier(.3,.7,.3,1)", fill: "forwards" });
     });
-    const done = 1550 + keys.length * 420 + 700;
-    setTimeout(() => {
-      pack.animate([{ opacity: 1, transform: "translateY(0)" }, { opacity: 0, transform: "translateY(120px) rotate(6deg)" }], { duration: 400, fill: "forwards" });
+    // 4. cards pop out one by one (face down), land in a fan, then flip
+    cards.forEach((c, n) => {
+      const sl = slots[n], t0 = 2050 + n * 430;
+      T(t0, () => {
+        Sound.play("flip");
+        c.animate([
+          { transform: "translate(-50%, 70px) rotate(0) scale(.45)", opacity: 0 },
+          { transform: `translate(calc(-50% + ${sl.x * .4}px), -320px) rotate(${sl.r * 2}deg) scale(.75)`, opacity: 1, offset: .5 },
+          { transform: `translate(calc(-50% + ${sl.x}px), ${sl.y}px) rotate(${sl.r}deg) scale(1)`, opacity: 1 },
+        ], { duration: 620, easing: "cubic-bezier(.25,.8,.35,1)", fill: "forwards" });
+      });
+      T(t0 + 640, () => {
+        c.classList.add("flipped");
+        const lv = lvlOf(keys[n]);
+        Sound.play("reveal", lv);
+        if (lv >= 2) { c.classList.add("big"); shake(); }
+        T(450, () => c.classList.add("float"));
+      });
+    });
+    const done = 2050 + keys.length * 430 + 1000;
+    T(done, () => {
+      pack.animate([{ opacity: 1 }, { opacity: 0, transform: "translateY(260px) scale(.6) rotate(8deg)" }], { duration: 380, fill: "forwards" });
       tap.classList.add("show");
-      ov.onclick = () => { ov.onclick = null; ov.classList.remove("show"); stage.innerHTML = ""; renderPanel(); renderShop(); refreshHover(); };
-    }, done);
+      ov.onclick = () => {
+        ov.onclick = null; tap.classList.remove("show");
+        // 5. cards whoosh down into your hand
+        Sound.play("whoosh");
+        cards.forEach((c, n) => {
+          c.classList.remove("float");
+          const sl = slots[n];
+          c.animate([{ transform: `translate(calc(-50% + ${sl.x}px), ${sl.y}px) rotate(${sl.r}deg) scale(1)`, opacity: 1 },
+                     { transform: `translate(calc(-50% + ${sl.x * .2}px), ${window.innerHeight * .45}px) rotate(${sl.r * 3}deg) scale(.3)`, opacity: 0 }],
+                    { duration: 480, delay: n * 70, easing: "cubic-bezier(.5,0,.8,.4)", fill: "forwards" });
+        });
+        glow.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 400, fill: "forwards" });
+        T(650, () => { ov.classList.remove("show"); stage.innerHTML = ""; renderPanel(); renderShop(); refreshHover(); Sound.play("pick"); });
+      };
+    });
   }
 
   function buyCard(key, item) {
