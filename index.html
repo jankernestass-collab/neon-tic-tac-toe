@@ -1428,6 +1428,43 @@
   .fleetpanel.mine .fleft b { color: #8dffb0; }
   .fleetpanel.mine .fcnt { color: #c8ffd8; }
   @media (max-height: 520px) { .fleetpanel.mine { display: none !important; } }   /* phones: no room next to the FIRE button */
+
+  /* ---- v46: playful ship placement ---- */
+  .placeprog { display: flex; align-items: center; gap: 12px; margin: 0 4px 10px; }
+  .pp-bar { flex: 1; height: 10px; border-radius: 6px; background: #021a33; border: 1px solid #9fe6ff33; overflow: hidden; box-shadow: inset 0 2px 4px #0008; }
+  .pp-bar i { display: block; height: 100%; border-radius: 6px; transition: width .35s cubic-bezier(.2, 1.3, .4, 1);
+    background: linear-gradient(90deg, #5ad0e8, #8dffb0); box-shadow: 0 0 12px #8dffb0aa;
+    background-size: 30px 100%; background-image: linear-gradient(90deg, #5ad0e8, #8dffb0), repeating-linear-gradient(45deg, #ffffff33 0 6px, transparent 6px 12px); background-blend-mode: overlay; }
+  .pp-txt { font-size: .8rem; letter-spacing: 1px; white-space: nowrap; opacity: .9; }
+  .pp-txt b { color: #8dffb0; font-size: 1rem; }
+  .ships { gap: 10px !important; padding-top: 4px; }
+  .shipbtn { border-radius: 12px !important; transition: transform .2s cubic-bezier(.2, 1.4, .4, 1), background .2s, box-shadow .2s !important; position: relative; }
+  .shipbtn:not(.done):hover { transform: translateY(-4px) rotate(-1.5deg) !important; }
+  .shipbtn.sel { transform: translateY(-7px) scale(1.06) !important; box-shadow: 0 0 0 2px #8dffb0, 0 0 22px #8dffb088, 0 10px 18px #0008 !important; }
+  .shipbtn .icon { position: relative; height: 28px !important; padding: 0 4px; }
+  .shipbtn.sel .icon svg { animation: sbBob 1.6s ease-in-out infinite; }
+  @keyframes sbBob { 0%, 100% { transform: translateY(0) rotate(-1.5deg); } 50% { transform: translateY(-3px) rotate(1.5deg); } }
+  .sb-wave { position: absolute; left: -2px; right: -2px; bottom: -3px; height: 6px; border-radius: 3px; opacity: .7;
+    background: repeating-radial-gradient(circle at 6px -2px, transparent 0 4px, #8fe3ff 4px 5.5px, transparent 5.5px 8px); background-size: 12px 8px; }
+  .shipbtn.sel .sb-wave { animation: sbWave 1.2s linear infinite; }
+  @keyframes sbWave { to { background-position: 12px 0; } }
+  .shipbtn.done { filter: none !important; opacity: 1 !important; }
+  .shipbtn.done .icon, .shipbtn.done .size { filter: grayscale(.9); opacity: .4; }
+  .shipbtn.done.sel { box-shadow: none !important; transform: none !important; }
+  .shipbtn.done .count { background: #2ea36b !important; color: #fff; }
+  .shipbtn.bump .count { animation: sbBump .45s cubic-bezier(.2, 1.8, .4, 1); }
+  @keyframes sbBump { 0% { transform: scale(1.8) rotate(-12deg); } 100% { transform: scale(1); } }
+  .shipbtn.done.bump { animation: sbDone .5s ease-out; }
+  @keyframes sbDone { 0% { transform: scale(1.15); filter: none; opacity: 1; } 100% { transform: scale(1); } }
+  .startbtn.ready { background: linear-gradient(180deg, #ffd84a, #ff9a3c) !important; color: #3a2400 !important; border-color: #fff0b0 !important;
+    box-shadow: 0 0 0 0 #ffc93c99; animation: readyPulse 1.4s ease-out infinite; position: relative; overflow: hidden; }
+  .startbtn.ready::after { content: ""; position: absolute; inset: 0; background: linear-gradient(105deg, transparent 35%, #ffffffaa 50%, transparent 65%);
+    background-size: 250% 100%; animation: titleShine 2.2s ease-in-out infinite; pointer-events: none; }
+  @keyframes titleShine { 0%, 50% { background-position: 130% 0; } 100% { background-position: -30% 0; } }
+  @keyframes readyPulse { 0% { box-shadow: 0 0 0 0 #ffc93caa; } 100% { box-shadow: 0 0 0 16px #ffc93c00; } }
+  .startbtn.ready:hover { transform: scale(1.04); }
+  .panel kbd { display: inline-block; min-width: 20px; padding: 1px 6px; border-radius: 5px; background: linear-gradient(180deg, #eaf6ff, #a8c6dc); color: #062a4a;
+    font: bold .78rem "Segoe UI", sans-serif; box-shadow: 0 2px 0 #4a6a85; margin: 0 2px; }
 </style>
 </head>
 <body>
@@ -3623,37 +3660,45 @@
     el.classList.add("show");
   }
   function hidePreview() { document.getElementById("cardPreview").classList.remove("show"); }
+  const placeCounts = {};
   function renderPanel() {
     hidePreview();
     panelBody.innerHTML = "";
     if (phase === "place") {
       panelTitle.textContent = "PLACE SHIPS";
+      // progress bar
+      const placed = sides.me.ships.length;
+      const prog = document.createElement("div"); prog.className = "placeprog";
+      prog.innerHTML = `<div class="pp-bar"><i style="width:${Math.round(placed / FLEET_TOTAL * 100)}%"></i></div><div class="pp-txt">⚓ <b>${placed}</b> / ${FLEET_TOTAL} ships placed</div>`;
+      panelBody.appendChild(prog);
       const row = document.createElement("div"); row.className = "ships";
       FLEET.forEach((f, k) => {
         const b = document.createElement("div");
-        b.className = "shipbtn" + (k === selected ? " sel" : "") + (f.count === 0 ? " done" : "");
-        b.innerHTML = '<div class="icon">' + shipSVG(f.size).replace('preserveAspectRatio="none"', "") + "</div>" +
+        const bump = placeCounts[k] !== undefined && placeCounts[k] !== f.count;
+        placeCounts[k] = f.count;
+        b.className = "shipbtn" + (k === selected ? " sel" : "") + (f.count === 0 ? " done" : "") + (bump ? " bump" : "");
+        b.innerHTML = '<div class="icon">' + shipSVG(f.size).replace('preserveAspectRatio="none"', "") + '<i class="sb-wave"></i></div>' +
                       '<div class="size">' + f.size + (f.size === 1 ? " square" : " squares") + "</div>" +
-                      '<div class="count">×' + f.count + "</div>";
-        b.onclick = () => { if (f.count > 0) { selected = k; renderPanel(); refreshHover(); } };
+                      '<div class="count">' + (f.count === 0 ? "✓" : "×" + f.count) + "</div>";
+        b.onclick = () => { if (f.count > 0) { selected = k; Sound.play("select"); renderPanel(); refreshHover(); } };
         row.appendChild(b);
       });
       panelBody.appendChild(row);
       const start = document.createElement("button");
-      start.className = "startbtn";
       const allPlaced = sides.me.ships.length >= FLEET_TOTAL;
+      start.className = "startbtn" + (allPlaced ? " ready" : "");
       if (mode === "mp") {
-        start.textContent = mp.myReady ? "WAITING FOR OPPONENT…" : "READY";
+        start.textContent = mp.myReady ? "WAITING FOR OPPONENT…" : allPlaced ? "⚓ READY!" : "🔒 PLACE ALL SHIPS FIRST";
         start.disabled = !allPlaced || mp.myReady;
         start.onclick = () => { Sound.play("pick"); sendReady(); };
       } else {
-        start.textContent = "START VS " + botLevel.toUpperCase() + " BOT";
+        start.textContent = allPlaced ? "⚓ START BATTLE VS " + botLevel.toUpperCase() + " BOT" : "🔒 PLACE ALL SHIPS FIRST";
         start.disabled = !allPlaced;
         start.onclick = () => { Sound.play("pick"); startBattle(); };
       }
       panelBody.appendChild(start);
       const oppNote = mode === "mp" ? (mp.oppReady ? " · <b class='okc'>Opponent is ready</b>" : " · Opponent is placing ships…") : "";
-      panelHint.innerHTML = (!allPlaced ? "Press <kbd>R</kbd> to rotate · place all ships" : "All ships placed!") + oppNote;
+      panelHint.innerHTML = (!allPlaced ? "Press <kbd>R</kbd> to rotate · click your board to place" : "🎉 Fleet ready — let's go!") + oppNote;
       return;
     }
     const mine = whose === "me" && !busy && phase === "battle";
