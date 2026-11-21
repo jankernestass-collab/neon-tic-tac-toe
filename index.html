@@ -1421,6 +1421,13 @@
   .pt-spark { position: absolute; top: -9px; right: -7px; font-size: 1rem; color: #fff6d0; text-shadow: 0 0 8px #ffc93c; animation: spk 1.4s ease-in-out infinite; }
   .packtab.on .pt-spark { display: none; }
   @keyframes spk { 0%, 100% { transform: scale(.6) rotate(0); opacity: .5; } 50% { transform: scale(1.2) rotate(90deg); opacity: 1; } }
+
+  /* ---- v45: YOUR FLEET panel under ENEMY FLEET ---- */
+  .fleetpanel.mine { border-color: #8dffb04d !important; }
+  .fleetpanel.mine h3 { color: #c8ffd8; text-shadow: 0 0 10px #8dffb055; }
+  .fleetpanel.mine .fleft b { color: #8dffb0; }
+  .fleetpanel.mine .fcnt { color: #c8ffd8; }
+  @media (max-height: 520px) { .fleetpanel.mine { display: none !important; } }   /* phones: no room next to the FIRE button */
 </style>
 </head>
 <body>
@@ -1459,6 +1466,7 @@
   </div>
 
   <div class="fleetpanel" id="fleet"></div>
+  <div class="fleetpanel mine" id="myfleet"></div>
   <div class="upgrades" id="upgrades"></div>
   <div class="passives" id="passives"></div>
 
@@ -1670,7 +1678,7 @@
       applyCamera();
     }
     // don't let the right board slide under the ENEMY FLEET panel (top right)
-    const fp = document.getElementById("fleet");
+    for (const fp of [document.getElementById("fleet"), document.getElementById("myfleet")])
     if (fp && getComputedStyle(fp).display !== "none") {
       const z2 = document.getElementById("zone2");
       let tr = z2.querySelector(".cm-tr"), br = z2.querySelector(".cm-br");
@@ -2187,12 +2195,12 @@
   //  ATTACKING
   // =====================================================================
   const botMem = { hits: new Set(), detected: new Set(), shot: new Set() };
-  function renderFleet(justSunk) {
-    const el = document.getElementById("fleet");
-    const ships = sides.bot.ships.filter(sh => !sh.decoy);
-    const left = alive(sides.bot).length;
-    let html = `<h3>ENEMY FLEET</h3><div class="fleft"><b>${left}</b> / ${ships.length} left</div>` +
-      `<div class="fstats"><span class="chip" title="Cards in their hand">🃏 <b>${sides.bot.inv.length}</b> card${sides.bot.inv.length === 1 ? "" : "s"}</span><span class="chip" title="Their gold">🪙 <b>${sides.bot.gold}</b></span></div>`;
+  const myPlayed = [];
+  function fleetPanelHTML(sd, title, who, played, justSunk) {
+    const ships = sd.ships.filter(sh => !sh.decoy);
+    const left = alive(sd).length;
+    let html = `<h3>${title}</h3><div class="fleft"><b>${left}</b> / ${ships.length} left</div>` +
+      `<div class="fstats"><span class="chip" title="Cards in ${who} hand">🃏 <b>${sd.inv.length}</b> card${sd.inv.length === 1 ? "" : "s"}</span><span class="chip" title="${who} gold">🪙 <b>${sd.gold}</b></span></div>`;
     FLEET_DEF.forEach(([size]) => {
       const group = ships.filter(sh => sh.size === size);
       const aliveN = group.filter(sh => !sh.sunk).length;
@@ -2203,15 +2211,37 @@
       });
       html += `</span><span class="fcnt">${aliveN}/${group.length}</span></div>`;
     });
-    if (typeof enemyPlayed !== "undefined" && enemyPlayed.length) {
-      html += `<div class="ehist-t">CARDS THEY PLAYED</div><div class="ehist">` +
-        enemyPlayed.slice(-8).reverse().map((k, n) => `<span class="eh r-${rarityOf(k)}${n === 0 ? " newest" : ""}" data-k="${k}">${CARDS[k].icon}</span>`).join("") +
-        `</div>`;
+    if (played.length) {
+      html += `<div class="ehist-t">CARDS ${who === "your" ? "YOU" : "THEY"} PLAYED</div><div class="ehist">` +
+        played.slice(-8).reverse().map((k, n) => `<span class="eh r-${rarityOf(k)}${n === 0 ? " newest" : ""}" data-k="${k}">${CARDS[k].icon}</span>`).join("") + `</div>`;
     }
-    el.innerHTML = html;
-    el.querySelectorAll(".eh").forEach(e => { e.onmouseenter = () => showPreview(e.dataset.k, sides.bot, "ENEMY USED"); e.onmouseleave = hidePreview; });
-    if (justSunk) { el.classList.remove("hitpulse"); void el.offsetWidth; el.classList.add("hitpulse"); }
+    return html;
   }
+  function renderFleet(justSunk) {
+    const el = document.getElementById("fleet"), mine = document.getElementById("myfleet");
+    el.innerHTML = fleetPanelHTML(sides.bot, "ENEMY FLEET", "their", typeof enemyPlayed !== "undefined" ? enemyPlayed : [], justSunk);
+    mine.innerHTML = fleetPanelHTML(sides.me, "YOUR FLEET", "your", myPlayed, justSunk);
+    el.querySelectorAll(".eh").forEach(e => { e.onmouseenter = () => showPreview(e.dataset.k, sides.bot, "ENEMY USED"); e.onmouseleave = hidePreview; });
+    mine.querySelectorAll(".eh").forEach(e => { e.onmouseenter = () => showPreview(e.dataset.k, sides.me, "YOU USED"); e.onmouseleave = hidePreview; });
+    if (justSunk) {
+      const p = sides.bot.ships.includes(justSunk) ? el : mine;
+      p.classList.remove("hitpulse"); void p.offsetWidth; p.classList.add("hitpulse");
+    }
+    layoutRight();
+  }
+  // stack the right side: ENEMY FLEET, then YOUR FLEET, then the turn reminder
+  function layoutRight() {
+    const el = document.getElementById("fleet"), mine = document.getElementById("myfleet"), side = document.getElementById("turnside");
+    if (!el || getComputedStyle(el).display === "none") return;
+    const gap = window.innerHeight <= 520 ? 6 : 10;
+    const z = parseFloat(getComputedStyle(mine).zoom) || 1;            // panels are CSS-zoomed on smaller screens
+    mine.style.setProperty("top", Math.round((el.getBoundingClientRect().bottom + gap) / z) + "px", "important");
+    if (!document.body.classList.contains("touch")) {
+      const r = mine.getBoundingClientRect(), h = side.offsetHeight || 42;
+      side.style.top = Math.round(r.bottom + gap + h / 2) + "px";
+    }
+  }
+  window.addEventListener("resize", () => setTimeout(layoutRight, 50));
 
   const stats = { me: { fired: 0, hits: 0, sunk: 0, gold: 0, cards: 0 }, bot: { fired: 0, hits: 0, sunk: 0, gold: 0, cards: 0 } };
   // +1 charge for every hit on an enemy ship
@@ -2287,7 +2317,7 @@
       if (!friendlyFire) sinkBonus(other(T), j);
       sunkToast(T === sides.bot, ship.size);
       ship.cells.forEach(k => { const m = T.marks[k]; if (m && m.el) m.el.classList.add("dead"); });   // stop fire animation on wrecks
-      if (T === sides.bot) renderFleet(ship);
+      renderFleet(ship);
       if (T === sides.me) ship.cells.forEach(k => { botMem.hits.delete(k); botMem.detected.delete(k); });
       return "sunk";
     }
@@ -2949,6 +2979,7 @@
     document.body.classList.add("battle-in");
     document.getElementById("turnbar").style.display = "block";
     document.getElementById("fleet").style.display = "block";
+    document.getElementById("myfleet").style.display = "block";
     document.getElementById("upgrades").style.display = "block";
     document.getElementById("passives").style.display = "block";
     renderFleet(); renderPassives();
@@ -3032,7 +3063,7 @@
     const key = sides.me.inv[idx];
     busy = true; active = -1; moving = null; clearAim(); clearPick();
     sides.me.inv.splice(idx, 1);
-    stats.me.cards++;
+    stats.me.cards++; myPlayed.push(key);
     renderPanel();
     const seed = newSeed();
     if (mode === "mp") Net.send({ t: "act", a: "card", key, opts: serOpts(opts), seed });
