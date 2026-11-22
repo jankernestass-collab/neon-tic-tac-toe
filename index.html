@@ -1642,8 +1642,8 @@
     <div class="popup-hint">It goes to your hand — use it whenever you want</div>
   </div>
 
-  <div class="phonesea" aria-hidden="true"><i class="ps-a"></i><i class="ps-b"></i><div class="ps-life" id="psLife"></div></div>
-  <div class="buildtag">build 54</div>
+  <div class="phonesea" aria-hidden="true"><i class="ps-a"></i><i class="ps-b"></i></div>
+  <div class="buildtag">build 55</div>
   <div class="turnside" id="turnside"></div>
   <div class="touchbar" id="touchbar">
     <button id="tbCancel" class="tb small">✕</button>
@@ -1796,7 +1796,15 @@
   let camQueued = false;
   function scheduleCamera() { if (camQueued) return; camQueued = true; requestAnimationFrame(() => { camQueued = false; applyCamera(); }); }
   let fixedCam = false;          // in a game the camera is fixed and framed by fitCamera()
+  let worldW = 0, worldH = 0;
   function applyCamera() {
+    if (PHONE && fixedCam) {                       // phones: just move the picture — nothing else to recalculate
+      if (!worldW) { worldW = world.offsetWidth; worldH = world.offsetHeight; }
+      const limX = worldW / 2 + 3500, limY = worldH / 2 + 3000;
+      cam.x = Math.max(-limX, Math.min(limX, cam.x)); cam.y = Math.max(-limY, Math.min(limY, cam.y));
+      world.style.transform = `translate(-50%, -50%) scale(${zoom}) translate(${-cam.x}px, ${-cam.y}px)`;
+      return;
+    }
     if (!fixedCam) zoom = Math.max(minZoom(), Math.min(3, zoom));
     const limX = world.offsetWidth / 2 + 3500, limY = world.offsetHeight / 2 + 3000;
     cam.x = Math.max(-limX, Math.min(limX, cam.x));
@@ -4207,7 +4215,6 @@
     }
   }
   requestAnimationFrame(() => {
-    phoneLife();
     if (PHONE) return;                     // phones never show the giant world sea, so don't fill it
     spawn("fishSchool", 14); spawn("whale", 3); spawn("manta", 6); spawn("turtle", 7); spawn("jelly", 10);
     // sun glints sparkling on the surface
@@ -4902,7 +4909,7 @@
   // remember the "fit both boards" zoom so pinch can't go further out than that
   let baseZoom = 1;
   const fit0 = fitCamera;
-  fitCamera = function () { fit0.apply(this, arguments); baseZoom = zoom; home = { x: cam.x, y: cam.y }; };
+  fitCamera = function () { worldW = 0; boardsHalf = null; fit0.apply(this, arguments); baseZoom = zoom; home = { x: cam.x, y: cam.y }; };
 
   const inGame = () => !document.body.classList.contains("in-menu") && (phase === "place" || phase === "battle");
   const blocked = t => t.closest(".panel, .charges, .overlay, .popup, .soundbtn, .fleetpanel, .upgrades, .passives, .home, .menubtn, .leavebox, .shop, .touchbar, .tb, .packopen, .fstip");
@@ -4910,12 +4917,29 @@
   // ---- aiming with one finger, pinch/pan with two ----
   let pinch = null, aimTouch = false, tapStart = null, aimedBefore = -1, pan = null, aimQ = null;
   const zoomedIn = () => zoom > baseZoom * 1.05;
+  // after a flick the view keeps sliding a little and slows down
+  let glideId = 0;
+  function glide(vx, vy) {
+    const id = ++glideId;
+    let last = performance.now();
+    const step = now => {
+      if (id !== glideId) return;
+      const dt = Math.min(40, now - last); last = now;
+      cam.x -= vx * dt / zoom; cam.y -= vy * dt / zoom; clampPan(); applyCamera();
+      const f = Math.pow(.92, dt / 16); vx *= f; vy *= f;
+      if (Math.hypot(vx, vy) > .02) requestAnimationFrame(step);
+      else document.body.classList.remove("pinching");
+    };
+    if (Math.hypot(vx, vy) > .05) requestAnimationFrame(step); else document.body.classList.remove("pinching");
+  }
   let home = { x: 0, y: 0 };                       // where fitCamera put the camera
   // keep the boards on screen: you can slide around, but not lose them
+  let boardsHalf = null;
   function clampPan() {
-    const room = (innerWidth * .45) / (zoom * WZ()), roomY = (innerHeight * .45) / (zoom * WZ());
-    const z1 = document.getElementById("zone1"), z2 = document.getElementById("zone2");
-    const halfW = (z2.offsetLeft + z2.offsetWidth - z1.offsetLeft) / 2, halfH = z1.offsetHeight / 2;
+    const room = (innerWidth * .45) / zoom, roomY = (innerHeight * .45) / zoom;
+    if (!boardsHalf) { const z1 = document.getElementById("zone1"), z2 = document.getElementById("zone2");
+      boardsHalf = { w: (z2.offsetLeft + z2.offsetWidth - z1.offsetLeft) / 2, h: z1.offsetHeight / 2 }; }
+    const halfW = boardsHalf.w, halfH = boardsHalf.h;
     const ex = Math.max(0, halfW - room * .2) + room * .6, ey = Math.max(0, halfH - roomY * .2) + roomY * .6;
     cam.x = Math.max(home.x - ex, Math.min(home.x + ex, cam.x));
     cam.y = Math.max(home.y - ey, Math.min(home.y + ey, cam.y));
@@ -4935,6 +4959,7 @@
       document.body.classList.add("pinching");
       aimTouch = false; e.preventDefault(); return;
     }
+    glideId++;
     if (e.touches.length === 1) {                // one finger: drag = move the view · tap = aim · tap again = fire
       e.preventDefault();
       const t = e.touches[0];
@@ -4955,14 +4980,20 @@
       const d = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
       const mx = (a.clientX + b.clientX) / 2, my = (a.clientY + b.clientY) / 2;
       zoom = Math.max(baseZoom, Math.min(baseZoom * 4, pinch.z * d / pinch.d));
-      cam.x = pinch.cx - (mx - pinch.mx) / (zoom * WZ());
-      cam.y = pinch.cy - (my - pinch.my) * (TILT ? 1.3 : 1) / (zoom * WZ());
+      cam.x = pinch.cx - (mx - pinch.mx) / zoom;
+      cam.y = pinch.cy - (my - pinch.my) * (TILT ? 1.3 : 1) / zoom;
       clampPan(); scheduleCamera(); e.preventDefault(); return;
     }
     if (pan && e.touches.length === 1) {
       const t = e.touches[0], dx = t.clientX - pan.x, dy = t.clientY - pan.y;
       if (!pan.moving && Math.hypot(dx, dy) > 8) { pan.moving = true; document.body.classList.add("pinching"); }
-      if (pan.moving) { cam.x = pan.cx - dx / (zoom * WZ()); cam.y = pan.cy - dy * (TILT ? 1.3 : 1) / (zoom * WZ()); clampPan(); scheduleCamera(); }
+      if (pan.moving) {
+        cam.x = pan.cx - dx / zoom; cam.y = pan.cy - dy / zoom; clampPan(); scheduleCamera();
+        const now = performance.now(), dt = Math.max(1, now - (pan.lt || now - 16));
+        pan.vx = .8 * (pan.vx || 0) + .2 * ((t.clientX - (pan.lx ?? t.clientX)) / dt);
+        pan.vy = .8 * (pan.vy || 0) + .2 * ((t.clientY - (pan.ly ?? t.clientY)) / dt);
+        pan.lx = t.clientX; pan.ly = t.clientY; pan.lt = now;
+      }
       e.preventDefault(); return;
     }
     if (aimTouch && e.touches.length === 1) { const t = e.touches[0]; aimSoon(t.clientX, t.clientY); e.preventDefault(); }
@@ -4971,7 +5002,7 @@
     if (pinch) { if (e.touches.length < 2) { pinch = null; setTimeout(() => document.body.classList.remove("pinching"), 120); } return; }
     if (pan) {
       const p = pan; pan = null;
-      if (p.moving) { setTimeout(() => document.body.classList.remove("pinching"), 120); return; }
+      if (p.moving) { glide(p.vx || 0, p.vy || 0); return; }
       if (!p.onZone || performance.now() - p.time > 500) return;
       const t = e.changedTouches[0];               // a tap while zoomed: aim, and a second tap on the same square fires
       aimAt(t.clientX, t.clientY);
