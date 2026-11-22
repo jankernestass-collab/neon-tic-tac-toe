@@ -1302,7 +1302,6 @@
   @media (pointer: coarse) {
     html, body { height: 100%; }
     #world { will-change: transform !important; }            /* keep the boards as one ready GPU picture */
-    body.pinching .zone { background-image: none !important; } /* skip redrawing thousands of grid lines mid-pinch */
     body.pinching .shipmodel { filter: none !important; }
   }
   .menubtn, .soundbtn, .fsbtn { margin-top: env(safe-area-inset-top, 0px); }
@@ -1498,6 +1497,21 @@
     .fleetpanel { transform: scale(.38) !important; }
     .touchbar { bottom: 64px !important; transform: scale(.7) !important; }
   }
+
+  /* ---- v48: lightweight animated sea behind everything on phones ---- */
+  .phonesea { display: none; }
+  @media (pointer: coarse) {
+    .phonesea { display: block; position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none;
+      background: radial-gradient(ellipse 80% 70% at 50% 45%, #1e8fc4 0%, #0d6aa3 45%, #074877 80%, #04304f 100%); }
+    .phonesea i { position: absolute; left: -240px; top: -240px; right: -240px; bottom: -240px; will-change: transform; }
+    .phonesea .ps-a { background-image: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='120'%3E%3Cg fill='none' stroke='%23bfefff' stroke-width='2' stroke-linecap='round' opacity='.55'%3E%3Cpath d='M10 30 q15 -10 30 0 t30 0'/%3E%3Cpath d='M130 80 q15 -10 30 0 t30 0'/%3E%3Cpath d='M170 20 q10 -7 20 0 t20 0'/%3E%3Cpath d='M40 100 q10 -7 20 0 t20 0'/%3E%3C/g%3E%3C/svg%3E"); background-size: 240px 120px; animation: psA 14s linear infinite; }
+    .phonesea .ps-b { background-image: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cg fill='%23e8fbff' opacity='.18'%3E%3Ccircle cx='20' cy='40' r='2'/%3E%3Ccircle cx='120' cy='20' r='1.5'/%3E%3Ccircle cx='80' cy='130' r='2.5'/%3E%3Ccircle cx='160' cy='110' r='1.5'/%3E%3Ccircle cx='50' cy='170' r='1.5'/%3E%3C/g%3E%3C/svg%3E"); background-size: 180px 180px; animation: psB 22s linear infinite; }
+    body.low-gfx .phonesea i { animation-duration: 28s, 44s; }
+    html { background: #074877 !important; }
+    body { background: transparent !important; }
+  }
+  @keyframes psA { from { transform: translate(0, 0); } to { transform: translate(240px, 120px); } }
+  @keyframes psB { from { transform: translate(0, 0); } to { transform: translate(-180px, 180px); } }
 </style>
 </head>
 <body>
@@ -1564,6 +1578,7 @@
     <div class="popup-hint">It goes to your hand — use it whenever you want</div>
   </div>
 
+  <div class="phonesea" aria-hidden="true"><i class="ps-a"></i><i class="ps-b"></i></div>
   <div class="turnside" id="turnside"></div>
   <div class="touchbar" id="touchbar">
     <button id="tbCancel" class="tb small">✕</button>
