@@ -1576,6 +1576,9 @@
   /* ---- v54: phones — boards without 5,000 square elements ---- */
   .zone.lazygrid { display: block; width: 1949px; height: 1949px; box-sizing: content-box; }
   .cell.lazy { position: absolute; width: 38px; height: 38px; pointer-events: none; z-index: 1; }
+
+  /* ---- v57: Android — don't keep the boards as one huge GPU picture (it ran out of memory and parts went missing) ---- */
+  body.android #world, body.android.pinching #world { will-change: auto !important; }
 </style>
 </head>
 <body>
@@ -1643,7 +1646,7 @@
   </div>
 
   <div class="phonesea" aria-hidden="true"><i class="ps-a"></i><i class="ps-b"></i></div>
-  <div class="buildtag">build 56</div>
+  <div class="buildtag">build 57</div>
   <div class="turnside" id="turnside"></div>
   <div class="touchbar" id="touchbar">
     <button id="tbCancel" class="tb small">✕</button>
@@ -4932,6 +4935,7 @@
   const isTouch = matchMedia("(pointer: coarse)").matches || "ontouchstart" in window;
   if (!isTouch) return;
   document.body.classList.add("touch");
+  if (!/iPhone|iPad|iPod/.test(navigator.userAgent) && !(navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)) document.body.classList.add("android");
   // phones: lighter graphics by default so the browser doesn't run out of memory and reload the page
   try { if (localStorage.getItem("bs-touchgfx") !== "1") { localStorage.setItem("bs-autolow", "1"); localStorage.setItem("bs-touchgfx", "1"); } } catch (x) {}
   autoLow = true; applySettings();
