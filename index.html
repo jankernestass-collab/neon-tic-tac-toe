@@ -1549,6 +1549,21 @@
     .shop-grid { grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); }
     .pack-grid { align-content: center; gap: 22px 18px; }
   }
+
+  /* ---- v52: phones — much cheaper boards to redraw while zooming / moving ---- */
+  .buildtag { position: fixed; left: 8px; bottom: 6px; z-index: 70; font: 10px "Segoe UI", sans-serif; color: #ffffff66; pointer-events: none; display: none; }
+  body.in-menu .buildtag { display: block; }
+  @media (pointer: coarse) {
+    .zone { box-shadow: 0 0 0 5px #17324b, 0 0 0 7px #8cc8e4 !important; }       /* no big blurred shadows */
+    .zone.domed { box-shadow: 0 0 0 5px #17324b, 0 0 0 7px #7fe7ff !important; }
+    .zone::before { display: none !important; }
+    .ripples { display: none !important; }
+    .shipmodel { filter: none !important; }
+    .shipmodel.armored { filter: none !important; outline: 2px solid #ffd84a; }
+    .mark.hit { animation: none !important; will-change: auto !important; }
+    .fx, .creature { will-change: auto; }
+    body.pinching .phonesea *, body.pinching .phonesea { animation-play-state: paused !important; }
+  }
 </style>
 </head>
 <body>
@@ -1616,6 +1631,7 @@
   </div>
 
   <div class="phonesea" aria-hidden="true"><i class="ps-a"></i><i class="ps-b"></i><div class="ps-life" id="psLife"></div></div>
+  <div class="buildtag">build 52</div>
   <div class="turnside" id="turnside"></div>
   <div class="touchbar" id="touchbar">
     <button id="tbCancel" class="tb small">✕</button>
@@ -4841,7 +4857,7 @@
   // remember the "fit both boards" zoom so pinch can't go further out than that
   let baseZoom = 1;
   const fit0 = fitCamera;
-  fitCamera = function () { fit0.apply(this, arguments); baseZoom = zoom; };
+  fitCamera = function () { fit0.apply(this, arguments); baseZoom = zoom; home = { x: cam.x, y: cam.y }; };
 
   const inGame = () => !document.body.classList.contains("in-menu") && (phase === "place" || phase === "battle");
   const blocked = t => t.closest(".panel, .charges, .overlay, .popup, .soundbtn, .fleetpanel, .upgrades, .passives, .home, .menubtn, .leavebox, .shop, .touchbar, .tb");
@@ -4849,6 +4865,16 @@
   // ---- aiming with one finger, pinch/pan with two ----
   let pinch = null, aimTouch = false, tapStart = null, aimedBefore = -1, pan = null, aimQ = null;
   const zoomedIn = () => zoom > baseZoom * 1.05;
+  let home = { x: 0, y: 0 };                       // where fitCamera put the camera
+  // keep the boards on screen: you can slide around, but not lose them
+  function clampPan() {
+    const room = (innerWidth * .45) / (zoom * WZ()), roomY = (innerHeight * .45) / (zoom * WZ());
+    const z1 = document.getElementById("zone1"), z2 = document.getElementById("zone2");
+    const halfW = (z2.offsetLeft + z2.offsetWidth - z1.offsetLeft) / 2, halfH = z1.offsetHeight / 2;
+    const ex = Math.max(0, halfW - room * .2) + room * .6, ey = Math.max(0, halfH - roomY * .2) + roomY * .6;
+    cam.x = Math.max(home.x - ex, Math.min(home.x + ex, cam.x));
+    cam.y = Math.max(home.y - ey, Math.min(home.y + ey, cam.y));
+  }
   function aimSoon(x, y) { const first = !aimQ; aimQ = [x, y]; if (first) requestAnimationFrame(() => { const q = aimQ; aimQ = null; if (q) aimAt(q[0], q[1]); }); }
   function aimAt(x, y) {
     const el = document.elementFromPoint(x, y), c = el && el.closest(".cell");
@@ -4864,7 +4890,7 @@
       document.body.classList.add("pinching");
       aimTouch = false; e.preventDefault(); return;
     }
-    if (e.touches.length === 1 && zoomedIn()) {   // zoomed in: one finger drags the view, a tap still aims
+    if (e.touches.length === 1) {                // one finger: drag = move the view · tap = aim · tap again = fire
       e.preventDefault();
       const t = e.touches[0];
       pan = { x: t.clientX, y: t.clientY, cx: cam.x, cy: cam.y, moving: false, onZone: !!e.target.closest("#zone1, #zone2"), time: performance.now(), prevI: hover.i, prevZone: hover.zone };
@@ -4886,13 +4912,12 @@
       zoom = Math.max(baseZoom, Math.min(baseZoom * 4, pinch.z * d / pinch.d));
       cam.x = pinch.cx - (mx - pinch.mx) / (zoom * WZ());
       cam.y = pinch.cy - (my - pinch.my) * (TILT ? 1.3 : 1) / (zoom * WZ());
-      if (zoom <= baseZoom * 1.01) { cam.x = pinch.cx; cam.y = pinch.cy; }
-      scheduleCamera(); e.preventDefault(); return;
+      clampPan(); scheduleCamera(); e.preventDefault(); return;
     }
     if (pan && e.touches.length === 1) {
       const t = e.touches[0], dx = t.clientX - pan.x, dy = t.clientY - pan.y;
       if (!pan.moving && Math.hypot(dx, dy) > 8) { pan.moving = true; document.body.classList.add("pinching"); }
-      if (pan.moving) { cam.x = pan.cx - dx / (zoom * WZ()); cam.y = pan.cy - dy * (TILT ? 1.3 : 1) / (zoom * WZ()); scheduleCamera(); }
+      if (pan.moving) { cam.x = pan.cx - dx / (zoom * WZ()); cam.y = pan.cy - dy * (TILT ? 1.3 : 1) / (zoom * WZ()); clampPan(); scheduleCamera(); }
       e.preventDefault(); return;
     }
     if (aimTouch && e.touches.length === 1) { const t = e.touches[0]; aimSoon(t.clientX, t.clientY); e.preventDefault(); }
@@ -4935,7 +4960,7 @@
     set(bCan.style, "display", key ? "" : "none");
     set(bAct, "textContent", phase === "place" ? "✔ PLACE" : key ? "▶ USE " + CARDS[key].name.toUpperCase() : "🔥 FIRE");
     set(bAct, "disabled", hover.i < 0);
-    const vs = game && zoom > baseZoom * 1.05;
+    const vs = game && (zoom > baseZoom * 1.05 || Math.abs(cam.x - home.x) + Math.abs(cam.y - home.y) > 20);
     if (bView.classList.contains("show") !== vs) bView.classList.toggle("show", vs);
   }, 150);
 
