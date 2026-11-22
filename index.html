@@ -1523,6 +1523,23 @@
   }
   @keyframes psA { from { transform: translate(0, 0); } to { transform: translate(168px, 96px); } }
   @keyframes psB { from { transform: translate(0, 0); } to { transform: translate(-168px, 96px); } }
+
+  /* ---- v50: phone card hand + top spacing ---- */
+  .empty-hand.short { display: none; }
+  @media (max-height: 520px) {
+    body.touch .zone::after { display: block !important; font-size: 86px; letter-spacing: 20px; margin-bottom: 34px; opacity: .6; }
+    body.touch .panel.handmode { background: none !important; border: none !important; box-shadow: none !important; padding: 0 !important;
+      transform: translateX(-50%) scale(.44) !important; bottom: 12px !important; min-width: 0 !important; }
+    body.touch .panel.handmode h2, body.touch .panel.handmode .rotate-hint { display: none !important; }
+    body.touch .panel.handmode .hand { min-height: 0; padding-top: 30px; }
+    body.touch .panel.handmode .slot { transform: translateY(var(--lift)) rotate(var(--rot)); transform-origin: 50% 120%; transition: transform .2s cubic-bezier(.2, 1.4, .4, 1); }
+    body.touch .panel.handmode .slot.sel { transform: translateY(-34px) rotate(0) scale(1.08); z-index: 6; }
+    body.touch .panel.handmode .slot.sel .gcard { box-shadow: 0 0 0 4px #ffe45c, 0 0 30px #ffb347, 0 14px 24px #000a; }
+    body.touch .panel.handmode .slot.off { filter: grayscale(.6) brightness(.75); }
+    body.touch .panel.handmode .empty-hand { display: none; }
+    body.touch .panel.handmode .empty-hand.short { display: block; font-size: 1.7rem; opacity: 1; padding: 12px 30px; border-radius: 40px; white-space: nowrap;
+      background: linear-gradient(180deg, #0e3f6ef2, #05223ff5); border: 1px solid #9fe6ff3d; margin-bottom: 10px; }
+  }
 </style>
 </head>
 <body>
@@ -1752,7 +1769,10 @@
     cam.x = 0; cam.y = 0; zoom = 1; applyCamera();
     // fit above whichever bottom panels are on screen
     let bottom = window.innerHeight - 12;
-    [".panel", ".upgrades", ".charges", ".passives"].forEach(sel => {
+    const phoneHand = window.innerHeight <= 520 && document.body.classList.contains("touch");
+    if (phoneHand) bottom = window.innerHeight - (phase === "place" ? 96 : 104);   // same board size whether you hold 0 or 7 cards
+    [phoneHand ? null : ".panel", ".upgrades", ".charges", ".passives"].forEach(sel => {
+      if (!sel) return;
       const el = document.querySelector(sel);
       if (!el || getComputedStyle(el).display === "none") return;
       const r = el.getBoundingClientRect();
@@ -1760,7 +1780,7 @@
     });
     const short = window.innerHeight <= 520;              // phones held sideways: no big title on top
     const tb = document.querySelector(".turnbar");
-    const top = short ? (tb && getComputedStyle(tb).display !== "none" ? tb.getBoundingClientRect().bottom + 6 : 30) : 112;
+    const top = short ? (tb && getComputedStyle(tb).display !== "none" ? tb.getBoundingClientRect().bottom + (phoneHand ? 20 : 6) : (phoneHand ? 42 : 30)) : 112;
     const left = 14, right = window.innerWidth - (short && document.body.classList.contains("touch") ? 110 : 14);
     const boxW = right - left, boxH = Math.max(short ? 100 : 200, bottom - top), midY = (top + bottom) / 2;
     const bounds = () => {
@@ -3725,6 +3745,7 @@
     hidePreview();
     panelBody.innerHTML = "";
     if (phase === "place") {
+      document.querySelector(".panel").classList.remove("handmode");
       panelTitle.textContent = "PLACE SHIPS";
       // progress bar
       const placed = sides.me.ships.length;
@@ -3763,10 +3784,11 @@
     }
     const mine = whose === "me" && !busy && phase === "battle";
     const inv = sides.me.inv;
+    document.querySelector(".panel").classList.add("handmode");
     panelTitle.textContent = "YOUR CARDS" + (inv.length ? " (" + inv.length + ")" : "");
     const row = document.createElement("div"); row.className = "hand";
     if (!inv.length) {
-      row.innerHTML = '<div class="empty-hand">No cards yet — unlock them with CHARGES, then buy in the 🛒 SHOP</div>';
+      row.innerHTML = '<div class="empty-hand">No cards yet — unlock them with CHARGES, then buy in the 🛒 SHOP</div><div class="empty-hand short">🃏 No cards yet · get some in the 🛒 SHOP</div>';
     }
     inv.forEach((key, k) => {
       const ok = mine && canUse(sides.me, key);
@@ -3774,6 +3796,8 @@
       slot.className = "slot" + (k === active ? " sel" : "") + (!ok ? " off" : "") + (newCard && k === inv.length - 1 ? " new" : "");
       slot.innerHTML = cardHTML(key);
       slot.dataset.k = k; slot.dataset.ok = ok ? 1 : 0;
+      const mid = (inv.length - 1) / 2, off = k - mid;                       // phones: cards held in a fan
+      slot.style.setProperty("--rot", (off * 5) + "deg"); slot.style.setProperty("--lift", (Math.abs(off) * Math.abs(off) * 3) + "px");
       slot.onmouseenter = () => showPreview(key);
       slot.onmouseleave = hidePreview;
       slot.title = CARDS[key].name + " — " + cardDesc(sides.me, key);
