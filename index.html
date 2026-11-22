@@ -1564,6 +1564,14 @@
     .fx, .creature { will-change: auto; }
     body.pinching .phonesea *, body.pinching .phonesea { animation-play-state: paused !important; }
   }
+
+  /* ---- v53: phones — sea is still like on PC (only the creatures swim); creatures hide while you move the view ---- */
+  @media (pointer: coarse) {
+    .phonesea .ps-a, .phonesea .ps-b { animation: none !important; will-change: auto !important; }
+    .phonesea .creature, .phonesea .creature *, .phonesea .glint { animation: none !important; }
+    .phonesea .glint { opacity: .5; }
+    body.pinching .phonesea .ps-life { display: none; }
+  }
 </style>
 </head>
 <body>
@@ -1631,7 +1639,7 @@
   </div>
 
   <div class="phonesea" aria-hidden="true"><i class="ps-a"></i><i class="ps-b"></i><div class="ps-life" id="psLife"></div></div>
-  <div class="buildtag">build 52</div>
+  <div class="buildtag">build 53</div>
   <div class="turnside" id="turnside"></div>
   <div class="touchbar" id="touchbar">
     <button id="tbCancel" class="tb small">✕</button>
@@ -4860,7 +4868,7 @@
   fitCamera = function () { fit0.apply(this, arguments); baseZoom = zoom; home = { x: cam.x, y: cam.y }; };
 
   const inGame = () => !document.body.classList.contains("in-menu") && (phase === "place" || phase === "battle");
-  const blocked = t => t.closest(".panel, .charges, .overlay, .popup, .soundbtn, .fleetpanel, .upgrades, .passives, .home, .menubtn, .leavebox, .shop, .touchbar, .tb");
+  const blocked = t => t.closest(".panel, .charges, .overlay, .popup, .soundbtn, .fleetpanel, .upgrades, .passives, .home, .menubtn, .leavebox, .shop, .touchbar, .tb, .packopen, .fstip");
 
   // ---- aiming with one finger, pinch/pan with two ----
   let pinch = null, aimTouch = false, tapStart = null, aimedBefore = -1, pan = null, aimQ = null;
