@@ -1572,6 +1572,10 @@
     .phonesea .glint { opacity: .5; }
     body.pinching .phonesea .ps-life { display: none; }
   }
+
+  /* ---- v54: phones — boards without 5,000 square elements ---- */
+  .zone.lazygrid { display: block; width: 1949px; height: 1949px; box-sizing: content-box; }
+  .cell.lazy { position: absolute; width: 38px; height: 38px; pointer-events: none; z-index: 1; }
 </style>
 </head>
 <body>
@@ -1639,7 +1643,7 @@
   </div>
 
   <div class="phonesea" aria-hidden="true"><i class="ps-a"></i><i class="ps-b"></i><div class="ps-life" id="psLife"></div></div>
-  <div class="buildtag">build 53</div>
+  <div class="buildtag">build 54</div>
   <div class="turnside" id="turnside"></div>
   <div class="touchbar" id="touchbar">
     <button id="tbCancel" class="tb small">✕</button>
@@ -1734,10 +1738,43 @@
   const world = document.getElementById("world");
 
   // ---- Build the two separate zones ----
+  // Phones: a square only gets a real element while it shows something (a miss, aim, highlight…).
+  // That's a few dozen elements instead of 5,000, so moving and zooming the view is much lighter.
+  class LazyCell {
+    constructor(zone, i) { this.zone = zone; this.i = i; this.el = null; this.classList = this; }
+    add(...c) {
+      if (!this.el) {
+        const d = this.el = document.createElement("div"), r = Math.floor(this.i / N), col = this.i % N;
+        d.className = "cell lazy"; d.dataset.i = this.i;
+        d.style.left = (10 + col * 39) + "px"; d.style.top = (10 + r * 39) + "px";
+        this.zone.appendChild(d);
+      }
+      this.el.classList.add(...c);
+    }
+    remove(...c) {
+      if (!this.el) return;
+      this.el.classList.remove(...c);
+      if (this.el.classList.length <= 2) { this.el.remove(); this.el = null; }    // only "cell lazy" left
+    }
+    contains(c) { return !!this.el && this.el.classList.contains(c); }
+  }
+  // which square of which board is under a screen point (phones: boards are flat, so plain maths)
+  function cellAtPoint(x, y) {
+    for (const id of ["zone1", "zone2"]) {
+      const z = document.getElementById(id), r = z.getBoundingClientRect();
+      if (x < r.left || x > r.right || y < r.top || y > r.bottom) continue;
+      const s = r.width / z.offsetWidth;
+      const c = Math.floor(((x - r.left) / s - 10) / 39), row = Math.floor(((y - r.top) / s - 10) / 39);
+      if (c < 0 || row < 0 || c >= N || row >= N) return null;
+      return { zone: id, i: row * N + c };
+    }
+    return null;
+  }
   const zoneCells = {};
   ["zone1", "zone2"].forEach(id => {
     const z = document.getElementById(id);
     zoneCells[id] = [];
+    if (PHONE) { z.classList.add("lazygrid"); for (let i = 0; i < N * N; i++) zoneCells[id].push(new LazyCell(z, i)); return; }
     for (let i = 0; i < N * N; i++) {
       const d = document.createElement("div");
       d.className = "cell";
@@ -4885,9 +4922,9 @@
   }
   function aimSoon(x, y) { const first = !aimQ; aimQ = [x, y]; if (first) requestAnimationFrame(() => { const q = aimQ; aimQ = null; if (q) aimAt(q[0], q[1]); }); }
   function aimAt(x, y) {
-    const el = document.elementFromPoint(x, y), c = el && el.closest(".cell");
-    if (!c) return;
-    const z = c.closest(".zone").id, i = +c.dataset.i;
+    const hit = cellAtPoint(x, y);
+    if (!hit) return;
+    const z = hit.zone, i = hit.i;
     if (hover.zone !== z || hover.i !== i) { hover = { zone: z, i }; refreshHover(); }
   }
   window.addEventListener("touchstart", e => {
@@ -4998,9 +5035,9 @@
       Sound.play("select");
     }
     cd.ghost.style.left = t.clientX + "px"; cd.ghost.style.top = t.clientY + "px";
-    const el = document.elementFromPoint(t.clientX, t.clientY - AIM_UP), c = el && el.closest(".cell");
-    if (c) {
-      const z = c.closest(".zone").id, i = +c.dataset.i;
+    const hit = cellAtPoint(t.clientX, t.clientY - AIM_UP);
+    if (hit) {
+      const z = hit.zone, i = hit.i;
       if (hover.zone !== z || hover.i !== i) { hover = { zone: z, i }; refreshHover(); }
       cd.ghost.classList.add("over");
     } else if (hover.i >= 0) { hover = { zone: null, i: -1 }; clearAim(); clearPick(); cd.ghost.classList.remove("over"); }
