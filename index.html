@@ -1465,6 +1465,39 @@
   .startbtn.ready:hover { transform: scale(1.04); }
   .panel kbd { display: inline-block; min-width: 20px; padding: 1px 6px; border-radius: 5px; background: linear-gradient(180deg, #eaf6ff, #a8c6dc); color: #062a4a;
     font: bold .78rem "Segoe UI", sans-serif; box-shadow: 0 2px 0 #4a6a85; margin: 0 2px; }
+
+  /* ---- v47: phone spacing (sideways phones) ---- */
+  @media (max-height: 520px) {
+    /* top-left buttons in one tidy row */
+    .menubtn, body.touch .soundbtn, body.touch .fsbtn, body.touch .viewreset { top: 6px !important; transform: scale(.66) !important; transform-origin: 0 0 !important; }
+    .menubtn { left: 6px !important; }
+    body.touch .soundbtn { left: 40px !important; }
+    body.touch .fsbtn { left: 74px !important; }
+    body.touch .viewreset { left: 108px !important; }
+    .leavebox { top: 40px; left: 6px; }
+    .turnbar { top: 3px !important; transform: translateX(-50%) scale(.55) !important; }
+    /* bottom row: smaller and tucked into the corners */
+    .charges  { transform: scale(.44) !important; left: 6px !important; bottom: 6px !important; }
+    .upgrades { transform: scale(.44) !important; left: 80px !important; bottom: 6px !important; }
+    .passives { transform: scale(.44) !important; right: 6px !important; bottom: 6px !important; }
+    .panel    { transform: translateX(-50%) scale(.46) !important; bottom: 6px !important; }
+    .panel:has(.ships) { transform: translateX(-50%) scale(.4) !important; }
+    .panel .rotate-hint { display: none !important; }
+    /* right column: enemy fleet → turn tag → buttons */
+    .fleetpanel { transform: scale(.42) !important; top: 6px !important; right: 6px !important; }
+    .turnside { right: 6px !important; transform: translateY(-50%) scale(.42) !important; transform-origin: 100% 50% !important; }
+    .touchbar { top: auto !important; bottom: 74px !important; right: 6px !important; transform: scale(.78) !important; transform-origin: 100% 100% !important; }
+    .tb-hint { display: none; }
+    .tb { padding: 10px 12px; }
+    .tb.main { padding: 14px 12px; }
+  }
+  @media (max-height: 380px) {
+    .charges, .upgrades, .passives { transform: scale(.4) !important; }
+    .upgrades { left: 72px !important; }
+    .panel { transform: translateX(-50%) scale(.42) !important; }
+    .fleetpanel { transform: scale(.38) !important; }
+    .touchbar { bottom: 64px !important; transform: scale(.7) !important; }
+  }
 </style>
 </head>
 <body>
@@ -1700,7 +1733,9 @@
       if (r.height > 0) bottom = Math.min(bottom, r.top - 10);
     });
     const short = window.innerHeight <= 520;              // phones held sideways: no big title on top
-    const top = short ? 34 : 112, left = 14, right = window.innerWidth - 14;
+    const tb = document.querySelector(".turnbar");
+    const top = short ? (tb && getComputedStyle(tb).display !== "none" ? tb.getBoundingClientRect().bottom + 6 : 30) : 112;
+    const left = 14, right = window.innerWidth - (short && document.body.classList.contains("touch") ? 110 : 14);
     const boxW = right - left, boxH = Math.max(short ? 100 : 200, bottom - top), midY = (top + bottom) / 2;
     const bounds = () => {
       const a = document.getElementById("zone1").getBoundingClientRect(), b = document.getElementById("zone2").getBoundingClientRect();
@@ -2273,10 +2308,9 @@
     const gap = window.innerHeight <= 520 ? 6 : 10;
     const z = parseFloat(getComputedStyle(mine).zoom) || 1;            // panels are CSS-zoomed on smaller screens
     mine.style.setProperty("top", Math.round((el.getBoundingClientRect().bottom + gap) / z) + "px", "important");
-    if (!document.body.classList.contains("touch")) {
-      const r = mine.getBoundingClientRect(), h = side.offsetHeight || 42;
-      side.style.top = Math.round(r.bottom + gap + h / 2) + "px";
-    }
+    const below = getComputedStyle(mine).display !== "none" ? mine : el;
+    const r = below.getBoundingClientRect(), h = side.getBoundingClientRect().height || 30;
+    side.style.top = Math.round(r.bottom + gap + h / 2) + "px";
   }
   window.addEventListener("resize", () => setTimeout(layoutRight, 50));
 
