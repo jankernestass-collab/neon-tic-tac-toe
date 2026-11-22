@@ -1643,7 +1643,7 @@
   </div>
 
   <div class="phonesea" aria-hidden="true"><i class="ps-a"></i><i class="ps-b"></i></div>
-  <div class="buildtag">build 55</div>
+  <div class="buildtag">build 56</div>
   <div class="turnside" id="turnside"></div>
   <div class="touchbar" id="touchbar">
     <button id="tbCancel" class="tb small">✕</button>
@@ -4491,27 +4491,58 @@
         document.head.appendChild(sc);
       });
     }
+    // phones drop the connection when you switch apps or the screen locks — so we reconnect instead of ending the game
+    const PEER_OPTS = { config: { iceServers: [
+      { urls: "stun:stun.l.google.com:19302" }, { urls: "stun:global.stun.twilio.com:3478" },
+      { urls: "turn:eu-0.turn.peerjs.com:3478", username: "peerjs", credential: "peerjsp" },
+      { urls: "turn:us-0.turn.peerjs.com:3478", username: "peerjs", credential: "peerjsp" } ] } };
+    let hostId = "", graceTimer = null, retryTimer = null;
     function setConn(c) {
+      if (conn && conn !== c) { const old = conn; conn = null; try { old.close(); } catch (e) {} }
       conn = c;
-      c.on("data", d => onMsg({ isMe: false, peer: "p2p", data: d }));
-      c.on("close", () => onLeft());
+      clearTimeout(graceTimer); clearInterval(retryTimer); graceTimer = retryTimer = null;
+      c.on("data", d => { if (c === conn) onMsg({ isMe: false, peer: "p2p", data: d }); });
+      c.on("close", () => { if (c === conn) connLost(); });
+      c.on("error", () => { if (c === conn) connLost(); });
+      if (state.connected) { try { setLog("Reconnected!"); } catch (e) {} pending.forEach(m => rawSend({ k: "m", m })); }
     }
+    function connLost() {
+      if (graceTimer || !transport) return;
+      try { setLog("Connection lost — reconnecting…"); } catch (e) {}
+      if (!state.isHost) { retryTimer = setInterval(guestReconnect, 3000); guestReconnect(); }
+      graceTimer = setTimeout(() => { graceTimer = null; clearInterval(retryTimer); if (!conn || !conn.open) onLeft(); }, 30000);
+    }
+    function guestReconnect() {
+      if (!peerObj || peerObj.destroyed) return;
+      if (peerObj.disconnected) { try { peerObj.reconnect(); } catch (e) {} return; }
+      const c = peerObj.connect(hostId, { reliable: true });
+      c.on("open", () => setConn(c));
+    }
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden || transport !== "p2p" || !peerObj || peerObj.destroyed) return;
+      if (peerObj.disconnected) { try { peerObj.reconnect(); } catch (e) {} }
+      if (!state.isHost && (!conn || !conn.open)) connLost();
+    });
     async function openP2P(code, asHost) {
       await loadPeerJS();
-      const id = "bs-battleships-" + code.toLowerCase();
-      const ready = pr => new Promise((res, rej) => { pr.on("open", res); pr.on("error", rej); setTimeout(() => rej(new Error("timeout")), 12000); });
+      const id = hostId = "bs-battleships-" + code.toLowerCase();
+      const ready = pr => new Promise((res, rej) => { pr.on("open", res); pr.on("error", rej); setTimeout(() => rej(new Error("timeout")), 25000); });
+      const keepAlive = pr => pr.on("disconnected", () => setTimeout(() => { try { if (!pr.destroyed) pr.reconnect(); } catch (e) {} }, 800));
       if (asHost) {
-        peerObj = new window.Peer(id);
+        peerObj = new window.Peer(id, PEER_OPTS);
         await ready(peerObj);
-        peerObj.on("connection", c => { if (conn) { c.close(); return; } c.on("open", () => setConn(c)); });
+        keepAlive(peerObj);
+        // the first player to connect is the opponent; later connections are that same player coming back
+        peerObj.on("connection", c => { c.on("open", () => setConn(c)); });
       } else {
-        peerObj = new window.Peer();
+        peerObj = new window.Peer(PEER_OPTS);
         await ready(peerObj);
+        keepAlive(peerObj);
         const c = peerObj.connect(id, { reliable: true });
         await new Promise((res, rej) => {
           c.on("open", res); c.on("error", rej);
           peerObj.on("error", e => rej(e));
-          setTimeout(() => rej(new Error("timeout")), 12000);
+          setTimeout(() => rej(new Error("timeout")), 25000);
         });
         setConn(c);
       }
@@ -4550,7 +4581,8 @@
       state.connected = true;
     }
     async function close() {
-      clearInterval(timer);
+      clearInterval(timer); clearTimeout(graceTimer); clearInterval(retryTimer); graceTimer = retryTimer = null;
+      transport = null;
       if (named) { try { await named.leave(); } catch (e) {} }
       if (conn) { try { conn.close(); } catch (e) {} }
       if (peerObj) { try { peerObj.destroy(); } catch (e) {} }
