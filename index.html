@@ -1756,7 +1756,7 @@
   </div>
 
   <div class="phonesea" aria-hidden="true"><i class="ps-a"></i><i class="ps-b"></i></div>
-  <div class="buildtag">build 60</div>
+  <div class="buildtag">build 61</div>
   <div class="turnside" id="turnside"></div>
   <div class="touchbar" id="touchbar">
     <button id="tbCancel" class="tb small">✕</button>
@@ -3475,11 +3475,29 @@
   const canUpgrade = (sd, k) => !!UPGRADES[k] && level(sd, k) < UPGRADES[k].levels.length;
   const isPassive = k => !!PASSIVES[k];
   const hasCard = (sd, k) => isPassive(k) ? level(sd, k) > 0 : sd.unl.has(k);       // already unlocked?
-  const pickPool = sd => [...Object.keys(PASSIVES), ...Object.keys(CARDS)].filter(k => isPassive(k) ? canUpgrade(sd, k) : (!sd.unl.has(k) || canUpgrade(sd, k)));
-  function upgradeOffer(sd) { return lshuffle(pickPool(sd)).slice(0, 3); }
-  const upgradable = sd => pickPool(sd);
-  // apply a pick: unlock if new, otherwise upgrade
+  // what a mystery pick can be: "?" = a random card straight into your hand (rarer rarities are rarer), or a passive,
+  // or face-up = an upgrade for a card you already have. Card picks are written "+key".
+  const CHARGE_RARITY = { common: 62, rare: 27, epic: 9, legendary: 2 };
+  function mysteryCard() {
+    const tot = Object.values(CHARGE_RARITY).reduce((a, b) => a + b, 0);
+    let x = LR() * tot;
+    for (const [r, w] of Object.entries(CHARGE_RARITY)) if ((x -= w) < 0) { const l = RARITY[r].cards; return l[Math.floor(LR() * l.length)]; }
+    return RARITY.common.cards[0];
+  }
+  const pickPool = sd => [...Object.keys(PASSIVES), ...Object.keys(CARDS)].filter(k => canUpgrade(sd, k) && (isPassive(k) || sd.unl.has(k)));
+  function upgradeOffer(sd) {
+    const ups = lshuffle(pickPool(sd)), out = [], used = new Set();
+    for (let n = 0; n < 3; n++) {
+      if (ups.length && LR() < 0.45) { out.push(ups.pop()); continue; }
+      for (let t = 0; t < 30; t++) { const k = mysteryCard(); if (!used.has(k)) { used.add(k); out.push("+" + k); break; } }
+    }
+    return out;
+  }
+  const upgradable = sd => [true];                 // there is always a mystery card to get
+  const pickKey = k => k[0] === "+" ? k.slice(1) : k;
+  // apply a pick: a card goes to your hand (and shows up in the shop from now on), otherwise unlock/upgrade
   function applyPick(sd, key) {
+    if (key[0] === "+") { const k = key.slice(1); if (!CARDS[k]) return "card"; sd.inv.push(k); sd.unl.add(k); return "card"; }
     if (isPassive(key)) { sd.up[key] = level(sd, key) + 1; return level(sd, key) === 1 ? "unlock" : "upgrade"; }
     if (!sd.unl.has(key)) { sd.unl.add(key); return "unlock"; }
     sd.up[key] = level(sd, key) + 1; return "upgrade";
@@ -3546,7 +3564,7 @@
     if (!offer.length) return;
     popup.classList.remove("hype");
     document.querySelector("#popup .popup-title").textContent = "PICK A MYSTERY CARD";
-    document.querySelector("#popup .popup-hint").textContent = "? = something new to unlock · face-up = upgrade for one you already have";
+    document.querySelector("#popup .popup-hint").textContent = "? = a mystery card for your hand · face-up = upgrade for a card you have";
     box.innerHTML = "";
     let picked = false, ready = false;                 // no picking until every card has dealt in and flipped
     popup.classList.add("locked");
@@ -3557,7 +3575,7 @@
       f.className = "flip"; f.style.setProperty("--i", k);
       const isNew = !hasCard(sides.me, key);
       f.className = "flip mystery"; f.style.setProperty("--i", k);
-      const face = !isNew ? upgradeHTML(key) : isPassive(key) ? passiveHTML(key, { up: { [key]: 1 } }, "NEW PASSIVE").replace('gc-rar"', 'gc-rar new"') : unlockHTML(key);
+      const face = !isNew ? upgradeHTML(key) : isPassive(key) ? passiveHTML(key, { up: { [key]: 1 } }, "NEW PASSIVE").replace('gc-rar"', 'gc-rar new"') : cardHTML(pickKey(key));
       f.innerHTML = `<div class="flip-in"><div class="face front">${face}</div><div class="face back"><div class="gback">?</div></div></div>`;
       setTimeout(() => Sound.play("flip"), k * 150 + 200);
       if (!isNew) setTimeout(() => { if (!picked) { f.classList.add("open"); Sound.play("flip"); } }, 700 + k * 180);
@@ -3583,7 +3601,7 @@
           setTimeout(() => f.classList.add("chosen"), 700);
           hold = 1450;
         } else {
-          hold = hypeReveal(f, popup, isPassive(key) ? "epic" : rarityOf(key));
+          hold = hypeReveal(f, popup, isPassive(key) ? "epic" : rarityOf(pickKey(key)));
           setTimeout(() => f.classList.add("chosen"), hold - 750);
         }
         setTimeout(() => {
@@ -3591,8 +3609,9 @@
           const what = applyPick(sides.me, key); sides.me.charge = Math.max(0, sides.me.charge - MAX_CHARGE);
           if (sides.me.charge >= MAX_CHARGE) setTimeout(() => { if (phase === "battle") openDraw(); }, 900);
           if (mode === "mp") Net.send({ t: "act", a: "upg", key });
-          renderCharges(); renderPanel(); renderUpgrades(true); renderPassives(); refreshHover();
-          setLog(what === "unlock" ? (isPassive(key) ? `Unlocked passive ${PASSIVES[key].name} — ${statText(key, val(sides.me, key))}` : `Unlocked ${CARDS[key].name} — buy it in the SHOP`)
+          if (what === "card") newCard = true;
+          renderCharges(); renderPanel(); renderUpgrades(true); renderPassives(); renderFleet(); refreshHover();
+          setLog(what === "card" ? `You got ${CARDS[pickKey(key)].name}!` : what === "unlock" ? (isPassive(key) ? `Unlocked passive ${PASSIVES[key].name} — ${statText(key, val(sides.me, key))}` : `Unlocked ${CARDS[key].name} — buy it in the SHOP`)
                                    : `Upgraded ${UPGRADES[key].name} → ${statText(key, val(sides.me, key))}`);
         }, hold);
       };
@@ -3923,7 +3942,7 @@
       const offer = upgradeOffer(A), best = offer[rand(offer.length)];
       const what = applyPick(A, best);
       A.charge = Math.max(0, A.charge - MAX_CHARGE); renderFleet();
-      setLog(what === "unlock" ? "Enemy unlocked a new card" : `Enemy upgraded ${UPGRADES[best].name}`);
+      setLog(what === "card" ? "Enemy got a mystery card" : what === "unlock" ? "Enemy unlocked a new passive" : `Enemy upgraded ${UPGRADES[best].name}`);
       await wait(700);
     }
     if (false) {
@@ -4114,7 +4133,7 @@
     panelBody.appendChild(top);
     const row = document.createElement("div"); row.className = "hand" + (over ? " over" : "");
     if (!inv.length) {
-      row.innerHTML = '<div class="empty-hand">No cards yet — unlock them with CHARGES, then buy in the 🛒 SHOP</div><div class="empty-hand short">🃏 No cards yet · get some in the 🛒 SHOP</div>';
+      row.innerHTML = '<div class="empty-hand">No cards yet — get them from CHARGES or the 🛒 SHOP</div><div class="empty-hand short">🃏 No cards yet · get some in the 🛒 SHOP</div>';
     }
     inv.forEach((key, k) => {
       const ok = mine && !over && canUse(sides.me, key);
@@ -4903,7 +4922,7 @@
     const B = sides.bot;
     // no rounding to 0 here: the draw can arrive just before this screen adds their turn's charge, and the order must not matter
     if (m.a === "draw") { B.charge -= MAX_CHARGE; setLog("Enemy drew a card"); return; }
-    if (m.a === "upg") { const what = applyPick(B, m.key); B.charge -= MAX_CHARGE; renderFleet(); setLog(what === "unlock" ? "Opponent unlocked a new card" : `Opponent upgraded ${UPGRADES[m.key].name}`); return; }
+    if (m.a === "upg") { const what = applyPick(B, m.key); B.charge -= MAX_CHARGE; renderFleet(); setLog(what === "card" ? "Opponent got a mystery card" : what === "unlock" ? "Opponent unlocked a new passive" : `Opponent upgraded ${UPGRADES[m.key].name}`); return; }
     if (m.a === "pack") { B.gold -= m.cost; B.inv.push(...(m.keys || []).filter(k => CARDS[k])); renderFleet(); setLog(`Opponent opened a ${m.rar} card pack`); return; }
     if (m.a === "reroll") { B.gold -= m.cost; renderFleet(); return; }
     if (m.a === "pass") { setLog("Opponent ran out of time"); await wait(400); nextTurn("me"); return; }
