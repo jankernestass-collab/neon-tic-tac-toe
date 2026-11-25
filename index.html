@@ -489,6 +489,36 @@
   .buy:hover:not(:disabled) { background: #ffd84a55; transform: scale(1.05); }
   .buy:disabled { opacity: .35; cursor: default; }
   .shopitem:not(.locked), .packitem:not(.locked) { cursor: pointer; }
+  /* rotating shop */
+  .shopbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 10px; padding: 9px 12px 9px 16px; border-radius: 12px;
+    background: linear-gradient(180deg, #ffffff10, #ffffff06); border: 1px solid #9fe6ff2e; }
+  .shopbar .sb-txt { display: flex; align-items: center; gap: 10px; font-size: .82rem; letter-spacing: 1px; }
+  .shopbar .sb-txt i { font-style: normal; font-size: 1.4rem; }
+  .shopbar .sb-txt > span { display: flex; flex-direction: column; align-items: flex-start; }
+  .shopbar .sb-txt b { letter-spacing: 2px; color: #dff6ff; } .shopbar .sb-txt small { opacity: .65; letter-spacing: .5px; margin-top: 2px; }
+  .rerollbtn { font: bold .85rem "Segoe UI", sans-serif; letter-spacing: 2px; padding: 9px 14px; border-radius: 10px; cursor: pointer; color: #fff;
+    background: linear-gradient(180deg, #6a4cff, #3d22b8); border: 1px solid #b9a8ff; box-shadow: 0 4px 14px #3d22b866; transition: transform .15s, filter .15s; }
+  .rerollbtn span { margin-left: 6px; padding: 2px 7px; border-radius: 8px; background: #00000040; color: #ffe45c; }
+  .rerollbtn:hover:not(:disabled) { transform: translateY(-2px) rotate(-1deg); filter: brightness(1.15); }
+  .rerollbtn:disabled { opacity: .4; cursor: default; }
+  .shop-grid.offers { grid-template-columns: repeat(4, 1fr); justify-items: center; gap: 16px 14px; overflow: visible; padding-top: 14px; }
+  .shop-grid.offers .shopitem { position: relative; gap: 10px; }
+  .shop-grid.offers .si-card, .shop-grid.offers .shopitem.mystery-lock .lockback { width: 150px; height: 214px; position: relative; }
+  .shop-grid.offers .si-card .gcard { transform: none; }
+  .shop-grid.offers .si-buy { max-width: 150px; padding: 8px 0; font-size: .95rem; }
+  .shop-grid.offers .si-buy s { opacity: .55; font-weight: normal; margin-right: 2px; }
+  .shopitem.deal .si-card .gcard { box-shadow: 0 0 0 3px #ffe45c, 0 0 26px #ffb34799, 0 8px 22px #000a; }
+  .shopitem.deal .si-buy:not(:disabled) { background: linear-gradient(180deg, #ffe45c, #ffb02e); color: #3a2400; border-color: #fff0b0; }
+  .dealtag { position: absolute; top: -10px; right: -10px; z-index: 3; padding: 5px 9px; border-radius: 10px; transform: rotate(8deg);
+    font: 900 .9rem "Segoe UI", sans-serif; color: #fff; background: linear-gradient(180deg, #ff5a5a, #c81e1e); border: 2px solid #ffd0d0; box-shadow: 0 4px 12px #000a;
+    animation: dealPop 1.6s ease-in-out infinite; }
+  @keyframes dealPop { 50% { transform: rotate(8deg) scale(1.12); } }
+  .shopitem.sold .si-card { filter: grayscale(1) brightness(.45); }
+  .soldstamp { position: absolute; left: 50%; top: 100px; z-index: 3; transform: translate(-50%, -50%) rotate(-16deg); padding: 6px 16px; border: 3px solid #ff6b6b; border-radius: 8px;
+    font: 900 1.4rem "Segoe UI", sans-serif; letter-spacing: 4px; color: #ff8a8a; background: #00000088; filter: none; }
+  .shopitem.sold .soldstamp { filter: none; }
+  .si-empty { font-size: .75rem; opacity: .55; text-align: center; line-height: 1.3; }
+  @keyframes offerIn { from { transform: translateY(-30px) rotateY(90deg) scale(.8); opacity: 0; } }
   .shopitem:not(.locked):hover .si-buy, .packitem:not(.locked):hover .si-buy { background: #ffd84a55; }
   .maxed { min-width: 62px; text-align: center; font-size: .72rem; font-weight: bold; color: #8dffb0; letter-spacing: 1px; }
   @media (max-width: 1400px) { .panel, .upgrades, .charges, .fleetpanel { zoom: .82; } }
@@ -1726,7 +1756,7 @@
   </div>
 
   <div class="phonesea" aria-hidden="true"><i class="ps-a"></i><i class="ps-b"></i></div>
-  <div class="buildtag">build 59</div>
+  <div class="buildtag">build 60</div>
   <div class="turnside" id="turnside"></div>
   <div class="touchbar" id="touchbar">
     <button id="tbCancel" class="tb small">✕</button>
@@ -3317,6 +3347,7 @@
     const income = TURN_INCOME + val(sd, "warchest");
     sd.gold += income; stats[sd.name].gold += income;   // same on both screens in multiplayer
     sd.turns = (sd.turns || 0) + 1;
+    rollOffers(sd);                                       // the shop restocks every turn
     const oc = val(sd, "overcharge");
     if (oc && sd.turns % oc === 0 && sd.charge < CHARGE_CAP) sd.charge++;          // Overcharge passive
     // shields of the OTHER side count down at the start of each of my turns (i.e. after an enemy turn)
@@ -3578,13 +3609,29 @@
   // legendaries get pricier every time that player buys one (+100% of the base price each time)
   const priceOf = (key, sd) => { const r = rarityOf(key); return PRICE[r] + (r === "legendary" && sd ? PRICE[r] * ((sd.bought || {})[key] || 0) : 0); };
   const noteBuy = (sd, key) => { if (rarityOf(key) === "legendary") { sd.bought = sd.bought || {}; sd.bought[key] = (sd.bought[key] || 0) + 1; } };
+  // ---- rotating shop: 4 random offers from your unlocked cards, new every turn, one at half price ----
+  const SHOP_SLOTS = 4, REROLL_COST = 10;
+  const shuffled = a => { a = [...a]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+  function rollOffers(sd) {
+    sd.offers = shuffled([...sd.unl].filter(k => CARDS[k])).slice(0, SHOP_SLOTS).map(key => ({ key, deal: false, sold: false }));
+    if (sd.offers.length) sd.offers[Math.floor(Math.random() * sd.offers.length)].deal = true;
+  }
+  function topUpOffers(sd) {                                   // cards unlocked mid-turn fill empty spots
+    if (!sd.offers) return rollOffers(sd);
+    const have = new Set(sd.offers.map(o => o.key));
+    const pool = shuffled([...sd.unl].filter(k => CARDS[k] && !have.has(k)));
+    while (sd.offers.length < SHOP_SLOTS && pool.length) sd.offers.push({ key: pool.pop(), deal: false, sold: false });
+    if (sd.offers.length && !sd.offers.some(o => o.deal)) { const open = sd.offers.filter(o => !o.sold); if (open.length) open[Math.floor(Math.random() * open.length)].deal = true; }
+  }
+  const offerPrice = (o, sd) => o.deal ? Math.ceil(priceOf(o.key, sd) / 2) : priceOf(o.key, sd);
   const SHOP_ORDER = Object.keys(CARDS).sort((a, b) => priceOf(a) - priceOf(b) || CARDS[a].name.localeCompare(CARDS[b].name));
   function renderUpgrades(bump) {                          // the small SHOP panel (bottom left)
     const el = document.getElementById("upgrades"), me = sides.me;
-    const prices = [...me.unl].map(priceOf), cheapest = prices.length ? Math.min(...prices) : Infinity;
+    topUpOffers(me);
+    const prices = me.offers.filter(o => !o.sold).map(o => offerPrice(o, me)), cheapest = prices.length ? Math.min(...prices) : Infinity;
     el.innerHTML = `<div class="up-head"><h3>SHOP</h3><div class="gold${bump ? " bump" : ""}">🪙 <b>${me.gold}</b></div></div>` +
       `<button class="shopbtn" id="openShop">🛒 OPEN SHOP</button>` +
-      `<div class="shop-sub">${me.gold >= cheapest ? "You can afford a card!" : !prices.length ? "Fill your CHARGES to unlock cards" : "Earn gold: +" + (GOLD_PER_HIT + val(me, "bounty")) + " per hit · +20 per ship sunk · +" + (TURN_INCOME + val(me, "warchest")) + " per turn"}</div>`;
+      `<div class="shop-sub">${me.gold >= cheapest ? "You can afford a card!" : !me.unl.size ? "Fill your CHARGES to unlock cards" : "Earn gold: +" + (GOLD_PER_HIT + val(me, "bounty")) + " per hit · +20 per ship sunk · +" + (TURN_INCOME + val(me, "warchest")) + " per turn"}</div>`;
     document.getElementById("openShop").onclick = openShop;
     if (document.getElementById("shop").classList.contains("show")) renderShop();
   }
@@ -3603,22 +3650,43 @@
       renderPacks(canBuy);
     }
     grid.innerHTML = ""; hidePreview();
+    let bar = document.getElementById("shopBar");
+    if (!bar) { bar = document.createElement("div"); bar.id = "shopBar"; bar.className = "shopbar"; grid.parentNode.insertBefore(bar, grid); }
+    bar.style.display = shopTab === "cards" ? "" : "none";
     if (shopTab !== "cards") return;
-    SHOP_ORDER.forEach(key => {
-      const price = priceOf(key, me), open = me.unl.has(key), ok = open && canBuy && me.gold >= price;
-      const item = document.createElement("div");
-      if (!open) {
-        item.className = "shopitem locked mystery-lock";
-        item.innerHTML = `<div class="si-card"><div class="gback lockback">?</div></div><button class="si-buy" disabled>🔒 LOCKED</button>`;
-        grid.appendChild(item); return;
+    topUpOffers(me);
+    const canRoll = canBuy && me.gold >= REROLL_COST && me.unl.size > 0;
+    bar.innerHTML = `<span class="sb-txt"><i>🔄</i><span><b>NEW OFFERS EVERY TURN</b><small>one card is always half price</small></span></span>` +
+                    `<button class="rerollbtn" ${canRoll ? "" : "disabled"}>🎲 REROLL <span>🪙 ${REROLL_COST}</span></button>`;
+    bar.querySelector(".rerollbtn").onclick = rerollShop;
+    grid.classList.add("offers");
+    for (let n = 0; n < SHOP_SLOTS; n++) {
+      const o = me.offers[n], item = document.createElement("div");
+      if (!o) {
+        item.className = "shopitem locked mystery-lock empty";
+        item.innerHTML = `<div class="si-card"><div class="gback lockback">?</div></div><div class="si-empty">Unlock more cards<br>with CHARGES</div>`;
+        grid.appendChild(item); continue;
       }
-      item.className = "shopitem" + (ok ? "" : " locked");
-      item.innerHTML = `<div class="si-card">${cardHTML(key)}</div><button class="si-buy" ${ok ? "" : "disabled"}>🪙 ${price}</button>`;
-      item.onclick = () => buyCard(key, item);                      // tap the card itself or its price to buy
-      item.querySelector(".si-card").onmouseenter = () => showPreview(key);
+      const price = offerPrice(o, me), ok = !o.sold && canBuy && me.gold >= price;
+      item.className = "shopitem" + (ok ? "" : " locked") + (o.deal ? " deal" : "") + (o.sold ? " sold" : "");
+      item.innerHTML = (o.deal && !o.sold ? `<div class="dealtag">−50%</div>` : "") + `<div class="si-card">${cardHTML(o.key)}</div>` + (o.sold ? '<div class="soldstamp">SOLD</div>' : "") +
+        (o.sold ? `<button class="si-buy" disabled>SOLD OUT</button>`
+                : `<button class="si-buy" ${ok ? "" : "disabled"}>${o.deal ? `<s>${priceOf(o.key, me)}</s> ` : ""}🪙 ${price}</button>`);
+      if (!o.sold) item.onclick = () => buyCard(n, item);          // tap the card itself or its price to buy
+      item.querySelector(".si-card").onmouseenter = () => showPreview(o.key);
       item.querySelector(".si-card").onmouseleave = hidePreview;
       grid.appendChild(item);
-    });
+    }
+  }
+  function rerollShop() {
+    const me = sides.me;
+    if (phase !== "battle" || whose !== "me" || busy || me.gold < REROLL_COST || !me.unl.size) return;
+    me.gold -= REROLL_COST;
+    rollOffers(me);
+    if (mode === "mp") Net.send({ t: "act", a: "reroll", cost: REROLL_COST });
+    Sound.play("coin"); Sound.play("flip");
+    renderUpgrades(true); renderFleet();
+    document.querySelectorAll("#shopGrid .shopitem").forEach((el, n) => { el.style.animation = "none"; void el.offsetWidth; el.style.animation = `offerIn .4s ${n * 70}ms cubic-bezier(.2, 1.3, .4, 1) backwards`; });
   }
   // ---- CARD PACKS: 3 random cards, one of them guaranteed to be the pack's rarity ----
   const PACKS = [
@@ -3780,10 +3848,12 @@
     if (sd !== sides.me) renderFleet();
   }
 
-  function buyCard(key, item) {
-    const me = sides.me, price = priceOf(key, me);
+  function buyCard(n, item) {
+    const me = sides.me, o = (me.offers || [])[n];
+    if (!o || o.sold) return;
+    const key = o.key, price = offerPrice(o, me);
     if (phase !== "battle" || whose !== "me" || busy || me.gold < price || !me.unl.has(key) || me.inv.length > HAND_MAX) return;
-    me.gold -= price; noteBuy(me, key);
+    me.gold -= price; noteBuy(me, key); o.sold = true;
     me.inv.push(key); newCard = true;
     if (mode === "mp") Net.send({ t: "act", a: "shop", cost: price, key });
     Sound.play("coin"); setTimeout(() => Sound.play("pick"), 80);
@@ -3866,17 +3936,20 @@
     trimHand(A);
     const smart = botLevel === "hard" ? 1 : botLevel === "medium" ? 0.75 : 0.3;   // how often it follows up on hits
     // shop: buy the best card it can afford (easy bots never shop)
-    if (botLevel === "easy" && A.gold >= 30 && Math.random() < 0.5) { const cheap = SHOP_ORDER.filter(k => priceOf(k) === 30 && A.unl.has(k)); if (cheap.length) { A.inv.push(cheap[rand(cheap.length)]); A.gold -= 30; } }
+    topUpOffers(A);
+    const offerOf = k => A.offers.find(o => o.key === k && !o.sold);
+    const costOf = k => offerPrice(offerOf(k), A);
+    if (botLevel === "easy" && Math.random() < 0.5) { const cheap = A.offers.filter(o => !o.sold && rarityOf(o.key) === "common" && A.gold >= offerPrice(o, A)); if (cheap.length) { const o = cheap[rand(cheap.length)]; A.gold -= offerPrice(o, A); o.sold = true; A.inv.push(o.key); } }
     if (botLevel !== "easy") {
       const wish = ["nuke", "kraken", "rocket", "rush", "homing", "barrage", "carpet", "irondome", "chain", "cardthief", "aoe", "cross", "evade", "jammer", "airstrike", "flare", "cluster", "armor", "depth", "gamble", "scan", "torpedo"];
       const dream = ["nuke", "kraken", "rocket"].find(c => A.unl.has(c));
       if (A.saveFor === undefined || (A.saveFor && !A.unl.has(A.saveFor))) A.saveFor = null;
       if (dream && !A.saveFor && Math.random() < 0.04) A.saveFor = dream;            // now and then it starts saving for a big one
-      const saving = A.saveFor && A.gold < priceOf(A.saveFor, A);
-      const k = saving ? null : wish.concat(SHOP_ORDER).find(c => A.unl.has(c) && A.gold >= priceOf(c, A) && (A.gold - priceOf(c, A) >= 30 || priceOf(c, A) >= 120) && (wish.includes(c) || Math.random() < 0.3));
+      const saving = A.saveFor && offerOf(A.saveFor) && A.gold < costOf(A.saveFor);
+      const k = saving ? null : wish.concat(SHOP_ORDER).find(c => offerOf(c) && A.gold >= costOf(c) && (A.gold - costOf(c) >= 30 || costOf(c) >= 120 || offerOf(c).deal) && (wish.includes(c) || Math.random() < 0.3));
       const pk = !saving && !k && Math.random() < 0.3 ? [...PACKS].reverse().find(p => A.gold >= p.price && A.gold - p.price >= 20) : null;
       if (pk) { const got = rollPack(pk.rar); A.gold -= pk.price; A.inv.push(...got); trimHand(A); setLog(`Enemy opened a ${pk.rar} card pack`); await wait(600); }
-      if (k) { if (k === A.saveFor) A.saveFor = null; A.gold -= priceOf(k, A); noteBuy(A, k); A.inv.push(k); trimHand(A); setLog("Enemy bought a card from the shop"); await wait(600); }
+      if (k) { if (k === A.saveFor) A.saveFor = null; A.gold -= costOf(k); offerOf(k).sold = true; noteBuy(A, k); A.inv.push(k); trimHand(A); setLog("Enemy bought a card from the shop"); await wait(600); }
     }
     trimHand(A);
     // maybe play a card first
@@ -4832,6 +4905,7 @@
     if (m.a === "draw") { B.charge -= MAX_CHARGE; setLog("Enemy drew a card"); return; }
     if (m.a === "upg") { const what = applyPick(B, m.key); B.charge -= MAX_CHARGE; renderFleet(); setLog(what === "unlock" ? "Opponent unlocked a new card" : `Opponent upgraded ${UPGRADES[m.key].name}`); return; }
     if (m.a === "pack") { B.gold -= m.cost; B.inv.push(...(m.keys || []).filter(k => CARDS[k])); renderFleet(); setLog(`Opponent opened a ${m.rar} card pack`); return; }
+    if (m.a === "reroll") { B.gold -= m.cost; renderFleet(); return; }
     if (m.a === "pass") { setLog("Opponent ran out of time"); await wait(400); nextTurn("me"); return; }
     if (m.a === "sell") { const i = B.inv.indexOf(m.key); if (i >= 0) B.inv.splice(i, 1); B.gold += m.g; renderFleet(); setLog("Opponent sold a card"); return; }
     if (m.a === "shop") { B.gold -= m.cost; if (m.key) { B.inv.push(m.key); noteBuy(B, m.key); } renderFleet(); setLog("Opponent bought a card from the shop"); return; }
