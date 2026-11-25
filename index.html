@@ -1769,7 +1769,7 @@
   </div>
 
   <div class="phonesea" aria-hidden="true"><i class="ps-a"></i><i class="ps-b"></i></div>
-  <div class="buildtag">build 62</div>
+  <div class="buildtag">build 63</div>
   <div class="turnside" id="turnside"></div>
   <div class="touchbar" id="touchbar">
     <button id="tbCancel" class="tb small">✕</button>
@@ -3498,7 +3498,7 @@
     for (const [r, w] of Object.entries(CHARGE_RARITY)) if ((x -= w) < 0) { const l = RARITY[r].cards; return l[Math.floor(LR() * l.length)]; }
     return RARITY.common.cards[0];
   }
-  const pickPool = sd => [...Object.keys(PASSIVES), ...new Set(sd.inv)].filter(k => canUpgrade(sd, k));   // passives, or upgrades for cards in your hand
+  const pickPool = sd => Object.keys(PASSIVES).filter(k => canUpgrade(sd, k));   // passives only (new ones or a level up) — no card upgrades
   function upgradeOffer(sd) {
     const ups = lshuffle(pickPool(sd)), out = [], used = new Set();
     for (let n = 0; n < 3; n++) {
@@ -3577,7 +3577,7 @@
     if (!offer.length) return;
     popup.classList.remove("hype");
     document.querySelector("#popup .popup-title").textContent = "PICK A CARD";
-    document.querySelector("#popup .popup-hint").textContent = "Pick one: a card for your hand, an upgrade or a passive";
+    document.querySelector("#popup .popup-hint").textContent = "Pick one: a card for your hand or a passive";
     box.innerHTML = "";
     let picked = false, ready = false;                 // no picking until every card has dealt in and flipped
     popup.classList.add("locked");
