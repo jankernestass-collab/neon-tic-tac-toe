@@ -934,6 +934,42 @@
     padding: 10px 12px 10px; box-shadow: 0 10px 30px #000a, inset 0 1px 0 #ffffff30; contain: layout paint; }
   .passives h3 { margin: 0 0 6px; text-align: center; font-family: "Black Ops One", "Segoe UI", sans-serif; font-weight: normal; letter-spacing: 3px; font-size: 1rem; }
   .pas-empty { text-align: center; font-size: .78rem; opacity: .7; padding: 4px 0 2px; }
+  /* passives: 6 tiles with tier pips + the turn counter badge on top */
+  .pastimer { position: absolute; left: 50%; top: -17px; transform: translateX(-50%); display: flex; align-items: center; gap: 8px; white-space: nowrap;
+    padding: 5px 12px 5px 8px; border-radius: 20px; font: bold .72rem "Segoe UI", sans-serif; letter-spacing: 1.5px; color: #e9fbff;
+    background: linear-gradient(180deg, #5b2e9e, #2e1458); border: 1px solid #c9a6ff99; box-shadow: 0 6px 16px #000a, 0 0 14px #9b5cff55; }
+  .pastimer .pt-ic { font-size: .95rem; }
+  .pastimer b { color: #ffe45c; }
+  .pastimer .pt-bar { display: block; width: 54px; height: 6px; border-radius: 4px; background: #ffffff22; overflow: hidden; }
+  .pastimer .pt-bar s { display: block; height: 100%; background: linear-gradient(90deg, #c77dff, #ffe45c); border-radius: 4px; transition: width .4s; }
+  .pastimer.done { background: linear-gradient(180deg, #8a6a12, #4a3606); border-color: #ffe45c99; }
+  .passives h3 { margin-top: 6px !important; }
+  .passives { contain: layout !important; overflow: visible !important; }
+  .pasgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .ptile { position: relative; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 2px 5px; border-radius: 10px; cursor: default;
+    background: #ffffff0d; border: 1px solid #ffffff1a; transition: background .2s, transform .15s; }
+  .ptile:hover { background: #ffffff1c; transform: translateY(-2px); }
+  .ptile .pt-icon { font-size: 1.35rem; line-height: 1.2; filter: drop-shadow(0 2px 3px #000a); }
+  .ptile .pt-name { font-size: .58rem; letter-spacing: .3px; opacity: .9; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+  .ptile .pt-pips { display: flex; gap: 3px; }
+  .ptile .pt-pips i { width: 9px; height: 4px; border-radius: 2px; background: #ffffff22; }
+  .ptile .pt-pips i.on { background: #ffe45c; box-shadow: 0 0 5px #ffe45c; }
+  .ptile.on { border-color: #c9a6ff66; background: linear-gradient(180deg, #9b5cff26, #9b5cff0d); }
+  .ptile.off .pt-icon { filter: grayscale(1) brightness(.6); opacity: .5; }
+  .ptile.off .pt-name { opacity: .4; }
+  .ptile.pop { animation: ptPop .6s cubic-bezier(.2, 1.6, .4, 1); }
+  @keyframes ptPop { 0% { transform: scale(.6); } 60% { transform: scale(1.18); box-shadow: 0 0 20px #c77dff; } }
+  .pas-next { text-align: center; font-size: .66rem; opacity: .55; margin-top: 7px; letter-spacing: .5px; }
+  body.touch .pasgrid { grid-template-columns: repeat(6, 1fr); gap: 4px; }               /* phones: one compact row */
+  body.touch .ptile .pt-name, body.touch .pas-next { display: none; }
+  body.touch .ptile { padding: 5px 0 4px; }
+  .pasaward { position: fixed; left: 50%; top: 44%; z-index: 26; pointer-events: none; display: flex; flex-direction: column; align-items: center; gap: 10px;
+    transform: translate(-50%, -50%); animation: paIn .55s cubic-bezier(.2, 1.5, .4, 1); }
+  .pasaward .gcard { box-shadow: 0 0 0 3px #fff, 0 0 60px #c77dff, 0 20px 50px #000d; transform: scale(1.15); }
+  .pasaward .pa-tag { font-family: "Black Ops One", "Segoe UI", sans-serif; font-size: 1.6rem; letter-spacing: 5px; color: #ffe45c; text-shadow: 0 0 18px #c77dff, 0 3px 0 #2e1458; }
+  .pasaward .pa-sub { font-size: .9rem; padding: 6px 14px; border-radius: 10px; background: #000a; border: 1px solid #c9a6ff66; margin-top: 12px; }
+  .pasaward.fly { transition: transform .6s cubic-bezier(.5, 0, .75, .3), opacity .6s; transform: translate(calc(-50% + var(--fx)), calc(-50% + var(--fy))) scale(.15); opacity: .2; }
+  @keyframes paIn { from { transform: translate(-50%, -50%) scale(.3) rotate(-10deg); opacity: 0; } }
   .pas { display: flex; align-items: center; gap: 8px; padding: 5px 6px; border-radius: 10px; cursor: default; transition: background .2s; animation: pasIn .5s cubic-bezier(.2, 1.4, .4, 1); }
   .pas + .pas { margin-top: 4px; }
   .pas:hover { background: #ffffff14; }
@@ -1769,7 +1805,7 @@
   </div>
 
   <div class="phonesea" aria-hidden="true"><i class="ps-a"></i><i class="ps-b"></i></div>
-  <div class="buildtag">build 63</div>
+  <div class="buildtag">build 64</div>
   <div class="turnside" id="turnside"></div>
   <div class="touchbar" id="touchbar">
     <button id="tbCancel" class="tb small">✕</button>
@@ -2109,17 +2145,22 @@
   const GOLD_PER_HIT = 10;
   // passive cards: always on once unlocked (unlocking = level 1), shown on the right side
   const PASSIVES = {
-    shot:       { name: "Shot Range",    icon: "🎯", type: "attack" },
-    warchest:   { name: "War Chest",     icon: "💰", type: "tactic" },
-    bounty:     { name: "Bounty Hunter", icon: "🏴‍☠️", type: "tactic" },
-    overcharge: { name: "Overcharge",    icon: "🔋", type: "intel" },
+    shot:       { name: "Shot Range",     icon: "🎯", type: "attack" },
+    warchest:   { name: "War Chest",      icon: "💰", type: "tactic" },    // the only passive that gives gold
+    overcharge: { name: "Overcharge",     icon: "🔋", type: "intel" },
+    pockets:    { name: "Deep Pockets",   icon: "🎒", type: "tactic" },
+    haggler:    { name: "Haggler",        icon: "🏷️", type: "tactic" },
+    repairs:    { name: "Damage Control", icon: "🛠️", type: "defense" },
   };
+  const PASSIVE_EVERY = 10, PASSIVE_MAX = 3;     // a passive every 10 of your turns; 3 tiers each
   // upgrade levels — won by choosing upgrades when your charges fill up
   const UPGRADES = {
-    shot:      { name: "Shot Range",     base: 1,  levels: [{ v: 2 }, { v: 3 }] },
+    shot:      { name: "Shot Range",     base: 1,  levels: [{ v: 2 }, { v: 3 }, { v: 4 }] },
     warchest:  { name: "War Chest",      base: 0,  levels: [{ v: 5 }, { v: 10 }, { v: 15 }] },
-    bounty:    { name: "Bounty Hunter",  base: 0,  levels: [{ v: 5 }, { v: 10 }, { v: 15 }] },
     overcharge:{ name: "Overcharge",     base: 0,  levels: [{ v: 4 }, { v: 3 }, { v: 2 }] },
+    pockets:   { name: "Deep Pockets",   base: 0,  levels: [{ v: 1 }, { v: 2 }, { v: 3 }] },
+    haggler:   { name: "Haggler",        base: 0,  levels: [{ v: 10 }, { v: 20 }, { v: 30 }] },
+    repairs:   { name: "Damage Control", base: 0,  levels: [{ v: 5 }, { v: 4 }, { v: 3 }] },
     aoe:       { name: "AOE Strike",     base: 5,  levels: [{ v: 7 }, { v: 9 }] },
     scan:      { name: "Sonar Scan",     base: 9,  levels: [{ v: 11 }, { v: 13 }] },
     cluster:   { name: "Cluster Bomb",   base: 10, levels: [{ v: 15 }, { v: 20 }] },
@@ -2159,9 +2200,11 @@
   function statText(key, v) {
     const sq = n => `${n}×${n}`;
     switch (key) {
-      case "shot": return v === 1 ? "Your shot hits 1 square" : v === 2 ? "Your shot hits a + shape (5 squares)" : "Your shot hits 3×3 (9 squares)";
+      case "shot": return v === 1 ? "Your shot hits 1 square" : v === 2 ? "Your shot hits a + shape (5 squares)" : v === 3 ? "Your shot hits 3×3 (9 squares)" : "Your shot hits 3×3 plus a cross (13 squares)";
       case "warchest": return `+${v} extra gold at the start of every turn`;
-      case "bounty": return `+${v} extra gold for every ship square you hit`;
+      case "pockets": return `Hold up to ${6 + v} cards instead of 6`;
+      case "haggler": return `Everything in the shop costs ${v}% less`;
+      case "repairs": return `Every ${v} turns your most damaged ship is fully repaired`;
       case "overcharge": return `+1 extra charge every ${v} turns`;
       case "aoe": return `Blast a ${sq(v)} area`;
       case "scan": return `Reveal enemy ships in a ${sq(v)} area`;
@@ -2201,7 +2244,7 @@
   function shotCells(sd, j) {
     const v = val(sd, "shot"), [r, c] = rc(j);
     const offs = v === 1 ? [[0, 0]] : v === 2 ? [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]]
-               : [[-1, -1], [-1, 0], [-1, 1], [0, -1], [0, 0], [0, 1], [1, -1], [1, 0], [1, 1]];
+               : [[-1, -1], [-1, 0], [-1, 1], [0, -1], [0, 0], [0, 1], [1, -1], [1, 0], [1, 1], ...(v >= 4 ? [[-2, 0], [2, 0], [0, -2], [0, 2]] : [])];
     return offs.map(([dr, dc]) => [r + dr, c + dc]).filter(([a, b]) => a >= 0 && b >= 0 && a < N && b < N).map(([a, b]) => a * N + b);
   }
 
@@ -2596,7 +2639,7 @@
   }
   let lastCoin = 0;
   function earnGold(A, j) {
-    const g = GOLD_PER_HIT + val(A, "bounty");
+    const g = GOLD_PER_HIT;
     A.gold += g;
     stats[A.name].gold += g;
     if (A !== sides.me) return;
@@ -3316,7 +3359,7 @@
     const popup = document.getElementById("popup");
     if (popup.classList.contains("show") && !popup.classList.contains("hype") && !popup.querySelector(".flip.chosen, .flip.gone")) popup.classList.remove("show");   // unpicked mystery cards wait for next turn
     closeShop(); active = -1; moving = null; clearAim(); clearPick();
-    if (sides.me.inv.length > HAND_MAX) trimHand(sides.me);           // too many cards: the cheapest ones get sold
+    if (sides.me.inv.length > handMax(sides.me)) trimHand(sides.me);           // too many cards: the cheapest ones get sold
     setLog("⏱ Time's up — your turn passed");
     Sound.play("deny");
     busy = true; renderPanel(); renderUpgrades();
@@ -3354,6 +3397,52 @@
     else nextTurn("me");
   }
 
+  // ---- passives: one every 10 turns. First you collect all 6, then each goes to tier 2, then tier 3 ----
+  // the pick is random but the same on both screens: it's seeded from that player's own fleet and turn count
+  function passiveRoll(sd) {
+    let h = (2166136261 ^ (sd.turns * 2654435761)) >>> 0;
+    sd.ships.forEach(sh => { h = Math.imul(h ^ (sh.at * 31 + sh.size * 7 + (sh.horiz ? 1 : 0)), 16777619) >>> 0; });
+    h ^= h >>> 15; h = Math.imul(h, 2246822507) >>> 0; h ^= h >>> 13;
+    return (h >>> 0) / 4294967296;
+  }
+  function grantPassive(sd) {
+    const keys = Object.keys(PASSIVES), tier = Math.min(...keys.map(k => level(sd, k)));
+    if (tier >= PASSIVE_MAX) return null;
+    const cands = keys.filter(k => level(sd, k) === tier);
+    const k = cands[Math.floor(passiveRoll(sd) * cands.length)];
+    sd.up[k] = tier + 1;
+    return k;
+  }
+  function passiveAward(sd, k) {
+    const lv = level(sd, k), what = lv === 1 ? "NEW PASSIVE" : "TIER " + lv + " UPGRADE";
+    if (sd !== sides.me) { setTimeout(() => setLog(`Enemy got ${what.toLowerCase()}: ${PASSIVES[k].name}`), 600); return; }
+    setTimeout(() => {
+      const el = document.createElement("div"); el.className = "pasaward";
+      el.innerHTML = `<div class="pa-tag">${what}!</div>${passiveHTML(k, sd, lv === 1 ? "NEW PASSIVE" : "TIER " + lv)}<div class="pa-sub">${statText(k, val(sd, k))}</div>`;
+      document.body.appendChild(el);
+      Sound.play("reveal", 2); Sound.play("upgrade");
+      setLog(`⏳ ${what}: ${PASSIVES[k].name} — ${statText(k, val(sd, k))}`);
+      setTimeout(() => {                                       // fly into the PASSIVES panel
+        const tgt = document.getElementById("passives").getBoundingClientRect(), r = el.getBoundingClientRect();
+        el.style.setProperty("--fx", (tgt.left + tgt.width / 2 - (r.left + r.width / 2)) + "px");
+        el.style.setProperty("--fy", (tgt.top + tgt.height / 2 - (r.top + r.height / 2)) + "px");
+        el.classList.add("fly");
+        setTimeout(() => { el.remove(); renderPassives(k); Sound.play("pick"); }, 650);
+      }, 1900);
+    }, BANNER_MS + 150);
+  }
+  function autoRepair(sd) {
+    const ship = alive(sd).filter(s => s.hits.size > 0 && !s.decoy).sort((a, b) => b.hits.size - a.hits.size)[0];
+    if (!ship) return;
+    ship.hits.forEach(seg => {
+      const [x, y] = center(ship.cells[seg]);
+      for (let k = 0; k < 3; k++) setTimeout(() => { const el = fx(sd, "plus", x + rand(20) - 10, y, 1000); el.textContent = "+"; }, 300 + k * 180);
+      setMark(sd, ship.cells[seg], null);
+    });
+    ship.hits.clear();
+    Sound.play("repair");
+    setTimeout(() => setLog(sd === sides.me ? "🛠️ Damage Control fully repaired one of your ships" : "Enemy's Damage Control repaired one of their ships"), 500);
+  }
   function nextTurn(who) {
     whose = who; busy = false; active = -1; moving = null;
     const sd = sides[who];
@@ -3364,6 +3453,9 @@
     rollOffers(sd);                                       // the shop restocks every turn
     const oc = val(sd, "overcharge");
     if (oc && sd.turns % oc === 0 && sd.charge < CHARGE_CAP) sd.charge++;          // Overcharge passive
+    const dc = val(sd, "repairs");
+    if (dc && sd.turns % dc === 0) autoRepair(sd);                                  // Damage Control passive
+    if (sd.turns % PASSIVE_EVERY === 0) { const got = grantPassive(sd); if (got) passiveAward(sd, got); }
     // shields of the OTHER side count down at the start of each of my turns (i.e. after an enemy turn)
     if (sd.shields.length) { sd.shields.forEach(sh => sh.turns--); sd.shields = sd.shields.filter(sh => sh.turns > 0); renderShields(sd); }
     if (sd.charge < CHARGE_CAP) {
@@ -3498,7 +3590,7 @@
     for (const [r, w] of Object.entries(CHARGE_RARITY)) if ((x -= w) < 0) { const l = RARITY[r].cards; return l[Math.floor(LR() * l.length)]; }
     return RARITY.common.cards[0];
   }
-  const pickPool = sd => Object.keys(PASSIVES).filter(k => canUpgrade(sd, k));   // passives only (new ones or a level up) — no card upgrades
+  const pickPool = sd => [];                       // charges give cards only (passives come every 10 turns)
   function upgradeOffer(sd) {
     const ups = lshuffle(pickPool(sd)), out = [], used = new Set();
     for (let n = 0; n < 3; n++) {
@@ -3577,7 +3669,7 @@
     if (!offer.length) return;
     popup.classList.remove("hype");
     document.querySelector("#popup .popup-title").textContent = "PICK A CARD";
-    document.querySelector("#popup .popup-hint").textContent = "Pick one: a card for your hand or a passive";
+    document.querySelector("#popup .popup-hint").textContent = "Pick one — it goes straight to your hand";
     box.innerHTML = "";
     let picked = false, ready = false;                 // no picking until every card has dealt in and flipped
     popup.classList.add("locked");
@@ -3633,11 +3725,14 @@
 
   // shop -----------------------------------------------------------------
   const PRICE = { common: 30, rare: 60, epic: 120, legendary: 220 };
-  const HAND_MAX = 6;                                       // most cards you can hold
+  const HAND_MAX = 6;                                       // most cards you can hold (Deep Pockets adds more)
+  const handMax = sd => HAND_MAX + val(sd, "pockets");
   const sellValue = key => Math.floor(PRICE[rarityOf(key)] / 2);   // selling gives back half the shop price
   const TURN_INCOME = 5;                                    // a little gold every turn
   // legendaries get pricier every time that player buys one (+100% of the base price each time)
-  const priceOf = (key, sd) => { const r = rarityOf(key); return PRICE[r] + (r === "legendary" && sd ? PRICE[r] * ((sd.bought || {})[key] || 0) : 0); };
+  const haggle = (g, sd) => sd ? Math.round(g * (1 - val(sd, "haggler") / 100)) : g;      // Haggler passive
+  const priceOf = (key, sd) => { const r = rarityOf(key); return haggle(PRICE[r] + (r === "legendary" && sd ? PRICE[r] * ((sd.bought || {})[key] || 0) : 0), sd); };
+  const packPrice = (p, sd) => haggle(p.price, sd);
   const noteBuy = (sd, key) => { if (rarityOf(key) === "legendary") { sd.bought = sd.bought || {}; sd.bought[key] = (sd.bought[key] || 0) + 1; } };
   // ---- rotating shop: 4 random offers from your unlocked cards, new every turn, one at half price ----
   const SHOP_SLOTS = 4, REROLL_COST = 10;
@@ -3661,7 +3756,7 @@
     const prices = me.offers.filter(o => !o.sold).map(o => offerPrice(o, me)), cheapest = prices.length ? Math.min(...prices) : Infinity;
     el.innerHTML = `<div class="up-head"><h3>SHOP</h3><div class="gold${bump ? " bump" : ""}">🪙 <b>${me.gold}</b></div></div>` +
       `<button class="shopbtn" id="openShop">🛒 OPEN SHOP</button>` +
-      `<div class="shop-sub">${me.gold >= cheapest ? "You can afford a card!" :  "Earn gold: +" + (GOLD_PER_HIT + val(me, "bounty")) + " per hit · +20 per ship sunk · +" + (TURN_INCOME + val(me, "warchest")) + " per turn"}</div>`;
+      `<div class="shop-sub">${me.gold >= cheapest ? "You can afford a card!" :  "Earn gold: +" + GOLD_PER_HIT + " per hit · +20 per ship sunk · +" + (TURN_INCOME + val(me, "warchest")) + " per turn"}</div>`;
     document.getElementById("openShop").onclick = openShop;
     if (document.getElementById("shop").classList.contains("show")) renderShop();
   }
@@ -3747,21 +3842,22 @@
     const grid = document.getElementById("packGrid"), me = sides.me;
     grid.innerHTML = "";
     PACKS.forEach(p => {
-      const ok = canBuy && me.gold >= p.price;
+      const ok = canBuy && me.gold >= packPrice(p, me);
       const item = document.createElement("div");
       item.className = "packitem" + (ok ? "" : " locked");
-      item.innerHTML = packHTML(p) + `<button class="si-buy" ${ok ? "" : "disabled"}>🪙 ${p.price}</button>`;
+      item.innerHTML = packHTML(p) + `<button class="si-buy" ${ok ? "" : "disabled"}>🪙 ${packPrice(p, me)}</button>`;
       item.onclick = () => buyPack(p);                              // tap the pack itself or its price to buy
       grid.appendChild(item);
     });
   }
   function buyPack(p) {
     const me = sides.me;
-    if (phase !== "battle" || whose !== "me" || busy || me.gold < p.price || me.inv.length > HAND_MAX) return;
+    if (phase !== "battle" || whose !== "me" || busy || me.gold < packPrice(p, me) || me.inv.length > handMax(sides.me)) return;
     const keys = rollPack(p.rar);
-    me.gold -= p.price;
+    const cost = packPrice(p, me);
+    me.gold -= cost;
     me.inv.push(...keys); newCard = true;
-    if (mode === "mp") Net.send({ t: "act", a: "pack", rar: p.rar, cost: p.price, keys });
+    if (mode === "mp") Net.send({ t: "act", a: "pack", rar: p.rar, cost, keys });
     Sound.play("coin");
     setLog(`You opened a ${p.name.toLowerCase()}: ${keys.map(k => CARDS[k].name).join(", ")}`);
     renderUpgrades(true);
@@ -3857,7 +3953,7 @@
   // ---- hand limit: 6 cards; above that you must sell before you can do anything else ----
   function sellCard(k) {
     const me = sides.me;
-    if (phase !== "battle" || whose !== "me" || busy || me.inv.length <= HAND_MAX) return;
+    if (phase !== "battle" || whose !== "me" || busy || me.inv.length <= handMax(sides.me)) return;
     const key = me.inv[k]; if (!key) return;
     const g = sellValue(key);
     me.inv.splice(k, 1); me.gold += g;
@@ -3869,7 +3965,7 @@
   }
   // bots (and the turn timer) sell their cheapest cards when they hold too many
   function trimHand(sd) {
-    while (sd.inv.length > HAND_MAX) {
+    while (sd.inv.length > handMax(sd)) {
       let k = 0; sd.inv.forEach((c, j) => { if (sellValue(c) < sellValue(sd.inv[k])) k = j; });
       const key = sd.inv[k];
       if (sd === sides.me) { const before = sd.inv.length; sellCard(k); if (sd.inv.length === before) break; }
@@ -3882,7 +3978,7 @@
     const me = sides.me, o = (me.offers || [])[n];
     if (!o || o.sold) return;
     const key = o.key, price = offerPrice(o, me);
-    if (phase !== "battle" || whose !== "me" || busy || me.gold < price || !me.unl.has(key) || me.inv.length > HAND_MAX) return;
+    if (phase !== "battle" || whose !== "me" || busy || me.gold < price || !me.unl.has(key) || me.inv.length > handMax(sides.me)) return;
     me.gold -= price; noteBuy(me, key); o.sold = true;
     me.inv.push(key); newCard = true;
     if (mode === "mp") Net.send({ t: "act", a: "shop", cost: price, key });
@@ -3977,8 +4073,8 @@
       if (dream && !A.saveFor && Math.random() < 0.04) A.saveFor = dream;            // now and then it starts saving for a big one
       const saving = A.saveFor && offerOf(A.saveFor) && A.gold < costOf(A.saveFor);
       const k = saving ? null : wish.concat(SHOP_ORDER).find(c => offerOf(c) && A.gold >= costOf(c) && (A.gold - costOf(c) >= 30 || costOf(c) >= 120 || offerOf(c).deal) && (wish.includes(c) || Math.random() < 0.3));
-      const pk = !saving && !k && Math.random() < 0.3 ? [...PACKS].reverse().find(p => A.gold >= p.price && A.gold - p.price >= 20) : null;
-      if (pk) { const got = rollPack(pk.rar); A.gold -= pk.price; A.inv.push(...got); trimHand(A); setLog(`Enemy opened a ${pk.rar} card pack`); await wait(600); }
+      const pk = !saving && !k && Math.random() < 0.3 ? [...PACKS].reverse().find(p => A.gold >= packPrice(p, A) && A.gold - packPrice(p, A) >= 20) : null;
+      if (pk) { const got = rollPack(pk.rar); A.gold -= packPrice(pk, A); A.inv.push(...got); trimHand(A); setLog(`Enemy opened a ${pk.rar} card pack`); await wait(600); }
       if (k) { if (k === A.saveFor) A.saveFor = null; A.gold -= costOf(k); offerOf(k).sold = true; noteBuy(A, k); A.inv.push(k); trimHand(A); setLog("Enemy bought a card from the shop"); await wait(600); }
     }
     trimHand(A);
@@ -4062,16 +4158,26 @@
   const panelBody = document.getElementById("panelBody");
   const panelHint = document.getElementById("panelHint");
 
-  function renderPassives() {
-    const el = document.getElementById("passives"), me = sides.me;
-    const on = Object.keys(PASSIVES).filter(k => level(me, k) > 0);
-    el.innerHTML = `<h3>PASSIVES</h3>` + (on.length ? "" : `<div class="pas-empty">Unlock passives with CHARGES</div>`) +
-      on.map(k => {
-        const max = UPGRADES[k].levels.length, lv = level(me, k);
-        return `<div class="pas" data-k="${k}"><div class="pas-ic">${PASSIVES[k].icon}</div><div class="pas-tx"><b>${PASSIVES[k].name}</b>` +
-               `<span>${statText(k, val(me, k))}</span></div><div class="pas-lv">${lv >= max ? "MAX" : "LV " + lv}</div></div>`;
-      }).join("");
-    el.querySelectorAll(".pas").forEach(r => { r.onmouseenter = () => showPreview(r.dataset.k); r.onmouseleave = hidePreview; });
+  function renderPassives(pop) {
+    const el = document.getElementById("passives"), me = sides.me, keys = Object.keys(PASSIVES);
+    const tier = Math.min(...keys.map(k => level(me, k))), allMax = tier >= PASSIVE_MAX;
+    const t = (me.turns || 0) % PASSIVE_EVERY;
+    el.innerHTML =
+      `<div class="pastimer${allMax ? " done" : ""}"><span class="pt-ic">⏳</span>` +
+      (allMax ? `<span class="pt-t">ALL PASSIVES MAXED</span>`
+              : `<span class="pt-t">TURNS <b>${t}/${PASSIVE_EVERY}</b></span><i class="pt-bar"><s style="width:${t / PASSIVE_EVERY * 100}%"></s></i>`) + `</div>` +
+      `<h3>PASSIVES</h3><div class="pasgrid">` +
+      keys.map(k => {
+        const lv = level(me, k);
+        return `<div class="ptile ${lv ? "on" : "off"}${pop === k ? " pop" : ""}" data-k="${k}"><div class="pt-icon">${PASSIVES[k].icon}</div><div class="pt-name">${PASSIVES[k].name}</div>` +
+               `<div class="pt-pips">${[1, 2, 3].map(n => `<i class="${n <= lv ? "on" : ""}"></i>`).join("")}</div></div>`;
+      }).join("") + `</div>` +
+      `<div class="pas-next">${allMax ? "Every passive is at tier 3" : tier === 0 ? "Every 10 turns: a new passive" : "Every 10 turns: a tier " + (tier + 1) + " upgrade"}</div>`;
+    el.querySelectorAll(".ptile").forEach(r => {
+      const k = r.dataset.k;
+      r.onmouseenter = () => showPreview(k, sides.me, level(me, k) ? "" : "NOT YET");
+      r.onmouseleave = hidePreview;
+    });
   }
   function showPreview(key, sd = sides.me, tag = "") {
     const el = document.getElementById("cardPreview");
@@ -4123,10 +4229,10 @@
       return;
     }
     const mine = whose === "me" && !busy && phase === "battle";
-    const inv = sides.me.inv, over = inv.length > HAND_MAX;
+    const inv = sides.me.inv, over = inv.length > handMax(sides.me);
     document.querySelector(".panel").classList.add("handmode");
     document.querySelector(".panel").classList.toggle("overhand", over);
-    panelTitle.innerHTML = `YOUR CARDS <span class="hcount${over ? " over" : ""}">${inv.length}/${HAND_MAX}</span>`;
+    panelTitle.innerHTML = `YOUR CARDS <span class="hcount${over ? " over" : ""}">${inv.length}/${handMax(sides.me)}</span>`;
     const top = document.createElement("div"); top.className = "handtop";
     const armed = mine && !over && active >= 0 && inv[active];
     document.body.classList.toggle("card-armed", !!armed);
@@ -4137,8 +4243,8 @@
       else modeHTML = `<div class="modepill basic"><span class="mp-ic">🎯</span><b>BASIC ATTACK</b>${sides.me.shotsOnly ? "<small>Double Shot</small>" : "<small>or pick a card</small>"}</div>`;
     }
     top.innerHTML = over
-      ? `<div class="sellbar"><b>SELL CARDS</b><span class="hcount over">${inv.length}/${HAND_MAX}</span><small>${mine ? "tap a card to sell it · " : ""}sell ${inv.length - HAND_MAX} to keep playing</small></div>`
-      : `<span class="hcount ph">${inv.length}/${HAND_MAX}</span>` + modeHTML;
+      ? `<div class="sellbar"><b>SELL CARDS</b><span class="hcount over">${inv.length}/${handMax(sides.me)}</span><small>${mine ? "tap a card to sell it · " : ""}sell ${inv.length - handMax(sides.me)} to keep playing</small></div>`
+      : `<span class="hcount ph">${inv.length}/${handMax(sides.me)}</span>` + modeHTML;
     const x = top.querySelector(".mp-x");
     if (x) x.onclick = e => { e.stopPropagation(); Sound.play("select"); active = -1; moving = null; renderPanel(); refreshHover(); };
     panelBody.appendChild(top);
@@ -4168,16 +4274,16 @@
     });
     newCard = false;
     // the tray always shows room for 6 cards: empty spots are outlined
-    if (inv.length) for (let k = inv.length; k < HAND_MAX; k++) { const e = document.createElement("div"); e.className = "slot empty"; e.innerHTML = "<i>⚓</i>"; row.appendChild(e); }
+    if (inv.length) for (let k = inv.length; k < handMax(sides.me); k++) { const e = document.createElement("div"); e.className = "slot empty"; e.innerHTML = "<i>⚓</i>"; row.appendChild(e); }
     // more than 6: they overlap like held cards so the panel never gets too wide
-    const n = Math.max(inv.length, HAND_MAX);
-    const ov = inv.length > HAND_MAX ? Math.max(0, (n * 98 - HAND_MAX * 98) / (n - 1)) : 0;
+    const n = Math.max(inv.length, handMax(sides.me));
+    const ov = n > HAND_MAX ? Math.max(0, (n * 98 - HAND_MAX * 98) / (n - 1)) : 0;   // wider than 6: overlap so the tray keeps its size
     row.style.setProperty("--ov", ov + "px");
     panelBody.appendChild(row);
     if (phase !== "battle") panelHint.textContent = "";
     else if (whose !== "me") panelHint.textContent = "Enemy is taking its turn…";
     else if (busy) panelHint.textContent = "…";
-    else if (over) panelHint.textContent = `Too many cards! Tap a card to sell it — ${inv.length - HAND_MAX} to go`;
+    else if (over) panelHint.textContent = `Too many cards! Tap a card to sell it — ${inv.length - handMax(sides.me)} to go`;
     else if (active < 0) panelHint.textContent = sides.me.shotsOnly ? `🎯 Double Shot — fire ${sides.me.extraShots + 1} more shot${sides.me.extraShots ? "s" : ""}` :
       sides.me.cardsLeft > 0 ? `⚡ Card Rush — play ${sides.me.cardsLeft} more card${sides.me.cardsLeft > 1 ? "s" : ""} (shooting ends your turn)` :
       "Fire at the enemy zone · or play a card (a card uses your turn)";
@@ -4292,7 +4398,7 @@
       return;
     }
     if (phase !== "battle" || whose !== "me" || busy) return;
-    if (me.inv.length > HAND_MAX) { setLog("Too many cards — sell some first"); Sound.play("deny"); nudgeHand(); return; }
+    if (me.inv.length > handMax(sides.me)) { setLog("Too many cards — sell some first"); Sound.play("deny"); nudgeHand(); return; }
     const key = active >= 0 ? me.inv[active] : null;
 
     if (!key) {                                   // plain shot
@@ -4335,7 +4441,7 @@
   document.addEventListener("mousemove", e => {
     const z = e.target.closest && e.target.closest(".zone");
     const me = sides.me, key = active >= 0 ? me.inv[active] : null;
-    const show = z && phase === "battle" && whose === "me" && !busy && !document.body.classList.contains("touch") && me.inv.length <= HAND_MAX &&
+    const show = z && phase === "battle" && whose === "me" && !busy && !document.body.classList.contains("touch") && me.inv.length <= handMax(sides.me) &&
                  (key ? true : z.id === "zone2");
     if (!show) { aimTag.classList.remove("show"); return; }
     const txt = key ? `${CARDS[key].icon} ${CARDS[key].name.toUpperCase()}` : "🎯 BASIC SHOT";
@@ -5443,7 +5549,7 @@
   const mo = new MutationObserver(() => {
     if (hint && /<kbd>R<\/kbd>|Click/.test(hint.innerHTML))
       hint.innerHTML = hint.innerHTML.replace("Press <kbd>R</kbd> to rotate", "Tap ⟳ ROTATE to turn the ship").replace(/<kbd>R<\/kbd> to rotate/g, "⟳ ROTATE to turn").replace(/Click/g, "Tap");
-    document.querySelectorAll(".hand .slot:not([data-lp]), .si-card:not([data-lp]), .pas:not([data-lp]), .eh:not([data-lp])").forEach(el => {
+    document.querySelectorAll(".hand .slot:not([data-lp]), .si-card:not([data-lp]), .ptile:not([data-lp]), .eh:not([data-lp])").forEach(el => {
       el.dataset.lp = 1;
       const f = el.onmouseenter;
       if (f) { el.onmouseenter = null; longPress(el, f); }
