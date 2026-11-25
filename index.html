@@ -1738,6 +1738,10 @@
      1) don't keep the whole battlefield / the huge sea as fixed giant GPU pictures (weaker graphics cards ran out of memory and blinked)
      2) the sea, sea life and boards sit clearly apart in 3D so browsers never mix up which one is on top */
   body:not(.touch) #world, body:not(.touch) .sea { will-change: auto !important; }
+  /* 4) flat view (Settings): no 3D at all — boards seen straight from above, like on phones */
+  body.flatview #world { transform-style: flat !important; }
+  body.touch .set.pc-only { display: none; }
+  .set small { display: block; font-size: .68rem; opacity: .6; font-weight: normal; }
   /* 3) sea life: the little wiggling fins/tails each became their own GPU layer (180+ of them) — the animals still swim, the parts stay still */
   .creature .fish, .creature .flap, .creature .pulse, .creature .paddle { animation: none !important; }
 
@@ -1883,7 +1887,7 @@
   </div>
 
   <div class="phonesea" aria-hidden="true"><i class="ps-a"></i><i class="ps-b"></i></div>
-  <div class="buildtag">build 73</div>
+  <div class="buildtag">build 74</div>
   <div class="turnside" id="turnside"></div>
   <div class="touchbar" id="touchbar">
     <button id="tbCancel" class="tb small">✕</button>
@@ -1950,6 +1954,7 @@
         <label class="set"><span>🔊 Effects</span><input type="range" id="setSfx" min="0" max="100"></label>
         <label class="set"><span>🐋 Sea life &amp; planes</span><input type="checkbox" id="setAmbient"></label>
         <label class="set"><span>📳 Screen shake</span><input type="checkbox" id="setShake"></label>
+        <label class="set pc-only"><span>📐 Flat view <small>(no 3D tilt — try this if the screen flickers)</small></span><input type="checkbox" id="setFlat"></label>
         <label class="set"><span>🖥️ Graphics</span><select id="setGfx"><option value="auto">Auto</option><option value="high">High</option><option value="low">Low (smoother)</option></select></label>
         <div class="m-status small" id="gfxNote"></div>
         <button class="mbtn small" data-back="1">BACK</button>
@@ -1974,7 +1979,8 @@
   const N = 50;
   // phones get a flat top-down view: tilted 3D boards make phone browsers (iPhone Safari) run out of memory
   const PHONE = matchMedia("(pointer: coarse)").matches;
-  const TILT = PHONE ? 0 : 34;               // camera tilt in degrees
+  let flatView = false;                         // Settings → Flat view
+  const tiltDeg = () => PHONE || flatView ? 0 : 34;   // camera tilt in degrees (0 = flat view)
   const world = document.getElementById("world");
 
   // ---- Build the two separate zones ----
@@ -2050,7 +2056,7 @@
     cam.x = Math.max(-limX, Math.min(limX, cam.x));
     cam.y = Math.max(-limY, Math.min(limY, cam.y));
     world.style.transform =
-      `translate(-50%, -50%) rotateX(${TILT}deg) scale(${zoom}) translate(${-cam.x}px, ${-cam.y}px)`;
+      `translate(-50%, -50%) rotateX(${tiltDeg()}deg) scale(${zoom}) translate(${-cam.x}px, ${-cam.y}px)`;
     // keep the sea under the camera, snapped to its pattern so it looks endless
     const fx = world.offsetWidth / 2 + cam.x - sea.offsetWidth / 2;
     const fy = world.offsetHeight / 2 + cam.y - sea.offsetHeight / 2;
@@ -2089,7 +2095,7 @@
     let bottom = window.innerHeight - 12;
     const phoneHand = window.innerHeight <= 520 && document.body.classList.contains("touch");
     if (phoneHand) bottom = window.innerHeight - (phase === "place" ? 96 : 104);   // same board size whether you hold 0 or 7 cards
-    [phoneHand ? null : ".panel", ".upgrades", ".charges", ".passives"].forEach(sel => {
+    [phoneHand ? null : ".panel", phoneHand ? null : ".panel .handtop", ".upgrades", ".charges", ".passives"].forEach(sel => {
       if (!sel) return;
       const el = document.querySelector(sel);
       if (!el || getComputedStyle(el).display === "none") return;
@@ -5204,7 +5210,7 @@
   // =====================================================================
   //  SETTINGS
   // =====================================================================
-  const settings = { music: 0.6, sfx: 0.8, ambient: true, shake: true, gfx: "auto" };
+  const settings = { music: 0.6, sfx: 0.8, ambient: true, shake: true, gfx: "auto", flat: false };
   let autoLow = false;
   const ON_PC = !matchMedia("(pointer: coarse)").matches;
   try {
@@ -5219,6 +5225,10 @@
     Sound.setVolumes(settings.music, settings.sfx);
     document.body.classList.toggle("no-ambient", !settings.ambient);
     document.body.classList.toggle("low-gfx", lowGfx());
+    const wasFlat = flatView;
+    flatView = !!settings.flat;
+    document.body.classList.toggle("flatview", flatView);
+    if (wasFlat !== flatView) try { applyCamera(); if (inGame()) setTimeout(fitCamera, 30); } catch (e) {}
     const note = document.getElementById("gfxNote");
     if (note) note.textContent = settings.gfx === "auto" ? (autoLow ? "Auto picked Low for this device" : "Auto picked High for this device") : "";
     try { localStorage.setItem("bs-settings", JSON.stringify(settings)); } catch (e) {}
@@ -5609,6 +5619,7 @@
     document.getElementById("setMusic").value = settings.music * 100;
     document.getElementById("setSfx").value = settings.sfx * 100;
     document.getElementById("setAmbient").checked = settings.ambient;
+    document.getElementById("setFlat").checked = !!settings.flat;
     document.getElementById("setShake").checked = settings.shake;
     document.getElementById("setGfx").value = settings.gfx;
     applySettings();
@@ -5618,6 +5629,7 @@
   document.getElementById("setSfx").oninput = e => { settings.sfx = e.target.value / 100; applySettings(); };
   document.getElementById("setSfx").onchange = () => Sound.play("boom", false);
   document.getElementById("setAmbient").onchange = e => { settings.ambient = e.target.checked; applySettings(); };
+  document.getElementById("setFlat").onchange = e => { settings.flat = e.target.checked; applySettings(); };
   document.getElementById("setShake").onchange = e => { settings.shake = e.target.checked; applySettings(); };
   document.querySelector('[data-go="quit"]').onclick = () => showMenu("menuQuit");
   document.querySelectorAll(".home [data-back]").forEach(b => b.onclick = async () => {
@@ -5780,7 +5792,7 @@
       const mx = (a.clientX + b.clientX) / 2, my = (a.clientY + b.clientY) / 2;
       zoom = Math.max(baseZoom, Math.min(baseZoom * 4, pinch.z * d / pinch.d));
       cam.x = pinch.cx - (mx - pinch.mx) / zoom;
-      cam.y = pinch.cy - (my - pinch.my) * (TILT ? 1.3 : 1) / zoom;
+      cam.y = pinch.cy - (my - pinch.my) * (tiltDeg() ? 1.3 : 1) / zoom;
       clampPan(); scheduleCamera(); e.preventDefault(); return;
     }
     if (pan && e.touches.length === 1) {
