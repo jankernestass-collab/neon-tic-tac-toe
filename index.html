@@ -96,7 +96,7 @@
   /* ---- Sea life (under the surface, under the zones) ---- */
   .life {
     position: absolute; left: 0; top: 0; width: 0; height: 0;
-    transform: translateZ(-1px); pointer-events: none;
+    transform: translateZ(-15px); pointer-events: none;
   }
   .creature { position: absolute; left: 0; top: 0; will-change: transform; }
   .creature svg { display: block; overflow: visible; transform: scale(1.7); transform-origin: 0 0; }
@@ -821,7 +821,7 @@
   .fx.wave.sonar { animation-duration: 1.4s; }
   .fx.wave.nukewave { border-width: 14px; animation-duration: 1.6s; }
   @keyframes fxgrow { from { transform: translate(-50%, -50%) scale(.1); opacity: 1; } to { transform: translate(-50%, -50%) scale(1); opacity: 0; } }
-  .fx, .mark.hit, .creature, .warplane { will-change: transform, opacity; }
+  .fx, .creature, .warplane { will-change: transform, opacity; }
   .charges, .upgrades, .fleetpanel { contain: layout paint; }
 
   /* ---- v12: lighter ripples + static wakes for everyone ---- */
@@ -1734,6 +1734,13 @@
   /* ---- v57: Android — don't keep the boards as one huge GPU picture (it ran out of memory and parts went missing) ---- */
   body.android #world, body.android.pinching #world { will-change: auto !important; }
 
+  /* ---- v73: anti-flicker ----
+     1) don't keep the whole battlefield / the huge sea as fixed giant GPU pictures (weaker graphics cards ran out of memory and blinked)
+     2) the sea, sea life and boards sit clearly apart in 3D so browsers never mix up which one is on top */
+  body:not(.touch) #world, body:not(.touch) .sea { will-change: auto !important; }
+  /* 3) sea life: the little wiggling fins/tails each became their own GPU layer (180+ of them) — the animals still swim, the parts stay still */
+  .creature .fish, .creature .flap, .creature .pulse, .creature .paddle { animation: none !important; }
+
   /* ---- v58: card hand — a tray with room for 6, hand limit and selling ---- */
   .panel.handmode { min-width: 430px; }
   .hcount { display: inline-block; vertical-align: middle; margin: -4px 0 0 8px; padding: 3px 10px; border-radius: 20px; font: bold .72rem "Segoe UI", sans-serif;
@@ -1876,7 +1883,7 @@
   </div>
 
   <div class="phonesea" aria-hidden="true"><i class="ps-a"></i><i class="ps-b"></i></div>
-  <div class="buildtag">build 72</div>
+  <div class="buildtag">build 73</div>
   <div class="turnside" id="turnside"></div>
   <div class="touchbar" id="touchbar">
     <button id="tbCancel" class="tb small">✕</button>
@@ -2047,7 +2054,7 @@
     // keep the sea under the camera, snapped to its pattern so it looks endless
     const fx = world.offsetWidth / 2 + cam.x - sea.offsetWidth / 2;
     const fy = world.offsetHeight / 2 + cam.y - sea.offsetHeight / 2;
-    sea.style.transform = `translate(${Math.round(fx / PER_X) * PER_X}px, ${Math.round(fy / PER_Y) * PER_Y}px) translateZ(-2px)`;
+    sea.style.transform = `translate(${Math.round(fx / PER_X) * PER_X}px, ${Math.round(fy / PER_Y) * PER_Y}px) translateZ(-30px)`;
   }
 
   let moved = 0;
