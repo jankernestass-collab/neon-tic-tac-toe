@@ -1814,7 +1814,7 @@
   </div>
 
   <div class="phonesea" aria-hidden="true"><i class="ps-a"></i><i class="ps-b"></i></div>
-  <div class="buildtag">build 70</div>
+  <div class="buildtag">build 71</div>
   <div class="turnside" id="turnside"></div>
   <div class="touchbar" id="touchbar">
     <button id="tbCancel" class="tb small">✕</button>
@@ -2113,6 +2113,11 @@
     chain:     { name: "Chain Reaction",icon: "⛓️", type: "attack", desc: "Fire at a square — if it hits a ship, up to 3 squares of that ship blow up", target: "enemy" },
     evade:     { name: "Evasive Maneuver", icon: "🌀", type: "defense", desc: "All your revealed ships sail away to random safe spots", target: "none" },
     pickpocket:{ name: "Steal",         icon: "👛", type: "tactic", desc: "Steal 30 gold from the enemy", target: "none" },
+    volley:    { name: "Volley",        icon: "🪃", type: "attack", desc: "3 shells in a line — across or down (R to turn)", target: "enemy" },
+    net:       { name: "Fishing Net",   icon: "🥅", type: "attack", desc: "Blast a 2×2 area", target: "enemy" },
+    firecracker:{ name: "Firecracker",  icon: "🧨", type: "attack", desc: "4 random hits anywhere on the enemy zone", target: "none" },
+    spyglass:  { name: "Spyglass",      icon: "🔍", type: "intel",  desc: "Reveal enemy ships in a 3×3 area", target: "enemy" },
+    sandbags:  { name: "Sandbags",      icon: "🧱", type: "defense", desc: "One of your ships ignores the next hit", target: "own" },
     stealam:   { name: "Steal Amateur", icon: "🧤", type: "tactic", desc: "Steal 40 gold from the enemy", target: "none" },
     stealpro:  { name: "Steal Pro",     icon: "🥷", type: "tactic", desc: "Steal 50 gold from the enemy", target: "none" },
     heist:     { name: "Heist",         icon: "💼", type: "tactic", desc: "Steal half of the enemy's gold", target: "none" },
@@ -2134,7 +2139,7 @@
 
   // rarity of each card + how often each rarity shows up in a draw
   const RARITY = {
-    common:    { label: "COMMON",    weight: 50, cards: ["satellite", "plunder", "depth", "broadside", "supply", "smoke", "gamble", "pickpocket"] },
+    common:    { label: "COMMON",    weight: 50, cards: ["satellite", "plunder", "depth", "broadside", "supply", "smoke", "gamble", "pickpocket", "volley", "net", "firecracker", "spyglass", "sandbags"] },
     rare:      { label: "RARE",      weight: 30, cards: ["scan", "torpedo", "recon", "cluster", "repair", "shield", "airstrike", "sabotage", "decoy", "armor", "cross", "chain", "evade", "jammer", "move", "stealam"] },
     epic:      { label: "EPIC",      weight: 15, cards: ["aoe", "flare", "homing", "double", "barrage", "carpet", "irondome", "mines", "rush", "cardthief", "stealpro"] },
     legendary: { label: "LEGENDARY", weight: 5,  cards: ["nuke", "kraken", "rocket", "heist"] },
@@ -2202,6 +2207,11 @@
     gamble:    { name: "Gamble",         base: 5,  levels: [{ v: 7 }] },
     pickpocket:{ name: "Steal",          base: 30, levels: [{ v: 45 }, { v: 60 }] },
     stealam:   { name: "Steal Amateur",  base: 40, levels: [] },
+    volley:    { name: "Volley",         base: 3,  levels: [] },
+    net:       { name: "Fishing Net",    base: 2,  levels: [] },
+    firecracker:{ name: "Firecracker",   base: 4,  levels: [] },
+    spyglass:  { name: "Spyglass",       base: 3,  levels: [] },
+    sandbags:  { name: "Sandbags",       base: 1,  levels: [] },
     stealpro:  { name: "Steal Pro",      base: 50, levels: [] },
     heist:     { name: "Heist",          base: 50, levels: [] },
     cardthief: { name: "Card Thief",     base: 1,  levels: [{ v: 2 }] },
@@ -2250,6 +2260,11 @@
       case "gamble": return `50% chance: blast a ${sq(v)} area · 50%: nothing`;
       case "pickpocket": case "stealam": case "stealpro": return `Steal ${v} gold from the enemy`;
       case "heist": return `Steal ${v}% of the enemy's gold`;
+      case "volley": return `${v} shells in a line — across or down (R to turn)`;
+      case "net": return `Blast a ${v}×${v} area`;
+      case "firecracker": return `${v} random hits anywhere on the enemy zone`;
+      case "spyglass": return `Reveal enemy ships in a ${v}×${v} area`;
+      case "sandbags": return `One of your ships ignores the next hit`;
       case "cardthief": return v === 1 ? "Steal a random card from the enemy's hand" : `Steal ${v} random cards from the enemy's hand`;
       case "jammer": return v === 1 ? "Destroy a random card in the enemy's hand" : `Destroy ${v} random cards in the enemy's hand`;
       case "rocket": return `Blast a ${sq(v)} area — but 30% chance it misfires onto your own fleet`;
@@ -2744,7 +2759,7 @@
   }
   function canUse(sd, key) {
     if (sd.shotsOnly) return false;                     // Double Shot: shoot first
-    if (key === "move" || key === "armor") return alive(sd).length > 0;
+    if (key === "move" || key === "armor" || key === "sandbags") return alive(sd).length > 0;
     if (key === "repair") return alive(sd).some(s => s.hits.size > 0);
     return true;
   }
@@ -2768,9 +2783,12 @@
       for (let c = Math.max(0, c0); c <= Math.min(N - 1, c1); c++) out.push(r * N + c);
     return out;
   }
-  function cardCells(sd, key, i) {
+  function cardCells(sd, key, i, horiz = horizontal) {
     const [r, c] = rc(i);
     switch (key) {
+      case "volley": return horiz ? rect(r, r, c - 1, c + 1) : rect(r - 1, r + 1, c, c);
+      case "net": return rect(r, r + 1, c, c + 1);
+      case "spyglass": return area(i, val(sd, "spyglass"));
       case "aoe": return area(i, val(sd, "aoe"));
       case "scan": return area(i, val(sd, "scan"));
       case "cluster": return area(i, clusterArea(sd));
@@ -2859,8 +2877,8 @@
       await wait(600);
       return `${who}: ${name} — ` + summary(res);
     }
-    if (key === "scan") {
-      const size = val(A, "scan"), list = area(opts.at, size);
+    if (key === "scan" || key === "spyglass") {
+      const size = val(A, key), list = area(opts.at, size);
       Sound.play("ping");
       fx(T, "sweep", ...center(opts.at), 1300, { "--r": size * 39 + "px" });
       fxWave(T, opts.at, size, "sonar");
@@ -3012,6 +3030,21 @@
     }
     if (key === "broadside") {
       return `${who}: ${name} — ` + summary(await salvo(T, cardCells(A, key, opts.at), 110));
+    }
+    if (key === "volley") {
+      return `${who}: ${name} — ` + summary(await salvo(T, cardCells(A, key, opts.at, opts.horiz !== false), 130));
+    }
+    if (key === "net") {
+      const res = await blast(T, cardCells(A, key, opts.at), opts.at, 2);
+      await wait(400);
+      return `${who}: ${name} — ` + summary(res);
+    }
+    if (key === "firecracker") {
+      // random squares the attacker hasn't fired at yet — seeded so both screens pick the same ones
+      const done = j => { const m = T.marks[j]; return m && (m.kind === "hit" || m.kind === "miss" || m.kind === "sunk"); };
+      const free = []; for (let j = 0; j < N * N; j++) if (!done(j)) free.push(j);
+      const list = lshuffle(free).slice(0, val(A, "firecracker"));
+      return `${who}: ${name} — ` + summary(await salvo(T, list, 220));
     }
     if (key === "recon" || key === "satellite") {
       let list;
@@ -3225,13 +3258,13 @@
       await wait(500);
       return `${who}: ${name} — ${A === sides.me ? "a fake ship is in the water" : "something moved in the water…"}`;
     }
-    if (key === "armor") {
+    if (key === "armor" || key === "sandbags") {
       const ship = opts.ship;
-      ship.armor = (ship.armor || 0) + val(A, "armor");
+      ship.armor = (ship.armor || 0) + val(A, key);
       if (A === sides.me && ship.model) ship.model.classList.add("armored");
       Sound.play("upgrade");
       await wait(500);
-      return `${who}: ${name} — a ship is armored against ${val(A, "armor")} hits`;
+      return `${who}: ${name} — a ship is armored against ${val(A, key)} hit${val(A, key) > 1 ? "s" : ""}`;
     }
     if (key === "irondome") {
       const all = new Set(); for (let j = 0; j < N * N; j++) all.add(j);
@@ -4136,6 +4169,11 @@
     else if (hot < 0 && pick("aoe") >= 0) { idx = pick("aoe"); opts = { at: clampCenter(randomUnshot(), val(A, "aoe")) }; }
     else if (hot < 0 && pick("cluster") >= 0) { idx = pick("cluster"); opts = { at: clampCenter(randomUnshot(), clusterArea(A)) }; }
     if (idx < 0 && damagedAny && pick("armor") >= 0) { idx = pick("armor"); opts = { ship: damagedAny }; }
+    if (idx < 0 && damagedAny && pick("sandbags") >= 0) { idx = pick("sandbags"); opts = { ship: damagedAny }; }
+    if (idx < 0 && hot >= 0 && pick("volley") >= 0) { idx = pick("volley"); opts = { at: hot, horiz: Math.random() < 0.5 }; }
+    if (idx < 0 && hot >= 0 && pick("net") >= 0) { idx = pick("net"); opts = { at: hot }; }
+    if (idx < 0 && hot < 0 && pick("spyglass") >= 0) { idx = pick("spyglass"); opts = { at: clampCenter(randomUnshot(), 3) }; }
+    if (idx < 0 && pick("firecracker") >= 0 && Math.random() < 0.5) { idx = pick("firecracker"); opts = {}; }
     if (idx < 0 && pick("irondome") >= 0 && (damagedAny || Math.random() < 0.35)) { idx = pick("irondome"); opts = {}; }
     if (idx < 0 && pick("evade") >= 0 && revealedShips(A).length >= 2) { idx = pick("evade"); opts = {}; }
     if (idx < 0 && pick("smoke") >= 0 && Object.values(A.marks).some(m => m.kind === "detect")) { idx = pick("smoke"); opts = {}; }
@@ -4328,7 +4366,8 @@
       if (key === "repair") panelHint.textContent = "Click one of your damaged ships";
       else if (key === "move") panelHint.innerHTML = moving ? "Click a new spot (not on shot squares) · <kbd>R</kbd> to rotate" : "Click one of your ships to move it";
       else if (key === "shield") panelHint.textContent = "Click your zone to place the shield";
-      else if (key === "armor") panelHint.textContent = "Click one of your ships to armor it";
+      else if (key === "armor" || key === "sandbags") panelHint.textContent = "Click one of your ships to protect it";
+      else if (key === "volley") panelHint.innerHTML = "Click the enemy zone · <kbd>R</kbd> to turn across / down";
       else if (key === "decoy") panelHint.innerHTML = "Click your zone to place the decoy · <kbd>R</kbd> to rotate";
       else if (key === "mines") panelHint.textContent = "Click your zone to lay the mines";
       else if (key === "torpedo") panelHint.textContent = "Click a row on the enemy zone";
@@ -4393,7 +4432,7 @@
         if (ship && !ship.sunk) { picked = ship; ship.model.classList.add("pick"); }
       }
       if (key === "shield" || key === "mines") area(i, val(me, key)).forEach(j => mark(me, j, "aim-scan"));
-      if (key === "armor") { const ship = shipAt(me, i); if (ship && !ship.sunk && !ship.decoy) { picked = ship; ship.model.classList.add("pick"); } }
+      if (key === "armor" || key === "sandbags") { const ship = shipAt(me, i); if (ship && !ship.sunk && !ship.decoy) { picked = ship; ship.model.classList.add("pick"); } }
       if (key === "decoy") { const list = footprint(3, horizontal, i); const ok = !!list && fits(me, list); (list || [i]).forEach(j => mark(me, j, ok ? "ok" : "bad")); if (list) showGhost(3, horizontal, i, ok); }
     }
   }
@@ -4446,7 +4485,7 @@
     }
     const cd = CARDS[key];
     if ((cd.target === "enemy" || cd.target === "row") && onZone === "zone2") {
-      myCard(active, { at: i });
+      myCard(active, key === "volley" ? { at: i, horiz: horizontal } : { at: i });
     } else if (key === "move" && onZone === "zone1") {
       if (!moving) {
         const ship = shipAt(me, i);
@@ -4458,7 +4497,7 @@
       }
     } else if (key === "mines" && onZone === "zone1") {
       myCard(active, { at: i });
-    } else if (key === "armor" && onZone === "zone1") {
+    } else if ((key === "armor" || key === "sandbags") && onZone === "zone1") {
       const ship = shipAt(me, i);
       if (ship && !ship.sunk && !ship.decoy) myCard(active, { ship });
     } else if (key === "decoy" && onZone === "zone1") {
@@ -5510,7 +5549,7 @@
     const game = inGame();
     const key = active >= 0 && sides.me.inv ? sides.me.inv[active] : null;
     const myTurn = phase === "battle" && whose === "me" && !busy;
-    const rot = phase === "place" || key === "move" || key === "decoy";
+    const rot = phase === "place" || key === "move" || key === "decoy" || key === "volley";
     const set = (el, prop, v) => { if (el[prop] !== v) el[prop] = v; };
     const show = game && (phase === "place" || myTurn);
     if (bar.classList.contains("show") !== show) bar.classList.toggle("show", show);
