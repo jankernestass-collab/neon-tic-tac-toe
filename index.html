@@ -1814,7 +1814,7 @@
   </div>
 
   <div class="phonesea" aria-hidden="true"><i class="ps-a"></i><i class="ps-b"></i></div>
-  <div class="buildtag">build 69</div>
+  <div class="buildtag">build 70</div>
   <div class="turnside" id="turnside"></div>
   <div class="touchbar" id="touchbar">
     <button id="tbCancel" class="tb small">✕</button>
@@ -3471,7 +3471,8 @@
     const income = TURN_INCOME + val(sd, "warchest");
     sd.gold += income; stats[sd.name].gold += income;   // same on both screens in multiplayer
     sd.turns = (sd.turns || 0) + 1;
-    rollOffers(sd);                                       // the shop restocks every turn
+    if (!sd.offers || sd.turns % RESTOCK_TURNS === 1) rollOffers(sd);   // the shop restocks every 2 turns
+    sd.rerolls = 0;                                                      // reroll price goes back to 10 each turn
     const oc = val(sd, "overcharge");
     if (oc && sd.turns % oc === 0 && sd.charge < CHARGE_CAP) sd.charge++;          // Overcharge passive
     const dc = val(sd, "repairs");
@@ -3761,7 +3762,8 @@
   const packPrice = (p, sd) => haggle(p.price, sd);
   const noteBuy = (sd, key) => { if (rarityOf(key) === "legendary") { sd.bought = sd.bought || {}; sd.bought[key] = (sd.bought[key] || 0) + 1; } };
   // ---- rotating shop: 4 random offers from your unlocked cards, new every turn, one at half price ----
-  const SHOP_SLOTS = 4, REROLL_COST = 10;
+  const SHOP_SLOTS = 4, REROLL_COST = 10, RESTOCK_TURNS = 2;
+  const rerollCost = sd => REROLL_COST * ((sd.rerolls || 0) + 1);      // 10, 20, 30… — resets every turn
   const shuffled = a => { a = [...a]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
   function rollOffers(sd) {
     sd.offers = shuffled([...sd.unl].filter(k => CARDS[k])).slice(0, SHOP_SLOTS).map(key => ({ key, deal: false, sold: false }));
@@ -3806,9 +3808,10 @@
     bar.style.display = shopTab === "cards" ? "" : "none";
     if (shopTab !== "cards") return;
     topUpOffers(me);
-    const canRoll = canBuy && me.gold >= REROLL_COST && me.unl.size > 0;
-    bar.innerHTML = `<span class="sb-txt"><i>🔄</i><span><b>NEW OFFERS EVERY TURN</b><small>one card is always half price</small></span></span>` +
-                    `<button class="rerollbtn" ${canRoll ? "" : "disabled"}>🎲 REROLL <span>🪙 ${REROLL_COST}</span></button>`;
+    const cost = rerollCost(me), canRoll = canBuy && me.gold >= cost && me.unl.size > 0;
+    const left = RESTOCK_TURNS - ((me.turns - 1) % RESTOCK_TURNS);        // turns until the shop restocks
+    bar.innerHTML = `<span class="sb-txt"><i>🔄</i><span><b>NEW OFFERS ${left === 1 ? "NEXT TURN" : "IN " + left + " TURNS"}</b><small>one card is always half price · reroll gets pricier each time this turn</small></span></span>` +
+                    `<button class="rerollbtn" ${canRoll ? "" : "disabled"}>🎲 REROLL <span>🪙 ${cost}</span></button>`;
     bar.querySelector(".rerollbtn").onclick = rerollShop;
     grid.classList.add("offers");
     for (let n = 0; n < SHOP_SLOTS; n++) {
@@ -3831,10 +3834,11 @@
   }
   function rerollShop() {
     const me = sides.me;
-    if (phase !== "battle" || whose !== "me" || busy || me.gold < REROLL_COST || !me.unl.size) return;
-    me.gold -= REROLL_COST;
+    const cost = rerollCost(me);
+    if (phase !== "battle" || whose !== "me" || busy || me.gold < cost || !me.unl.size) return;
+    me.gold -= cost; me.rerolls = (me.rerolls || 0) + 1;
     rollOffers(me);
-    if (mode === "mp") Net.send({ t: "act", a: "reroll", cost: REROLL_COST });
+    if (mode === "mp") Net.send({ t: "act", a: "reroll", cost });
     Sound.play("coin"); Sound.play("flip");
     renderUpgrades(true); renderFleet();
     document.querySelectorAll("#shopGrid .shopitem").forEach((el, n) => { el.style.animation = "none"; void el.offsetWidth; el.style.animation = `offerIn .4s ${n * 70}ms cubic-bezier(.2, 1.3, .4, 1) backwards`; });
