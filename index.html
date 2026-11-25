@@ -960,14 +960,75 @@
   .ptile.pop { animation: ptPop .6s cubic-bezier(.2, 1.6, .4, 1); }
   @keyframes ptPop { 0% { transform: scale(.6); } 60% { transform: scale(1.18); box-shadow: 0 0 20px #c77dff; } }
   .pas-next { text-align: center; font-size: .66rem; opacity: .55; margin-top: 7px; letter-spacing: .5px; }
+  /* ULTIMATE */
+  .gcard.r-ultimate { --rc: #ff2e4d; border-color: #ff2e4d !important; box-shadow: 0 0 30px #ff2e4daa, 0 8px 22px #000a, inset 0 0 0 2px #ff2e4d99; animation: ultGlow 1.4s ease-in-out infinite alternate; }
+  .gcard.r-ultimate .gc-art { background: radial-gradient(circle at 50% 45%, #ff8a9a, #c3002b 45%, #1a0006 80%); }
+  .gcard.r-ultimate .gc-name { color: #ff6b80; }
+  .gcard.r-ultimate .gc-rar { background: linear-gradient(90deg, #ff2e4d, #1a0006); color: #fff; }
+  @keyframes ultGlow { to { box-shadow: 0 0 46px #ff2e4d, 0 8px 22px #000a, inset 0 0 0 2px #ff6b80; } }
+  .eh.r-ultimate { --rc: #ff2e4d; }
+  .ultpanel { position: fixed; right: 280px; bottom: 16px; width: 176px; display: none; text-align: center; box-sizing: border-box; min-height: 128px;
+    padding: 12px 12px 10px; border-radius: 14px; background: linear-gradient(180deg, #3a0a16e6, #12020af2); border: 1px solid #ff6b8066;
+    box-shadow: 0 10px 30px #000a, inset 0 1px 0 #ffffff22; }
+  body.in-menu .ultpanel { opacity: 0; pointer-events: none; }
+  .ultpanel h3 { margin: 0 0 8px; padding-bottom: 7px; border-bottom: 1px solid #ff6b8033; font-family: "Black Ops One", "Segoe UI", sans-serif; font-weight: normal; letter-spacing: 2px; font-size: .85rem; color: #ffb3bf; }
+  .ultpanel.ready { animation: ulReady 1.1s ease-in-out infinite alternate; }
+  @keyframes ulReady { to { box-shadow: 0 10px 30px #000a, 0 0 26px #ff2e4d; border-color: #ff2e4d; } }
+  .ul-lock { font-size: 1.6rem; opacity: .7; }
+  .ul-sub { font-size: .7rem; opacity: .85; margin-top: 4px; } .ul-sub.dim { opacity: .5; } .ul-sub b { color: #ff8a9a; font-size: .85rem; }
+  .ul-bar { height: 6px; border-radius: 4px; background: #ffffff1a; overflow: hidden; margin: 6px 8px 0; }
+  .ul-bar s { display: block; height: 100%; background: linear-gradient(90deg, #ff2e4d, #ffb347); }
+  .ul-pick { font: bold .85rem "Segoe UI", sans-serif; letter-spacing: 2px; padding: 10px 12px; border-radius: 12px; cursor: pointer; color: #fff; width: 100%;
+    background: linear-gradient(180deg, #ff2e4d, #8a0020); border: 1px solid #ffb3bf; box-shadow: 0 6px 16px #000a, 0 0 18px #ff2e4d88; }
+  .ul-pick:disabled { opacity: .45; cursor: default; }
+  .ul-pick:not(:disabled):hover { filter: brightness(1.15); transform: translateY(-2px); }
+  .ul-name { display: flex; align-items: center; justify-content: center; gap: 6px; font-weight: bold; font-size: .85rem; color: #ffd0d8; cursor: default; }
+  .ul-name span { font-size: 1.3rem; }
+  .ul-slots { display: flex; justify-content: center; gap: 4px; margin-top: 8px; }
+  .ul-slots i { font-style: normal; width: 26px; height: 26px; display: grid; place-items: center; border-radius: 7px; font-size: .9rem;
+    background: #ffffff0d; border: 1px dashed #ffffff33; filter: grayscale(1); opacity: .45; }
+  .ul-slots i.on { filter: none; opacity: 1; border: 1px solid #ff6b80; background: #ff2e4d33; box-shadow: 0 0 8px #ff2e4d88; }
+  .fstatus { display: flex; justify-content: center; gap: 4px; margin-top: 4px; }
+  .fstatus .chip { background: #ffffff10; border: 1px solid #ffffff1a; border-radius: 20px; padding: 2px 7px; font-size: .72rem; }
+  .fstatus .st-mirror { border-color: #9fe6ff88; } .fstatus .st-black { border-color: #8a7bff88; background: #1a1040; } .fstatus .st-bp { border-color: #ff6b8088; }
+  .mark.fogq { width: 38px; height: 38px; display: grid; place-items: center; font: bold 1.2rem "Segoe UI", sans-serif; color: #c9b8ff;
+    background: #1a1040cc; border-radius: 6px; box-shadow: inset 0 0 0 1px #8a7bff88; pointer-events: none; z-index: 3; }
+  .modepill.black { border-color: #8a7bff !important; } .modepill.black b { color: #c9b8ff !important; }
+  .hand .slot.bpmatch .gcard { box-shadow: 0 0 0 2px #ff6b80, 0 0 18px #ff2e4d88, 0 10px 22px #000b !important; }
+  .addbp { position: absolute; left: 50%; top: -11px; transform: translateX(-50%); z-index: 5; white-space: nowrap; cursor: pointer;
+    padding: 3px 9px; border-radius: 20px; font: bold .64rem "Segoe UI", sans-serif; letter-spacing: .5px; color: #fff;
+    background: linear-gradient(180deg, #ff2e4d, #8a0020); border: 1px solid #ffb3bf; box-shadow: 0 3px 10px #000b, 0 0 10px #ff2e4d88; animation: addGlow 1.1s ease-in-out infinite alternate; }
+  @keyframes addGlow { to { box-shadow: 0 3px 10px #000b, 0 0 20px #ff2e4d; } }
+  body.touch .addbp { font-size: .95rem; padding: 5px 11px; top: -4px; }
+  .pasaward.forge .gcard { box-shadow: 0 0 0 3px #fff, 0 0 70px #ff2e4d, 0 20px 50px #000d !important; }
+  .pasaward.forge .pa-tag { color: #ff6b80; text-shadow: 0 0 20px #ff2e4d, 0 3px 0 #3a0010; }
+  .bpov { position: fixed; inset: 0; z-index: 40; display: none; align-items: center; justify-content: center; background: #000c; backdrop-filter: blur(3px); }
+  .bpov.show { display: flex; }
+  .bp-box { position: relative; padding: 22px 26px 24px; border-radius: 18px; background: linear-gradient(180deg, #2a0812f5, #0c0206fa); border: 1px solid #ff6b8077;
+    box-shadow: 0 20px 60px #000, 0 0 40px #ff2e4d44; text-align: center; max-width: 96vw; }
+  .bp-box h2 { margin: 0; font-family: "Black Ops One", "Segoe UI", sans-serif; font-weight: normal; letter-spacing: 4px; color: #ff8a9a; text-shadow: 0 0 18px #ff2e4d; }
+  .bp-box p { margin: 6px 0 16px; font-size: .85rem; opacity: .8; } .bp-box p b { color: #ffb3bf; }
+  .bp-x { position: absolute; top: 10px; right: 12px; width: 32px; height: 32px; border-radius: 50%; border: 1px solid #ffffff44; background: #ffffff14; color: #fff; cursor: pointer; }
+  .bp-row { display: flex; gap: 14px; justify-content: center; }
+  .bp-item { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 10px; border-radius: 14px; cursor: pointer; background: #ffffff08; border: 1px solid #ffffff14;
+    transition: transform .2s, background .2s; animation: offerIn .45s calc(var(--i) * 80ms) cubic-bezier(.2, 1.3, .4, 1) backwards; }
+  .bp-item:hover { transform: translateY(-8px); background: #ff2e4d1f; border-color: #ff6b8088; }
+  .bp-rec { display: grid; grid-template-columns: 1fr; gap: 2px; width: 150px; text-align: left; }
+  .bp-rec span { font-size: .95rem; display: flex; align-items: center; gap: 6px; }
+  .bp-rec small { font-size: .68rem; opacity: .8; }
+  .bp-go { font: bold .75rem "Segoe UI", sans-serif; letter-spacing: 2px; padding: 7px 14px; border-radius: 10px; color: #fff; cursor: pointer;
+    background: linear-gradient(180deg, #ff2e4d, #8a0020); border: 1px solid #ffb3bf; }
+  @media (max-width: 1400px), (max-height: 860px) { .ultpanel { zoom: .82; } }
+  body.touch .bp-box { transform: scale(.68); flex: none; max-width: none; }
+  body.touch .ultpanel { zoom: 1 !important; transform: scale(.44); transform-origin: 100% 100%; right: 124px; bottom: 6px; }
   body.touch .pasgrid { grid-template-columns: repeat(6, 1fr); gap: 4px; }               /* phones: one compact row */
   body.touch .ptile .pt-name, body.touch .pas-next { display: none; }
   body.touch .ptile { padding: 5px 0 4px; }
   .pasaward { position: fixed; left: 50%; top: 44%; z-index: 26; pointer-events: none; display: flex; flex-direction: column; align-items: center; gap: 10px;
     transform: translate(-50%, -50%); animation: paIn .55s cubic-bezier(.2, 1.5, .4, 1); }
   .pasaward .gcard { box-shadow: 0 0 0 3px #fff, 0 0 60px #c77dff, 0 20px 50px #000d; transform: scale(1.15); }
-  .pasaward .pa-tag { font-family: "Black Ops One", "Segoe UI", sans-serif; font-size: 1.6rem; letter-spacing: 5px; color: #ffe45c; text-shadow: 0 0 18px #c77dff, 0 3px 0 #2e1458; }
-  .pasaward .pa-sub { font-size: .9rem; padding: 6px 14px; border-radius: 10px; background: #000a; border: 1px solid #c9a6ff66; margin-top: 12px; }
+  .pasaward .pa-tag { margin-bottom: 20px; font-family: "Black Ops One", "Segoe UI", sans-serif; font-size: 1.6rem; letter-spacing: 5px; color: #ffe45c; text-shadow: 0 0 18px #c77dff, 0 3px 0 #2e1458; }
+  .pasaward .pa-sub { margin-top: 22px !important; font-size: .9rem; padding: 6px 14px; border-radius: 10px; background: #000a; border: 1px solid #c9a6ff66; margin-top: 12px; }
   .pasaward.fly { transition: transform .6s cubic-bezier(.5, 0, .75, .3), opacity .6s; transform: translate(calc(-50% + var(--fx)), calc(-50% + var(--fy))) scale(.15); opacity: .2; }
   @keyframes paIn { from { transform: translate(-50%, -50%) scale(.3) rotate(-10deg); opacity: 0; } }
   .pas { display: flex; align-items: center; gap: 8px; padding: 5px 6px; border-radius: 10px; cursor: default; transition: background .2s; animation: pasIn .5s cubic-bezier(.2, 1.4, .4, 1); }
@@ -1674,7 +1735,7 @@
   body.android #world, body.android.pinching #world { will-change: auto !important; }
 
   /* ---- v58: card hand — a tray with room for 6, hand limit and selling ---- */
-  .panel.handmode { min-width: 650px; }
+  .panel.handmode { min-width: 430px; }
   .hcount { display: inline-block; vertical-align: middle; margin: -4px 0 0 8px; padding: 3px 10px; border-radius: 20px; font: bold .72rem "Segoe UI", sans-serif;
     letter-spacing: 1px; text-shadow: none; color: #bfefff; background: #ffffff12; border: 1px solid #ffffff2e; }
   .hcount.over { color: #fff; background: linear-gradient(180deg, #ff5a5a, #c81e1e); border-color: #ffb0b0; animation: hcPulse .9s ease-in-out infinite; }
@@ -1788,6 +1849,7 @@
   <div class="fleetpanel mine" id="myfleet"></div>
   <div class="upgrades" id="upgrades"></div>
   <div class="passives" id="passives"></div>
+  <div class="ultpanel" id="ultpanel"></div>
 
   <div class="cardpreview" id="cardPreview"></div>
 
@@ -1814,7 +1876,7 @@
   </div>
 
   <div class="phonesea" aria-hidden="true"><i class="ps-a"></i><i class="ps-b"></i></div>
-  <div class="buildtag">build 71</div>
+  <div class="buildtag">build 72</div>
   <div class="turnside" id="turnside"></div>
   <div class="touchbar" id="touchbar">
     <button id="tbCancel" class="tb small">✕</button>
@@ -2144,8 +2206,24 @@
     epic:      { label: "EPIC",      weight: 15, cards: ["aoe", "flare", "homing", "double", "barrage", "carpet", "irondome", "mines", "rush", "cardthief", "stealpro"] },
     legendary: { label: "LEGENDARY", weight: 5,  cards: ["nuke", "kraken", "rocket", "heist"] },
   };
-  const rarityOf = key => Object.keys(RARITY).find(r => RARITY[r].cards.includes(key));
+  const rarityOf = key => ULT[key] ? "ultimate" : Object.keys(RARITY).find(r => RARITY[r].cards.includes(key));
   Object.values(sides).forEach(sd => Object.keys(CARDS).forEach(k => sd.unl.add(k)));   // every card is open in the shop from the start
+  // ---- ULTIMATE cards: forged from the 5 cards of a blueprint. They can't be bought, stolen or sold ----
+  const ULT = {
+    orbital:  { name: "Orbital Laser", icon: "🔆", type: "attack",  target: "enemy", desc: "Burns a whole row and a whole column through one square",
+                recipe: ["volley", "broadside", "torpedo", "airstrike", "recon"] },
+    tempest:  { name: "Tempest",       icon: "🌪️", type: "attack",  target: "none",  desc: "Three 5×5 storms hit random spots on the enemy zone",
+                recipe: ["net", "depth", "gamble", "cluster", "aoe"] },
+    mutiny:   { name: "Mutiny",        icon: "⚔️", type: "tactic",  target: "none",  desc: "Take all of the enemy's cards and half their gold",
+                recipe: ["pickpocket", "stealam", "jammer", "cardthief", "heist"] },
+    mirror:   { name: "Mirror Wall",   icon: "🪞", type: "defense", target: "none",  desc: "The enemy's next 3 hits on you bounce back onto their own fleet",
+                recipe: ["sandbags", "shield", "armor", "decoy", "irondome"] },
+    blackout: { name: "Blackout",      icon: "🌑", type: "tactic",  target: "none",  desc: "For 2 enemy turns: no cards, no shop, and they can't see what their shots hit",
+                recipe: ["jammer", "smoke", "satellite", "evade", "sabotage"] },
+  };
+  Object.entries(ULT).forEach(([k, u]) => { CARDS[k] = { name: u.name, icon: u.icon, type: u.type, desc: u.desc, target: u.target }; });
+  const isUlt = k => !!ULT[k];
+  const ULT_UNLOCK = 15;                       // the ULTIMATE panel opens on your 15th turn
 
   // game-logic randomness is seeded per action, so both players' screens stay identical
   let LR = Math.random;
@@ -2608,16 +2686,21 @@
   const myPlayed = [];
   function fleetPanelHTML(sd, title, who, played, justSunk) {
     const ships = sd.ships.filter(sh => !sh.decoy);
-    const left = alive(sd).length;
+    const seenSunk = sh => sh.sunk && !fogSunk.has(sh);
+    const left = ships.filter(sh => !seenSunk(sh)).length;
     let html = `<h3>${title}</h3><div class="fleft"><b>${left}</b> / ${ships.length} left</div>` +
       `<div class="fstats"><span class="chip" title="Cards in ${who} hand">🃏 <b>${sd.inv.length}</b> card${sd.inv.length === 1 ? "" : "s"}</span><span class="chip" title="${who} gold">🪙 <b>${sd.gold}</b></span>` +
-      (who === "their" ? `<span class="chip chg" title="Their charges (${MAX_CHARGE} = a mystery card)">⚡ <b>${Math.max(0, sd.charge)}</b></span>` : "") + `</div>`;
+      (who === "their" ? `<span class="chip chg" title="Their charges (${MAX_CHARGE} = a mystery card)">⚡ <b>${Math.max(0, sd.charge)}</b></span>` : "") + `</div>` +
+      (sd.mirror || sd.blacked || sd.blackoutTurns || sd.bp ? `<div class="fstatus">` +
+        (sd.mirror ? `<span class="chip st-mirror" title="Mirror Wall: hits that bounce back">🪞 ${sd.mirror}</span>` : "") +
+        (sd.blacked || sd.blackoutTurns ? `<span class="chip st-black" title="Blacked out">🌑 ${(sd.blackoutTurns || 0) + (sd.blacked ? 1 : 0)}</span>` : "") +
+        (sd.bp ? `<span class="chip st-bp" title="Building an ULTIMATE">${ULT[sd.bp.key].icon} ${sd.bp.slots.filter(Boolean).length}/5</span>` : "") + `</div>` : "");
     FLEET_DEF.forEach(([size]) => {
       const group = ships.filter(sh => sh.size === size);
-      const aliveN = group.filter(sh => !sh.sunk).length;
+      const aliveN = group.filter(sh => !seenSunk(sh)).length;
       html += `<div class="frow${aliveN ? "" : " gone"}"><span class="fsize">${size}</span><span class="fships">`;
       group.forEach(sh => {
-        html += `<span class="fship${sh.sunk ? " sunk" : ""}${sh === justSunk ? " just" : ""}" style="width:${size * 8}px">` +
+        html += `<span class="fship${seenSunk(sh) ? " sunk" : ""}${sh === justSunk ? " just" : ""}" style="width:${size * 8}px">` +
                 shipSVG(size).replace('preserveAspectRatio="none"', "") + `</span>`;
       });
       html += `</span><span class="fcnt">${aliveN}/${group.length}</span></div>`;
@@ -2685,6 +2768,29 @@
 
   const shielded = (sd, j) => sd.shields.some(sh => sh.cells.has(j));
   let friendlyFire = false;                 // a misfired rocket hitting its own fleet gives nobody gold or charges
+  // ---- Blackout: while you are blacked out, your shot results stay hidden ("?") until it ends ----
+  let bouncing = false, fogging = false;
+  const fogList = [], fogSunk = new Set();
+  function fogSquare(T, k) {
+    const m = T.marks[k]; if (!m) return;
+    if (m.el) m.el.style.visibility = "hidden"; else T.cells[k].classList.remove("m-" + m.kind);
+    const q = document.createElement("div"), [r, c] = rc(k);
+    q.className = "mark fogq"; q.textContent = "?";
+    q.style.left = (10 + c * 39) + "px"; q.style.top = (10 + r * 39) + "px";
+    document.getElementById(T.zone).appendChild(q);
+    fogList.push({ T, k, q });
+  }
+  function revealFog() {
+    fogList.splice(0).forEach(({ T, k, q }) => {
+      q.remove();
+      const m = T.marks[k]; if (!m) return;
+      if (m.el) m.el.style.visibility = ""; else T.cells[k].classList.add("m-" + m.kind);
+    });
+    fogSunk.forEach(ship => { drawModel(sides.bot, ship); sunkMarker(sides.bot, ship); });
+    const n = fogSunk.size; fogSunk.clear();
+    renderFleet();
+    setLog("🌑 Blackout over — your shot results are revealed" + (n ? ` · you sank ${n} ship${n > 1 ? "s" : ""}!` : ""));
+  }
   function strike(T, j) {
     const st = stats[other(T).name];
     st.fired++;
@@ -2711,6 +2817,21 @@
       if (T === sides.me) botMem.shot.delete(j);
       return "blocked";
     }
+    if (T.mirror > 0 && !ship.hits.has(seg) && !bouncing && !friendlyFire) {   // Mirror Wall: the hit bounces back
+      T.mirror--;
+      const [x, y] = center(j); fx(T, "ring blocked", x, y, 700);
+      if (T === sides.me) botMem.shot.delete(j);
+      const B = other(T);
+      const back = B.ships.filter(sh => !sh.sunk && !sh.decoy).sort((a, b) => a.id - b.id).find(sh => sh.hits.size < sh.size);
+      if (back) {
+        let n = 0; while (back.hits.has(n)) n++;
+        const j2 = back.cells[n];
+        bouncing = true; const r2 = strike(B, j2); bouncing = false;
+        setTimeout(() => hitFx(B, j2, r2), 300);
+      }
+      renderFleet();
+      return "blocked";
+    }
     setMark(T, j, "hit");
     if (ship.hits.has(seg)) return "already";
     ship.hits.add(seg);
@@ -2722,13 +2843,12 @@
     if (!friendlyFire) { earnGold(other(T), j); st.hits++; gainCharge(other(T)); }
     if (ship.hits.size === ship.size) {
       ship.sunk = true;
-      drawModel(T, ship);
       st.sunk++;
-      sunkMarker(T, ship);
+      if (fogging) fogSunk.add(ship);                          // blacked out: you don't see it sink yet
+      else { drawModel(T, ship); sunkMarker(T, ship); sunkToast(T === sides.bot, ship.size); }
       if (!friendlyFire) sinkBonus(other(T), j);
-      sunkToast(T === sides.bot, ship.size);
       ship.cells.forEach(k => { const m = T.marks[k]; if (m && m.el) m.el.classList.add("dead"); });   // stop fire animation on wrecks
-      renderFleet(ship);
+      if (!fogging) renderFleet(ship);
       if (T === sides.me) ship.cells.forEach(k => { botMem.hits.delete(k); botMem.detected.delete(k); });
       return "sunk";
     }
@@ -2770,6 +2890,12 @@
     const T = other(A), list = shotCells(A, j);
     Sound.play("shot"); list.forEach(k => fxShell(T, k));
     await wait(380);
+    if (A === sides.me && A.blacked) {                         // blacked out: fire blind
+      fogging = true; list.forEach(k => strike(T, k)); fogging = false;
+      list.forEach(k => fogSquare(T, k));
+      Sound.play("splash");
+      return "You fired — 🌑 blackout: you can't see what you hit";
+    }
     const res = list.map(k => strike(T, k));
     list.forEach((k, n) => setTimeout(() => hitFx(T, k, res[n]), n * 40));
     const who = A === sides.me ? "You" : "Enemy";
@@ -2787,6 +2913,7 @@
     const [r, c] = rc(i);
     switch (key) {
       case "volley": return horiz ? rect(r, r, c - 1, c + 1) : rect(r - 1, r + 1, c, c);
+      case "orbital": return [...new Set([...rect(r, r, 0, N - 1), ...rect(0, N - 1, c, c)])];
       case "net": return rect(r, r + 1, c, c + 1);
       case "spyglass": return area(i, val(sd, "spyglass"));
       case "aoe": return area(i, val(sd, "aoe"));
@@ -3022,6 +3149,40 @@
       return `${who}: ${name} — ${A === sides.me ? "play 2 more cards this turn!" : "the enemy can play 2 more cards!"}`;
     }
 
+    if (key === "orbital") {                                    // a whole row + a whole column
+      const list = cardCells(A, key, opts.at);
+      Sound.play("ping"); flash(T, list, "flash-scan", 750);
+      await wait(700);
+      const res = await blast(T, list, opts.at, 9);
+      await wait(500);
+      return `${who}: ${name} — ` + summary(res);
+    }
+    if (key === "tempest") {                                    // three 5×5 storms, seeded so both screens agree
+      const all = [];
+      for (let n = 0; n < 3; n++) { const c = clampCenter(lrand(N * N), 5); all.push(...await blast(T, area(c, 5), c, 5)); await wait(350); }
+      return `${who}: ${name} — ` + summary(all);
+    }
+    if (key === "mutiny") {
+      const took = T.inv.filter(c => !isUlt(c)), g = Math.floor(T.gold / 2);
+      T.inv = T.inv.filter(isUlt); A.inv.push(...took);
+      T.gold -= g; A.gold += g;
+      Sound.play("whoosh"); for (let k = 0; k < 4; k++) setTimeout(() => Sound.play("coin"), 150 + k * 110);
+      renderPanel(); renderUpgrades(true); renderFleet();
+      await wait(700);
+      return `${who}: ${name} — took ${took.length} card${took.length === 1 ? "" : "s"} and ${g} gold`;
+    }
+    if (key === "mirror") {
+      A.mirror = (A.mirror || 0) + 3;
+      Sound.play("upgrade"); renderFleet();
+      await wait(500);
+      return `${who}: ${name} — the next 3 enemy hits bounce back`;
+    }
+    if (key === "blackout") {
+      T.blackoutTurns = 2;
+      Sound.play("full"); renderFleet();
+      await wait(500);
+      return `${who}: ${name} — ${T === sides.me ? "you are" : "the enemy is"} blacked out for 2 turns`;
+    }
     if (key === "depth") {
       const n = val(A, "depth") >= 5 ? 12 : 5;              // 5 random squares of the 3×3 (12 of the 5×5 when upgraded)
       const res = await blast(T, lshuffle(cardCells(A, key, opts.at)).slice(0, n), opts.at, val(A, "depth"));
@@ -3092,8 +3253,8 @@
     if (key === "cardthief" || key === "jammer") {
       // pick from the sorted hand so both screens agree in multiplayer
       const took = [];
-      for (let k = 0; k < val(A, key) && T.inv.length; k++) {
-        const c = [...T.inv].sort()[lrand(T.inv.length)];
+      for (let k = 0; k < val(A, key) && T.inv.some(c => !isUlt(c)); k++) {
+        const pool = T.inv.filter(c => !isUlt(c)).sort(), c = pool[lrand(pool.length)];
         T.inv.splice(T.inv.indexOf(c), 1); took.push(c);
         if (key === "cardthief") A.inv.push(c);
       }
@@ -3440,6 +3601,7 @@
     document.getElementById("myfleet").style.display = "block";
     document.getElementById("upgrades").style.display = "block";
     document.getElementById("passives").style.display = "block";
+    document.getElementById("ultpanel").style.display = "block";
     renderFleet(); renderPassives();
     setTimeout(fitCamera, 50);
     setTimeout(fitCamera, 900);          // again once the side panels have slid in
@@ -3501,6 +3663,10 @@
     whose = who; busy = false; active = -1; moving = null;
     const sd = sides[who];
     sd.extraShots = 0; sd.shotsOnly = false; sd.cardsLeft = 0;
+    const wasBlack = sd.blacked;                                 // Blackout: counts down at the start of the victim's turns
+    sd.blacked = (sd.blackoutTurns || 0) > 0;
+    if (sd.blacked) sd.blackoutTurns--;
+    if (wasBlack && !sd.blacked && sd === sides.me) revealFog();
     const income = TURN_INCOME + val(sd, "warchest");
     sd.gold += income; stats[sd.name].gold += income;   // same on both screens in multiplayer
     sd.turns = (sd.turns || 0) + 1;
@@ -3607,7 +3773,7 @@
   const cardHTML = (key, sd = sides.me) => {
     const c = CARDS[key];
     const rar = rarityOf(key);
-    return `<div class="gcard ${c.type} r-${rar}"><div class="gc-rar">${RARITY[rar].label}</div><div class="gc-name">${c.name}</div><div class="gc-art">${c.icon}</div>` +
+    return `<div class="gcard ${c.type} r-${rar}"><div class="gc-rar">${rar === "ultimate" ? "ULTIMATE" : RARITY[rar].label}</div><div class="gc-name">${c.name}</div><div class="gc-art">${c.icon}</div>` +
            `<div class="gc-type">${c.type.toUpperCase()}${UPGRADES[key] && level(sd, key) ? " · LV " + (level(sd, key) + 1) : ""}</div>` +
            `<div class="gc-text${txtCls(cardDesc(sd, key))}">${cardDesc(sd, key)}</div></div>`;
   };
@@ -3685,7 +3851,7 @@
            `<div class="gc-text upg-text${txtCls(now + next)}"><span class="was">${now}</span><span class="arrow">▼</span><span class="now">${next}</span></div></div>`;
   }
   // spin the mystery card faster and faster in its rarity colour, then BOOM — returns how long it all takes (ms)
-  const RAR_COLOR = { common: "#d6e2ee", rare: "#4fa8ff", epic: "#c77dff", legendary: "#ffc93c" };
+  const RAR_COLOR = { common: "#d6e2ee", rare: "#4fa8ff", epic: "#c77dff", legendary: "#ffc93c", ultimate: "#ff2e4d" };
   function hypeReveal(f, popup, rar) {
     const lvl = ["common", "rare", "epic", "legendary"].indexOf(rar);
     const spin = [1100, 1500, 1900, 2500][lvl];
@@ -3868,7 +4034,7 @@
   function rerollShop() {
     const me = sides.me;
     const cost = rerollCost(me);
-    if (phase !== "battle" || whose !== "me" || busy || me.gold < cost || !me.unl.size) return;
+    if (phase !== "battle" || whose !== "me" || busy || me.blacked || me.gold < cost || !me.unl.size) return;
     me.gold -= cost; me.rerolls = (me.rerolls || 0) + 1;
     rollOffers(me);
     if (mode === "mp") Net.send({ t: "act", a: "reroll", cost });
@@ -3915,7 +4081,7 @@
   }
   function buyPack(p) {
     const me = sides.me;
-    if (phase !== "battle" || whose !== "me" || busy || me.gold < packPrice(p, me) || me.inv.length > handMax(sides.me)) return;
+    if (phase !== "battle" || whose !== "me" || busy || me.blacked || me.gold < packPrice(p, me) || me.inv.length > handMax(sides.me)) return;
     const keys = rollPack(p.rar);
     const cost = packPrice(p, me);
     me.gold -= cost;
@@ -4017,7 +4183,7 @@
   function sellCard(k) {
     const me = sides.me;
     if (phase !== "battle" || whose !== "me" || busy) return;          // sell any card, any time on your turn — it doesn't use the turn
-    const key = me.inv[k]; if (!key) return;
+    const key = me.inv[k]; if (!key || isUlt(key)) return;
     const g = sellValue(key);
     me.inv.splice(k, 1); me.gold += g;
     if (mode === "mp") Net.send({ t: "act", a: "sell", key, g });
@@ -4029,7 +4195,8 @@
   // bots (and the turn timer) sell their cheapest cards when they hold too many
   function trimHand(sd) {
     while (sd.inv.length > handMax(sd)) {
-      let k = 0; sd.inv.forEach((c, j) => { if (sellValue(c) < sellValue(sd.inv[k])) k = j; });
+      let k = sd.inv.findIndex(c => !isUlt(c)); if (k < 0) break;
+      sd.inv.forEach((c, j) => { if (!isUlt(c) && sellValue(c) < sellValue(sd.inv[k])) k = j; });
       const key = sd.inv[k];
       if (sd === sides.me) { const before = sd.inv.length; sellCard(k); if (sd.inv.length === before) break; }
       else { sd.inv.splice(k, 1); sd.gold += sellValue(key); }
@@ -4041,7 +4208,7 @@
     const me = sides.me, o = (me.offers || [])[n];
     if (!o || o.sold) return;
     const key = o.key, price = offerPrice(o, me);
-    if (phase !== "battle" || whose !== "me" || busy || me.gold < price || !me.unl.has(key) || me.inv.length > handMax(sides.me)) return;
+    if (phase !== "battle" || whose !== "me" || busy || me.blacked || me.gold < price || !me.unl.has(key) || me.inv.length > handMax(sides.me)) return;
     me.gold -= price; noteBuy(me, key); o.sold = true;
     me.inv.push(key); newCard = true;
     if (mode === "mp") Net.send({ t: "act", a: "shop", cost: price, key });
@@ -4052,7 +4219,7 @@
   }
   function oldUpgradesPanelUnused(bump) {
     const el = document.getElementById("upgrades"), me = sides.me;
-    const canBuy = phase === "battle" && whose === "me" && !busy;
+    const canBuy = phase === "battle" && whose === "me" && !busy && !sides.me.blacked;
     let html = `<div class="up-head"><h3>UPGRADES</h3><div class="gold${bump ? " bump" : ""}">🪙 <b>${me.gold}</b></div></div>`;
     Object.entries(UPGRADES).forEach(([key, u]) => {
       const lv = level(me, key), max = u.levels.length, next = u.levels[lv];
@@ -4123,6 +4290,15 @@
       await wait(700);
     }
     trimHand(A);
+    if (A.blacked) {                                           // blacked out: no cards, no shop — just a blind shot
+      setLog(await shoot(A, randomUnshot()));
+      if (checkOver()) return;
+      await wait(700); nextTurn("me"); return;
+    }
+    // ULTIMATE: pick a blueprint at turn 15, put matching cards into it
+    if ((A.turns || 0) >= ULT_UNLOCK && !A.bp) { const ks = Object.keys(ULT); setBlueprint(A, ks[rand(ks.length)]); setLog("Enemy chose an ULTIMATE blueprint"); renderFleet(); await wait(500); }
+    for (const c of [...A.inv]) { const r = bpAdd(A, c); if (r && r !== "added") { setLog("🔥 Enemy forged an ULTIMATE card!"); await wait(700); } }
+    renderFleet();
     const smart = botLevel === "hard" ? 1 : botLevel === "medium" ? 0.75 : 0.3;   // how often it follows up on hits
     // shop: buy the best card it can afford (easy bots never shop)
     topUpOffers(A);
@@ -4148,7 +4324,9 @@
     const pick = k => A.inv.indexOf(k);
     let idx = -1, opts = null;
     const damagedAny = alive(A).filter(s => s.hits.size > 0).sort((a, b) => b.hits.size - a.hits.size)[0];
-    if (pick("repair") >= 0 && badly) { idx = pick("repair"); opts = { ship: badly }; }
+    const ultK = A.inv.find(isUlt);
+    if (ultK) { idx = pick(ultK); opts = ultK === "orbital" ? { at: hot >= 0 ? hot : randomUnshot() } : {}; }
+    else if (pick("repair") >= 0 && badly) { idx = pick("repair"); opts = { ship: badly }; }
     else if (pick("plunder") >= 0) { idx = pick("plunder"); opts = {}; }
     else if (pick("cardthief") >= 0 && sides.me.inv.length) { idx = pick("cardthief"); opts = {}; }
     else if (pick("jammer") >= 0 && sides.me.inv.length) { idx = pick("jammer"); opts = {}; }
@@ -4201,7 +4379,7 @@
       }
       if (opts) idx = pick("move");
     }
-    if (idx >= 0 && botLevel === "easy" && Math.random() < 0.5) idx = -1;           // easy bots often forget their cards
+    if (idx >= 0 && botLevel === "easy" && !isUlt(A.inv[idx]) && Math.random() < 0.5) idx = -1;           // easy bots often forget their cards
     if (idx >= 0) {
       const key = A.inv.splice(idx, 1)[0];
       await showEnemyCard(key);
@@ -4229,6 +4407,89 @@
   const panelBody = document.getElementById("panelBody");
   const panelHint = document.getElementById("panelHint");
 
+  // ---- ULTIMATE panel (left of PASSIVES): pick a blueprint, add its 5 cards, forge the Ultimate ----
+  function setBlueprint(sd, key) { sd.bp = { key, slots: [false, false, false, false, false] }; }
+  function bpCanAdd(sd, card) { return !!sd.bp && ULT[sd.bp.key].recipe.some((r, n) => r === card && !sd.bp.slots[n]); }
+  function bpAdd(sd, card) {                                // returns the forged Ultimate's key, "added", or null
+    if (!bpCanAdd(sd, card)) return null;
+    const i = sd.inv.indexOf(card); if (i < 0) return null;
+    const n = ULT[sd.bp.key].recipe.findIndex((r, m) => r === card && !sd.bp.slots[m]);
+    sd.inv.splice(i, 1); sd.bp.slots[n] = true;
+    if (sd.bp.slots.every(Boolean)) { const u = sd.bp.key; sd.inv.push(u); sd.bp = null; sd.forged = (sd.forged || 0) + 1; return u; }
+    return "added";
+  }
+  function myBpAdd(k) {
+    const me = sides.me, card = me.inv[k];
+    if (phase !== "battle" || whose !== "me" || busy || !card) return;
+    const r = bpAdd(me, card); if (!r) return;
+    if (mode === "mp") Net.send({ t: "act", a: "bpadd", key: card });
+    Sound.play("pick");
+    if (r !== "added") { forgeFx(r); newCard = true; }
+    else setLog(`✨ ${CARDS[card].name} added to your ${ULT[me.bp.key].name} blueprint`);
+    active = -1; renderPanel(); renderUlt(); renderFleet(); refreshHover();
+  }
+  function myPickBlueprint(key) {
+    const me = sides.me;
+    if (phase !== "battle" || whose !== "me" || me.bp || (me.turns || 0) < ULT_UNLOCK) return;
+    setBlueprint(me, key);
+    if (mode === "mp") Net.send({ t: "act", a: "bp", key });
+    Sound.play("upgrade");
+    setLog(`✨ Blueprint chosen: ${ULT[key].name} — add its 5 cards to forge it`);
+    closeBlueprints(); renderUlt(); renderPanel(); renderFleet();
+  }
+  function forgeFx(u) {
+    setLog(`🔥 ULTIMATE FORGED: ${ULT[u].name}!`);
+    const el = document.createElement("div"); el.className = "pasaward forge";
+    el.innerHTML = `<div class="pa-tag">ULTIMATE FORGED!</div>${cardHTML(u)}<div class="pa-sub">It's in your hand</div>`;
+    document.body.appendChild(el);
+    Sound.play("reveal", 3); Sound.play("full"); shake();
+    setTimeout(() => {
+      const tgt = document.querySelector(".panel").getBoundingClientRect(), r = el.getBoundingClientRect();
+      el.style.setProperty("--fx", (tgt.left + tgt.width / 2 - (r.left + r.width / 2)) + "px");
+      el.style.setProperty("--fy", (tgt.top + tgt.height / 2 - (r.top + r.height / 2)) + "px");
+      el.classList.add("fly");
+      setTimeout(() => el.remove(), 650);
+    }, 2000);
+  }
+  function renderUlt() {
+    const el = document.getElementById("ultpanel"), me = sides.me;
+    if (!el) return;
+    const t = me.turns || 0, open = t >= ULT_UNLOCK;
+    let html = `<h3>ULTIMATE CARD</h3>`;
+    if (!open) {
+      html += `<div class="ul-lock">🔒</div><div class="ul-sub">Unlocks on turn ${ULT_UNLOCK}</div>` +
+              `<div class="ul-bar"><s style="width:${t / ULT_UNLOCK * 100}%"></s></div><div class="ul-sub dim">TURN ${t}/${ULT_UNLOCK}</div>`;
+    } else if (!me.bp) {
+      html += `<button class="ul-pick" ${whose === "me" && phase === "battle" ? "" : "disabled"}>✨ CHOOSE<br>BLUEPRINT</button>` +
+              `<div class="ul-sub dim">${me.forged ? `Forged: ${me.forged}` : "Pick an Ultimate to build"}</div>`;
+    } else {
+      const u = ULT[me.bp.key], got = me.bp.slots.filter(Boolean).length;
+      html += `<div class="ul-name" data-k="${me.bp.key}"><span>${u.icon}</span>${u.name}</div>` +
+              `<div class="ul-slots">${u.recipe.map((r, n) => `<i class="${me.bp.slots[n] ? "on" : ""}" title="${CARDS[r].name}">${CARDS[r].icon}</i>`).join("")}</div>` +
+              `<div class="ul-sub"><b>${got}/5</b> cards added</div>`;
+    }
+    el.innerHTML = html;
+    el.classList.toggle("ready", open && !me.bp);
+    const b = el.querySelector(".ul-pick"); if (b) b.onclick = openBlueprints;
+    const nm = el.querySelector(".ul-name"); if (nm) { nm.onmouseenter = () => showPreview(nm.dataset.k); nm.onmouseleave = hidePreview; }
+    el.querySelectorAll(".ul-slots i").forEach((ic, n) => { ic.onmouseenter = () => showPreview(ULT[me.bp.key].recipe[n]); ic.onmouseleave = hidePreview; });
+  }
+  function openBlueprints() {
+    if (sides.me.bp || whose !== "me" || phase !== "battle") return;
+    let ov = document.getElementById("bpov");
+    if (!ov) { ov = document.createElement("div"); ov.id = "bpov"; ov.className = "bpov"; document.body.appendChild(ov); }
+    ov.innerHTML = `<div class="bp-box"><button class="bp-x">✕</button><h2>CHOOSE AN ULTIMATE BLUEPRINT</h2>` +
+      `<p>Add the 5 cards from its recipe to forge it. <b>You can't switch</b> until it's forged.</p><div class="bp-row">` +
+      Object.keys(ULT).map((k, n) => `<div class="bp-item" data-k="${k}" style="--i:${n}">${cardHTML(k)}<div class="bp-rec">` +
+        ULT[k].recipe.map(r => `<span title="${CARDS[r].name}">${CARDS[r].icon}<small>${CARDS[r].name}</small></span>`).join("") +
+        `</div><button class="bp-go">BUILD THIS</button></div>`).join("") + `</div></div>`;
+    ov.classList.add("show");
+    Sound.play("flip");
+    ov.querySelector(".bp-x").onclick = closeBlueprints;
+    ov.querySelectorAll(".bp-item").forEach(it => it.onclick = () => myPickBlueprint(it.dataset.k));
+  }
+  function closeBlueprints() { const ov = document.getElementById("bpov"); if (ov) ov.classList.remove("show"); }
+
   function renderPassives(pop) {
     const el = document.getElementById("passives"), me = sides.me, keys = Object.keys(PASSIVES);
     const tier = Math.min(...keys.map(k => level(me, k))), allMax = tier >= PASSIVE_MAX;
@@ -4244,6 +4505,7 @@
                `<div class="pt-pips">${[1, 2, 3].map(n => `<i class="${n <= lv ? "on" : ""}"></i>`).join("")}</div></div>`;
       }).join("") + `</div>` +
       `<div class="pas-next">${allMax ? "Every passive is at tier 3" : tier === 0 ? `Every ${every} turns: a new passive` : `Every ${every} turns: a tier ${tier + 1} upgrade`}</div>`;
+    renderUlt();
     el.querySelectorAll(".ptile").forEach(r => {
       const k = r.dataset.k;
       r.onmouseenter = () => showPreview(k, sides.me, level(me, k) ? "" : "NOT YET");
@@ -4311,6 +4573,7 @@
     let modeHTML = "";
     if (phase === "battle" && whose === "me" && !over) {
       if (armed) modeHTML = `<div class="modepill card r-${rarityOf(inv[active])}"><span class="mp-ic">${CARDS[inv[active]].icon}</span>USING <b>${CARDS[inv[active]].name.toUpperCase()}</b><button class="mp-x" title="Cancel (Esc)">✕</button></div>`;
+      else if (sides.me.blacked) modeHTML = `<div class="modepill basic black"><span class="mp-ic">🌑</span><b>BLACKOUT</b><small>basic attacks only · results hidden</small></div>`;
       else modeHTML = `<div class="modepill basic"><span class="mp-ic">🎯</span><b>BASIC ATTACK</b>${sides.me.shotsOnly ? "<small>Double Shot</small>" : "<small>or pick a card</small>"}</div>`;
     }
     top.innerHTML = over
@@ -4324,20 +4587,25 @@
       row.innerHTML = '<div class="empty-hand">No cards yet — get them from CHARGES or the 🛒 SHOP</div><div class="empty-hand short">🃏 No cards yet · get some in the 🛒 SHOP</div>';
     }
     inv.forEach((key, k) => {
-      const ok = mine && !over && canUse(sides.me, key);
+      const ok = mine && !over && !sides.me.blacked && canUse(sides.me, key);
       const slot = document.createElement("div");
       slot.className = "slot" + (k === active ? " sel" : "") + (over ? " selling" : !ok ? " off" : " ready") + (newCard && k === inv.length - 1 ? " new" : "");
-      slot.innerHTML = cardHTML(key) + (over ? `<div class="sellbadge">+${sellValue(key)} 🪙</div>`
-                     : mine ? `<button class="sellbtn" title="Sell this card (doesn't use your turn)"><span class="sl-l">SELL </span>+${sellValue(key)} 🪙</button>` : "");
+      const ult = isUlt(key), forBp = mine && !ult && bpCanAdd(sides.me, key);
+      slot.innerHTML = cardHTML(key) + (ult ? "" : over ? `<div class="sellbadge">+${sellValue(key)} 🪙</div>`
+                     : mine ? `<button class="sellbtn" title="Sell this card (doesn't use your turn)"><span class="sl-l">SELL </span>+${sellValue(key)} 🪙</button>` : "") +
+                     (forBp ? `<button class="addbp" title="Put this card into your ULTIMATE blueprint (doesn't use your turn)">✨ ADD TO ${ULT[sides.me.bp.key].icon}</button>` : "");
+      if (forBp) slot.classList.add("bpmatch");
       const sb = slot.querySelector(".sellbtn");
       if (sb) sb.onclick = e => { e.stopPropagation(); sellCard(k); };
+      const ab = slot.querySelector(".addbp");
+      if (ab) ab.onclick = e => { e.stopPropagation(); myBpAdd(k); };
       slot.dataset.k = k; slot.dataset.ok = ok ? 1 : 0;
       const mid = (inv.length - 1) / 2, off = k - mid;                       // phones: cards held in a fan
       slot.style.setProperty("--rot", (off * 5) + "deg"); slot.style.setProperty("--lift", (Math.abs(off) * Math.abs(off) * 3) + "px");
       slot.onmouseenter = () => showPreview(key);
       slot.onmouseleave = hidePreview;
       slot.title = CARDS[key].name + " — " + cardDesc(sides.me, key);
-      if (over) slot.onclick = () => sellCard(k);
+      if (over && !ult) slot.onclick = () => sellCard(k);
       if (ok) slot.onclick = () => {
         if (CARDS[key].target === "none") { Sound.play("select"); myCard(k, {}); return; }
         Sound.play("select");
@@ -4475,6 +4743,7 @@
     if (phase !== "battle" || whose !== "me" || busy) return;
     if (me.inv.length > handMax(sides.me)) { setLog("Too many cards — sell some first"); Sound.play("deny"); nudgeHand(); return; }
     const key = active >= 0 ? me.inv[active] : null;
+    if (key && me.blacked) { setLog("🌑 Blacked out — basic attacks only"); Sound.play("deny"); return; }
 
     if (!key) {                                   // plain shot
       if (onZone !== "zone2") return;
@@ -5116,6 +5385,8 @@
     if (m.a === "draw") { B.charge -= MAX_CHARGE; setLog("Enemy drew a card"); return; }
     if (m.a === "upg") { const what = applyPick(B, m.key); B.charge -= MAX_CHARGE; renderFleet(); setLog(what === "card" ? "Opponent got a mystery card" : what === "unlock" ? "Opponent unlocked a new passive" : `Opponent upgraded ${UPGRADES[m.key].name}`); return; }
     if (m.a === "pack") { B.gold -= m.cost; B.inv.push(...(m.keys || []).filter(k => CARDS[k])); renderFleet(); setLog(`Opponent opened a ${m.rar} card pack`); return; }
+    if (m.a === "bp") { setBlueprint(B, m.key); renderFleet(); setLog("Opponent chose an ULTIMATE blueprint"); return; }
+    if (m.a === "bpadd") { const r = bpAdd(B, m.key); renderFleet(); if (r && r !== "added") setLog("🔥 Opponent forged an ULTIMATE card!"); return; }
     if (m.a === "reroll") { B.gold -= m.cost; renderFleet(); return; }
     if (m.a === "pass") { setLog("Opponent ran out of time"); await wait(400); nextTurn("me"); return; }
     if (m.a === "sell") { const i = B.inv.indexOf(m.key); if (i >= 0) B.inv.splice(i, 1); B.gold += m.g; renderFleet(); setLog("Opponent sold a card"); return; }
@@ -5433,7 +5704,7 @@
   fitCamera = function () { worldW = 0; boardsHalf = null; fit0.apply(this, arguments); baseZoom = zoom; home = { x: cam.x, y: cam.y }; };
 
   const inGame = () => !document.body.classList.contains("in-menu") && (phase === "place" || phase === "battle");
-  const blocked = t => t.closest(".panel, .charges, .overlay, .popup, .soundbtn, .fleetpanel, .upgrades, .passives, .home, .menubtn, .leavebox, .shop, .touchbar, .tb, .packopen, .fstip");
+  const blocked = t => t.closest(".panel, .charges, .overlay, .popup, .soundbtn, .fleetpanel, .upgrades, .passives, .home, .menubtn, .leavebox, .shop, .touchbar, .tb, .packopen, .fstip, .ultpanel, .bpov");
 
   // ---- aiming with one finger, pinch/pan with two ----
   let pinch = null, aimTouch = false, tapStart = null, aimedBefore = -1, pan = null, aimQ = null;
@@ -5567,7 +5838,7 @@
   const AIM_UP = 38;                                // aim a little above the finger so you can see the range
   document.addEventListener("touchstart", e => {
     const slot = e.target.closest(".hand .slot");
-    if (!slot || e.touches.length !== 1 || e.target.closest(".sellbtn")) return;
+    if (!slot || e.touches.length !== 1 || e.target.closest(".sellbtn, .addbp")) return;
     const t = e.touches[0];
     cd = { k: +slot.dataset.k, ok: slot.dataset.ok === "1", x: t.clientX, y: t.clientY, slot, ghost: null, on: false };
   }, { passive: true });
@@ -5630,7 +5901,7 @@
       if (f) { el.onmouseenter = null; longPress(el, f); }
     });
   });
-  [document.getElementById("panelBody"), document.getElementById("shopGrid"), document.getElementById("passives"), document.getElementById("fleet"), document.getElementById("panelHint")]
+  [document.getElementById("panelBody"), document.getElementById("shopGrid"), document.getElementById("passives"), document.getElementById("ultpanel"), document.getElementById("fleet"), document.getElementById("panelHint")]
     .forEach(el => el && mo.observe(el, { childList: true, subtree: true }));
 
 })();
