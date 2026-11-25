@@ -960,6 +960,20 @@
   .ptile.pop { animation: ptPop .6s cubic-bezier(.2, 1.6, .4, 1); }
   @keyframes ptPop { 0% { transform: scale(.6); } 60% { transform: scale(1.18); box-shadow: 0 0 20px #c77dff; } }
   .pas-next { text-align: center; font-size: .66rem; opacity: .55; margin-top: 7px; letter-spacing: .5px; }
+  /* v76: recipe badge, Jammer pop-up, auto-miss, name box */
+  .gc-bp { position: absolute; top: 40px; left: 8px; z-index: 3; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-size: 1rem;
+    background: radial-gradient(circle at 40% 35%, #ff6b80, #8a0020); border: 2px solid #ffd0d8; box-shadow: 0 0 12px #ff2e4d, 0 3px 8px #000a; }
+  .lostcards { position: fixed; left: 50%; top: 42%; z-index: 27; transform: translate(-50%, -50%); text-align: center; pointer-events: none; animation: paIn .45s cubic-bezier(.2, 1.5, .4, 1); }
+  .lostcards.out { transition: opacity .45s, transform .45s; opacity: 0; transform: translate(-50%, -50%) scale(.8); }
+  .lc-title { font-family: "Black Ops One", "Segoe UI", sans-serif; font-size: 1.5rem; letter-spacing: 4px; color: #ff6b6b; text-shadow: 0 0 18px #ff2e4d, 0 3px 0 #3a0010; margin-bottom: 14px; }
+  .lc-row { display: flex; gap: 14px; justify-content: center; }
+  .lc-card { position: relative; }
+  .lc-card .gcard { filter: grayscale(.7) brightness(.7); box-shadow: 0 0 0 3px #ff6b6b, 0 16px 40px #000c; }
+  .lc-x { position: absolute; inset: 0; display: grid; place-items: center; font: 900 7rem "Segoe UI", sans-serif; color: #ff3b3b; text-shadow: 0 0 20px #ff0000, 0 4px 0 #000;
+    animation: lcX .4s .35s cubic-bezier(.2, 1.6, .4, 1) backwards; }
+  @keyframes lcX { from { transform: scale(2.4); opacity: 0; } }
+  .cell.automiss.m-miss::after { opacity: .55; }
+  .namein { letter-spacing: 2px !important; text-transform: none !important; }
   /* ULTIMATE */
   .gcard.r-ultimate { --rc: #ff2e4d; border-color: #ff2e4d !important; box-shadow: 0 0 30px #ff2e4daa, 0 8px 22px #000a, inset 0 0 0 2px #ff2e4d99; animation: ultGlow 1.4s ease-in-out infinite alternate; }
   .gcard.r-ultimate .gc-art { background: radial-gradient(circle at 50% 45%, #ff8a9a, #c3002b 45%, #1a0006 80%); }
@@ -1898,7 +1912,7 @@
   </div>
 
   <div class="phonesea" aria-hidden="true"><i class="ps-a"></i><i class="ps-b"></i></div>
-  <div class="buildtag">build 75</div>
+  <div class="buildtag">build 76</div>
   <div class="turnside" id="turnside"></div>
   <div class="touchbar" id="touchbar">
     <button id="tbCancel" class="tb small">✕</button>
@@ -1948,6 +1962,15 @@
         <div class="code" id="hostCode">·····</div>
         <div class="m-status" id="hostStatus"></div>
         <button class="mbtn small" data-back="cancel-host">CANCEL</button>
+      </div>
+
+      <div class="menu" id="menuName">
+        <div class="m-title">WHAT'S YOUR NAME?</div>
+        <div class="m-label">YOUR OPPONENT WILL SEE IT</div>
+        <input class="codein namein" id="nameIn" maxlength="14" placeholder="Captain" autocomplete="off" spellcheck="false">
+        <button class="mbtn" id="nameBtn"><span>⚓</span>CONTINUE</button>
+        <div class="m-status" id="nameStatus"></div>
+        <button class="mbtn small" data-back="1">BACK</button>
       </div>
 
       <div class="menu" id="menuJoin">
@@ -2269,20 +2292,20 @@
     overcharge: { name: "Overcharge",     icon: "🔋", type: "intel" },
     pockets:    { name: "Deep Pockets",   icon: "🎒", type: "tactic" },
     haggler:    { name: "Haggler",        icon: "🏷️", type: "tactic" },
-    repairs:    { name: "Damage Control", icon: "🧯", type: "defense" },
+    lucky:      { name: "Lucky Charm",    icon: "🍀", type: "intel" },
   };
-  const PASSIVE_MAX = 3;                         // 3 tiers each
-  const PASSIVE_TURNS = { 1: 5, 2: 6, 3: 7 };    // turns to wait: a new passive every 5, a tier 2 every 6, a tier 3 every 7
+  const PASSIVE_MAX = 5;                         // 5 tiers each
+  const PASSIVE_TURNS = { 1: 5, 2: 5, 3: 6, 4: 6, 5: 7 };    // turns to wait for each tier
   const passiveTier = sd => Math.min(...Object.keys(PASSIVES).map(k => level(sd, k)));    // what everyone is at now
   const passiveWait = sd => PASSIVE_TURNS[passiveTier(sd) + 1] || 0;
   // upgrade levels — won by choosing upgrades when your charges fill up
   const UPGRADES = {
-    shot:      { name: "Shot Range",     base: 1,  levels: [{ v: 2 }, { v: 3 }, { v: 4 }] },
-    warchest:  { name: "War Chest",      base: 0,  levels: [{ v: 5 }, { v: 10 }, { v: 15 }] },
-    overcharge:{ name: "Overcharge",     base: 0,  levels: [{ v: 4 }, { v: 3 }, { v: 2 }] },
-    pockets:   { name: "Deep Pockets",   base: 0,  levels: [{ v: 1 }, { v: 2 }, { v: 3 }] },
-    haggler:   { name: "Haggler",        base: 0,  levels: [{ v: 10 }, { v: 20 }, { v: 30 }] },
-    repairs:   { name: "Damage Control", base: 0,  levels: [{ v: 5 }, { v: 4 }, { v: 3 }] },
+    shot:      { name: "Shot Range",     base: 1,  levels: [{ v: 2 }, { v: 3 }, { v: 4 }, { v: 5 }, { v: 6 }] },
+    warchest:  { name: "War Chest",      base: 0,  levels: [{ v: 5 }, { v: 10 }, { v: 15 }, { v: 20 }, { v: 30 }] },
+    overcharge:{ name: "Overcharge",     base: 0,  levels: [{ v: 4 }, { v: 3 }, { v: 2 }, { v: 1 }, { v: 0.5 }] },
+    pockets:   { name: "Deep Pockets",   base: 0,  levels: [{ v: 1 }, { v: 2 }, { v: 3 }, { v: 4 }, { v: 5 }] },
+    haggler:   { name: "Haggler",        base: 0,  levels: [{ v: 10 }, { v: 20 }, { v: 30 }, { v: 40 }, { v: 50 }] },
+    lucky:     { name: "Lucky Charm",    base: 0,  levels: [{ v: 1 }, { v: 2 }, { v: 3 }, { v: 4 }, { v: 5 }] },
     aoe:       { name: "AOE Strike",     base: 5,  levels: [{ v: 7 }, { v: 9 }] },
     scan:      { name: "Sonar Scan",     base: 9,  levels: [{ v: 11 }, { v: 13 }] },
     cluster:   { name: "Cluster Bomb",   base: 10, levels: [{ v: 15 }, { v: 20 }] },
@@ -2330,12 +2353,13 @@
   function statText(key, v) {
     const sq = n => `${n}×${n}`;
     switch (key) {
-      case "shot": return v === 1 ? "Your shot hits 1 square" : v === 2 ? "Your shot hits a + shape (5 squares)" : v === 3 ? "Your shot hits 3×3 (9 squares)" : "Your shot hits 3×3 plus a cross (13 squares)";
+      case "shot": return v === 1 ? "Your shot hits 1 square" : v === 2 ? "Your shot hits a + shape (5 squares)" : v === 3 ? "Your shot hits 3×3 (9 squares)"
+                        : v === 4 ? "Your shot hits 3×3 plus a cross (13 squares)" : v === 5 ? "Your shot hits 5×5 without corners (21 squares)" : "Your shot hits 5×5 (25 squares)";
       case "warchest": return `+${v} extra gold at the start of every turn`;
       case "pockets": return `Hold up to ${HAND_MAX + v} cards instead of ${HAND_MAX}`;
       case "haggler": return `Everything in the shop costs ${v}% less`;
-      case "repairs": return `Every ${v} turns your most damaged ship is fully repaired`;
-      case "overcharge": return `+1 extra charge every ${v} turns`;
+      case "lucky": return `Rarer cards from charges and packs — legendary chance in charge picks ×${luckMult(v).toFixed(1)}`;
+      case "overcharge": return v < 1 ? "+2 extra charges every turn" : v === 1 ? "+1 extra charge every turn" : `+1 extra charge every ${v} turns`;
       case "aoe": return `Blast a ${sq(v)} area`;
       case "scan": return `Reveal enemy ships in a ${sq(v)} area`;
       case "cluster": return `${v} random hits in a ${v >= 20 ? "7×7" : "5×5"} area`;
@@ -2380,6 +2404,7 @@
   function shotCells(sd, j) {
     const v = val(sd, "shot"), [r, c] = rc(j);
     const offs = v === 1 ? [[0, 0]] : v === 2 ? [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]]
+               : v >= 5 ? [-2, -1, 0, 1, 2].flatMap(a => [-2, -1, 0, 1, 2].map(b => [a, b])).filter(([a, b]) => v >= 6 || Math.abs(a) + Math.abs(b) < 4)
                : [[-1, -1], [-1, 0], [-1, 1], [0, -1], [0, 0], [0, 1], [1, -1], [1, 0], [1, 1], ...(v >= 4 ? [[-2, 0], [2, 0], [0, -2], [0, 2]] : [])];
     return offs.map(([dr, dc]) => [r + dr, c + dc]).filter(([a, b]) => a >= 0 && b >= 0 && a < N && b < N).map(([a, b]) => a * N + b);
   }
@@ -2589,7 +2614,18 @@
     }
     return list;
   }
-  const fits = (sd, list, ignore = -1) => !!list && list.every(j => sd.grid[j] === -1 || sd.grid[j] === ignore);
+  // a ship fits if its squares are free AND no other ship touches it — not even at the corners (old-school rule)
+  const fits = (sd, list, ignore = -1) => !!list && list.every(j => {
+    if (sd.grid[j] !== -1 && sd.grid[j] !== ignore) return false;
+    const r = Math.floor(j / N), c = j % N;
+    for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
+      const rr = r + dr, cc = c + dc;
+      if (rr < 0 || cc < 0 || rr >= N || cc >= N) continue;
+      const g = sd.grid[rr * N + cc];
+      if (g !== -1 && g !== ignore) return false;
+    }
+    return true;
+  });
   function addShip(sd, size, horiz, at) {
     const ship = { id: sd.ships.length, size, horiz, at, hits: new Set(), sunk: false, model: null };
     ship.cells = footprint(size, horiz, at);
@@ -2737,7 +2773,7 @@
   }
   function renderFleet(justSunk) {
     const el = document.getElementById("fleet"), mine = document.getElementById("myfleet");
-    el.innerHTML = fleetPanelHTML(sides.bot, "ENEMY FLEET", "their", typeof enemyPlayed !== "undefined" ? enemyPlayed : [], justSunk);
+    el.innerHTML = fleetPanelHTML(sides.bot, mode === "mp" && oppName ? oppName.toUpperCase() + "'S FLEET" : "ENEMY FLEET", "their", typeof enemyPlayed !== "undefined" ? enemyPlayed : [], justSunk);
     mine.innerHTML = fleetPanelHTML(sides.me, "YOUR FLEET", "your", myPlayed, justSunk);
     el.querySelectorAll(".eh").forEach(e => { e.onmouseenter = () => showPreview(e.dataset.k, sides.bot, "ENEMY USED"); e.onmouseleave = hidePreview; });
     mine.querySelectorAll(".eh").forEach(e => { e.onmouseenter = () => showPreview(e.dataset.k, sides.me, "YOU USED"); e.onmouseleave = hidePreview; });
@@ -2810,16 +2846,40 @@
       const m = T.marks[k]; if (!m) return;
       if (m.el) m.el.style.visibility = ""; else T.cells[k].classList.add("m-" + m.kind);
     });
-    fogSunk.forEach(ship => { drawModel(sides.bot, ship); sunkMarker(sides.bot, ship); });
+    fogSunk.forEach(ship => {
+      drawModel(sides.bot, ship); sunkMarker(sides.bot, ship);
+      (ship.__around || []).forEach(k => { const m = sides.bot.marks[k]; if (!(m && (m.kind === "miss" || m.kind === "hit"))) { setMark(sides.bot, k, "miss"); sides.bot.cells[k].classList.add("automiss"); } });
+    });
     const n = fogSunk.size; fogSunk.clear();
     renderFleet();
     setLog("🌑 Blackout over — your shot results are revealed" + (n ? ` · you sank ${n} ship${n > 1 ? "s" : ""}!` : ""));
+  }
+  // when a ship sinks, every square around it is water (ships can't touch) — mark them as misses for everyone
+  function autoMiss(T, ship, show = true) {
+    const around = new Set();
+    ship.cells.forEach(j => {
+      const r = Math.floor(j / N), c = j % N;
+      for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
+        const rr = r + dr, cc = c + dc;
+        if (rr < 0 || cc < 0 || rr >= N || cc >= N) continue;
+        const k = rr * N + cc;
+        if (!ship.cells.includes(k) && T.grid[k] === -1) around.add(k);
+      }
+    });
+    around.forEach(k => {
+      (T.firedAt || (T.firedAt = new Set())).add(k);
+      if (T === sides.me) { botMem.shot.add(k); botMem.detected.delete(k); }
+      const m = T.marks[k];
+      if (show && !(m && (m.kind === "miss" || m.kind === "hit"))) { setMark(T, k, "miss"); T.cells[k].classList.add("automiss"); }
+    });
+    if (!show) ship.__around = [...around];
   }
   function strike(T, j) {
     const st = stats[other(T).name];
     st.fired++;
     if (shielded(T, j)) { const [x, y] = center(j); fx(T, "ring blocked", x, y, 700); if (T === sides.me) botMem.shot.delete(j); return "blocked"; }
     const ship = shipAt(T, j);
+    (T.firedAt || (T.firedAt = new Set())).add(j);
     if (T === sides.me) { botMem.shot.add(j); botMem.detected.delete(j); }
     if (!ship) {
       setMark(T, j, "miss");
@@ -2868,6 +2928,7 @@
     if (ship.hits.size === ship.size) {
       ship.sunk = true;
       st.sunk++;
+      autoMiss(T, ship, !fogging);                             // nothing can touch a ship: the water around it is marked
       if (fogging) fogSunk.add(ship);                          // blacked out: you don't see it sink yet
       else { drawModel(T, ship); sunkMarker(T, ship); sunkToast(T === sides.bot, ship.size); }
       if (!friendlyFire) sinkBonus(other(T), j);
@@ -2889,7 +2950,7 @@
     return hits + (hits === 1 ? " hit" : " hits") + (sunk ? ", " + sunk + " ship" + (sunk > 1 ? "s" : "") + " sunk!" : "");
   }
   // a ship can only move onto free squares the enemy hasn't shot at
-  const shotAt = (sd, j) => sd.marks[j] && (sd.marks[j].kind === "miss" || sd.marks[j].kind === "hit");
+  const shotAt = (sd, j) => !!(sd.firedAt && sd.firedAt.has(j));     // fired at (same on both screens, unlike the marks you see)
   const isRevealed = (sd, j) => sd === sides.me ? botMem.detected.has(j) : !!(sd.marks[j] && sd.marks[j].kind === "detect");
   const revealedShips = sd => alive(sd).filter(sh => sh.hits.size > 0 || sh.cells.some(j => isRevealed(sd, j)));
   const canMoveTo = (sd, ship, list) => fits(sd, list, ship.id) && list.every(j => ship.cells.includes(j) || !shotAt(sd, j));
@@ -2922,7 +2983,7 @@
     }
     const res = list.map(k => strike(T, k));
     list.forEach((k, n) => setTimeout(() => hitFx(T, k, res[n]), n * 40));
-    const who = A === sides.me ? "You" : "Enemy";
+    const who = A === sides.me ? "You" : mode === "mp" && oppName ? oppName : "Enemy";
     if (list.length === 1) return who + " fired — " + (res[0] === "sunk" ? "hit, ship sunk!" : res[0] === "hit" ? "hit!" : res[0] === "blocked" ? "blocked!" : res[0] === "mine" ? "hit a sea mine! (−20 gold)" : "miss");
     return who + " fired — " + summary(res);
   }
@@ -3000,7 +3061,7 @@
   // a card's ability, with its animation
   async function playCard(A, key, opts) {
     actionCharge = 0;
-    const T = other(A), who = A === sides.me ? "You" : "Enemy", name = CARDS[key].name;
+    const T = other(A), who = A === sides.me ? "You" : mode === "mp" && oppName ? oppName : "Enemy", name = CARDS[key].name;
     if (key === "aoe") {
       const size = val(A, "aoe"), list = area(opts.at, size);
       Sound.play("shot"); fxShell(T, opts.at);
@@ -3079,8 +3140,8 @@
                         .sort((a, b) => b.hits.size - a.hits.size)].slice(0, val(A, "repair"));
       Sound.play("repair");
       fixList.forEach(ship => {
-        ship.hits.forEach(seg => {
-          const [x, y] = center(ship.cells[seg]);
+        if (A === sides.me) ship.hits.forEach(seg => {         // only the owner sees where the repair happened;
+          const [x, y] = center(ship.cells[seg]);              // the attacker's hit marks stay, so it doesn't give the ship away
           for (let k = 0; k < 3; k++) setTimeout(() => { const el = fx(A, "plus", x + rand(20) - 10, y, 1000); el.textContent = "+"; }, k * 180);
           setMark(A, ship.cells[seg], null);
         });
@@ -3226,8 +3287,7 @@
     }
     if (key === "firecracker") {
       // random squares the attacker hasn't fired at yet — seeded so both screens pick the same ones
-      const done = j => { const m = T.marks[j]; return m && (m.kind === "hit" || m.kind === "miss" || m.kind === "sunk"); };
-      const free = []; for (let j = 0; j < N * N; j++) if (!done(j)) free.push(j);
+      const free = []; for (let j = 0; j < N * N; j++) if (!shotAt(T, j)) free.push(j);
       const list = lshuffle(free).slice(0, val(A, "firecracker"));
       return `${who}: ${name} — ` + summary(await salvo(T, list, 220));
     }
@@ -3285,6 +3345,7 @@
       Sound.play(took.length ? "whoosh" : "splash");
       if (A === sides.me && key === "cardthief") newCard = took.length > 0;
       renderPanel(); renderFleet();
+      if (key === "jammer" && took.length) { await lostCards(took, A === sides.me ? "YOU DESTROYED" : "JAMMED — YOU LOST"); }
       await wait(600);
       if (!took.length) return `${who}: ${name} — their hand was empty`;
       const names = took.map(c => CARDS[c].name).join(" and ");
@@ -3559,7 +3620,7 @@
   }
   const BANNER_MS = 450;                     // the big turn banner: 0.15s in, 0.15s hold, 0.15s out
   function turnBanner(who) {
-    const text = who === "me" ? "YOUR TURN" : mode === "mp" ? "OPPONENT'S TURN" : "ENEMY TURN";
+    const text = who === "me" ? "YOUR TURN" : mode === "mp" ? foeName().toUpperCase() + "'S TURN" : "ENEMY TURN";
     const el = document.createElement("div");
     el.className = "turnbanner quick " + who;
     el.textContent = text;
@@ -3671,18 +3732,6 @@
       }, 1900);
     }, BANNER_MS + 150);
   }
-  function autoRepair(sd) {
-    const ship = alive(sd).filter(s => s.hits.size > 0 && !s.decoy).sort((a, b) => b.hits.size - a.hits.size)[0];
-    if (!ship) return;
-    ship.hits.forEach(seg => {
-      const [x, y] = center(ship.cells[seg]);
-      for (let k = 0; k < 3; k++) setTimeout(() => { const el = fx(sd, "plus", x + rand(20) - 10, y, 1000); el.textContent = "+"; }, 300 + k * 180);
-      setMark(sd, ship.cells[seg], null);
-    });
-    ship.hits.clear();
-    Sound.play("repair");
-    setTimeout(() => setLog(sd === sides.me ? "🧯 Damage Control fully repaired one of your ships" : "Enemy's Damage Control repaired one of their ships"), 500);
-  }
   function nextTurn(who) {
     whose = who; busy = false; active = -1; moving = null;
     const sd = sides[who];
@@ -3697,9 +3746,7 @@
     if (!sd.offers || sd.turns % RESTOCK_TURNS === 1) rollOffers(sd);   // the shop restocks every 2 turns
     sd.rerolls = 0;                                                      // reroll price goes back to 10 each turn
     const oc = val(sd, "overcharge");
-    if (oc && sd.turns % oc === 0 && sd.charge < CHARGE_CAP) sd.charge++;          // Overcharge passive
-    const dc = val(sd, "repairs");
-    if (dc && sd.turns % dc === 0) autoRepair(sd);                                  // Damage Control passive
+    if (oc) { const add = oc < 1 ? 2 : sd.turns % oc === 0 ? 1 : 0; sd.charge = Math.min(CHARGE_CAP, sd.charge + add); }   // Overcharge passive
     if (passiveWait(sd)) {                                                          // passive turn counter
       sd.pasTurns = (sd.pasTurns || 0) + 1;
       if (sd.pasTurns >= passiveWait(sd)) { sd.pasTurns = 0; const got = grantPassive(sd); if (got) passiveAward(sd, got); }
@@ -3712,7 +3759,7 @@
     }
     if (who === "me") { turn++; Sound.play("turn"); coolFlames(); }
     const w = document.getElementById("who");
-    w.textContent = "TURN " + Math.max(1, turn) + " · " + (who === "me" ? "YOUR TURN" : mode === "mp" ? "OPPONENT'S TURN" : "ENEMY TURN");
+    w.textContent = "TURN " + Math.max(1, turn) + " · " + (who === "me" ? "YOUR TURN" : mode === "mp" ? foeName().toUpperCase() + "'S TURN" : "ENEMY TURN");
     w.className = "who " + who;
     renderCharges(); renderPanel(); renderUpgrades(); renderPassives(); renderFleet(); refreshHover();
     if (who !== "me") closeShop();
@@ -3740,7 +3787,7 @@
     t.style.color = win ? "#8dffb0" : "#ff7a5c";
     const acc = s => s.fired ? Math.round(s.hits / s.fired * 100) + "%" : "—";
     const row = (label, a, b) => `<div class="sr"><span>${a}</span><b>${label}</b><span>${b}</span></div>`;
-    const me = stats.me, en = stats.bot, foe = mode === "mp" ? "OPPONENT" : "ENEMY";
+    const me = stats.me, en = stats.bot, foe = foeName().toUpperCase();
     document.getElementById("endStats").innerHTML =
       `<div class="sr head"><span>YOU</span><b></b><span>${foe}</span></div>` +
       row("Turns", turn, turn) + row("Squares fired at", me.fired, en.fired) + row("Hits", me.hits, en.hits) +
@@ -3797,20 +3844,32 @@
   const cardHTML = (key, sd = sides.me) => {
     const c = CARDS[key];
     const rar = rarityOf(key);
-    return `<div class="gcard ${c.type} r-${rar}"><div class="gc-rar">${rar === "ultimate" ? "ULTIMATE" : RARITY[rar].label}</div><div class="gc-name">${c.name}</div><div class="gc-art">${c.icon}</div>` +
+    const bp = sd === sides.me && sides.me.bp && !isUlt(key) && bpCanAdd(sides.me, key)
+      ? `<div class="gc-bp" title="Needed for your ${ULT[sides.me.bp.key].name}">${ULT[sides.me.bp.key].icon}</div>` : "";
+    return `<div class="gcard ${c.type} r-${rar}">${bp}<div class="gc-rar">${rar === "ultimate" ? "ULTIMATE" : RARITY[rar].label}</div><div class="gc-name">${c.name}</div><div class="gc-art">${c.icon}</div>` +
            `<div class="gc-type">${c.type.toUpperCase()}${UPGRADES[key] && level(sd, key) ? " · LV " + (level(sd, key) + 1) : ""}</div>` +
            `<div class="gc-text${txtCls(cardDesc(sd, key))}">${cardDesc(sd, key)}</div></div>`;
   };
 
   // ---- show the card the enemy just played ----
   const enemyPlayed = [];
+  // Jammer: show which card(s) got destroyed
+  async function lostCards(keys, title) {
+    const el = document.createElement("div"); el.className = "lostcards";
+    el.innerHTML = `<div class="lc-title">${title}</div><div class="lc-row">` +
+      keys.map(k => `<div class="lc-card">${cardHTML(k, sides.bot)}<div class="lc-x">✕</div></div>`).join("") + `</div>`;
+    document.body.appendChild(el);
+    Sound.play("flip"); setTimeout(() => Sound.play("boom", false), 450);
+    await wait(2000);
+    el.classList.add("out"); setTimeout(() => el.remove(), 500);
+  }
   async function showEnemyCard(key) {
     enemyPlayed.push(key);
     stats.bot.cards++;
     renderFleet();
     const el = document.createElement("div");
     el.className = "enemycard";
-    el.innerHTML = `<div class="ec-label">${mode === "mp" ? "OPPONENT" : "ENEMY"} PLAYED</div>${cardHTML(key, sides.bot)}`;
+    el.innerHTML = `<div class="ec-label">${foeName().toUpperCase()} PLAYED</div>${cardHTML(key, sides.bot)}`;
     document.body.appendChild(el);
     Sound.play("flip"); setTimeout(() => Sound.play("select"), 150);
     await wait(1700);
@@ -3832,10 +3891,14 @@
   // what a mystery pick can be: "?" = a random card straight into your hand (rarer rarities are rarer), or a passive,
   // or face-up = an upgrade for a card you already have. Card picks are written "+key".
   const CHARGE_RARITY = { common: 62, rare: 27, epic: 9, legendary: 2 };
-  function mysteryCard() {
-    const tot = Object.values(CHARGE_RARITY).reduce((a, b) => a + b, 0);
+  // Lucky Charm: each tier makes commons rarer and the rest more likely
+  const LUCK = { common: 0.88, rare: 1.05, epic: 1.2, legendary: 1.35 };
+  const luckMult = (lv, r = "legendary") => Math.pow(LUCK[r], lv) / (Object.entries(CHARGE_RARITY).reduce((a, [q, w]) => a + w * Math.pow(LUCK[q], lv), 0) / 100);
+  const luckyWeight = (sd, r, w) => w * Math.pow(LUCK[r] || 1, sd ? val(sd, "lucky") : 0);
+  function mysteryCard(sd) {
+    const tot = Object.entries(CHARGE_RARITY).reduce((a, [r, w]) => a + luckyWeight(sd, r, w), 0);
     let x = LR() * tot;
-    for (const [r, w] of Object.entries(CHARGE_RARITY)) if ((x -= w) < 0) { const l = RARITY[r].cards; return l[Math.floor(LR() * l.length)]; }
+    for (const [r, w] of Object.entries(CHARGE_RARITY)) if ((x -= luckyWeight(sd, r, w)) < 0) { const l = RARITY[r].cards; return l[Math.floor(LR() * l.length)]; }
     return RARITY.common.cards[0];
   }
   const pickPool = sd => [];                       // charges give cards only (passives come from the turn counter)
@@ -3843,7 +3906,7 @@
     const ups = lshuffle(pickPool(sd)), out = [], used = new Set();
     for (let n = 0; n < 3; n++) {
       if (ups.length && LR() < 0.25) { out.push(ups.pop()); continue; }
-      for (let t = 0; t < 30; t++) { const k = mysteryCard(); if (!used.has(k)) { used.add(k); out.push("+" + k); break; } }
+      for (let t = 0; t < 30; t++) { const k = mysteryCard(sd); if (!used.has(k)) { used.add(k); out.push("+" + k); break; } }
     }
     return out;
   }
@@ -3977,7 +4040,8 @@
   const PRICE = { common: 30, rare: 60, epic: 120, legendary: 220 };
   const HAND_MAX = 3;                                       // most cards you can hold (Deep Pockets adds more)
   const handMax = sd => HAND_MAX + val(sd, "pockets");
-  const sellValue = key => Math.floor(PRICE[rarityOf(key)] / 2);   // selling gives back half the shop price
+  // selling gives back half of what the card costs in the shop now (legendaries cost more each time you buy one)
+  const sellValue = (key, sd = sides.me) => { const r = rarityOf(key); return Math.floor((PRICE[r] + (r === "legendary" ? PRICE[r] * ((sd.bought || {})[key] || 0) : 0)) / 2); };
   const TURN_INCOME = 5;                                    // a little gold every turn
   // legendaries get pricier every time that player buys one (+100% of the base price each time)
   const haggle = (g, sd) => sd ? Math.round(g * (1 - val(sd, "haggler") / 100)) : g;      // Haggler passive
@@ -4074,14 +4138,15 @@
     { rar: "legendary", price: 380, name: "LEGENDARY PACK" },
   ];
   let shopTab = "cards";
-  function rollPack(rar) {
+  function rollPack(rar, sd = sides.me) {
     const pickFrom = list => list[Math.floor(Math.random() * list.length)];
     const ORDER = ["common", "rare", "epic", "legendary"];
     const allowed = ORDER.slice(0, ORDER.indexOf(rar) + 1).map(k => RARITY[k]);   // never above the pack's own rarity
     const anyCard = () => {                                     // the 2 extra cards: weighted by rarity
-      const total = allowed.reduce((a, r) => a + r.weight, 0);
+      const w = r => luckyWeight(sd, Object.keys(RARITY).find(k => RARITY[k] === r), r.weight);
+      const total = allowed.reduce((a, r) => a + w(r), 0);
       let x = Math.random() * total;
-      for (const r of allowed) { if ((x -= r.weight) < 0) return pickFrom(r.cards); }
+      for (const r of allowed) { if ((x -= w(r)) < 0) return pickFrom(r.cards); }
       return pickFrom(RARITY.common.cards);
     };
     const cards = [anyCard(), anyCard(), pickFrom(RARITY[rar].cards)];   // the guaranteed one is revealed last
@@ -4220,10 +4285,10 @@
   function trimHand(sd) {
     while (sd.inv.length > handMax(sd)) {
       let k = sd.inv.findIndex(c => !isUlt(c)); if (k < 0) break;
-      sd.inv.forEach((c, j) => { if (!isUlt(c) && sellValue(c) < sellValue(sd.inv[k])) k = j; });
+      sd.inv.forEach((c, j) => { if (!isUlt(c) && sellValue(c, sd) < sellValue(sd.inv[k], sd)) k = j; });
       const key = sd.inv[k];
       if (sd === sides.me) { const before = sd.inv.length; sellCard(k); if (sd.inv.length === before) break; }
-      else { sd.inv.splice(k, 1); sd.gold += sellValue(key); }
+      else { sd.inv.splice(k, 1); sd.gold += sellValue(key, sd); }
     }
     if (sd !== sides.me) renderFleet();
   }
@@ -4337,7 +4402,7 @@
       const saving = A.saveFor && offerOf(A.saveFor) && A.gold < costOf(A.saveFor);
       const k = saving ? null : wish.concat(SHOP_ORDER).find(c => offerOf(c) && A.gold >= costOf(c) && (A.gold - costOf(c) >= 30 || costOf(c) >= 120 || offerOf(c).deal) && (wish.includes(c) || Math.random() < 0.3));
       const pk = !saving && !k && Math.random() < 0.3 ? [...PACKS].reverse().find(p => A.gold >= packPrice(p, A) && A.gold - packPrice(p, A) >= 20) : null;
-      if (pk) { const got = rollPack(pk.rar); A.gold -= packPrice(pk, A); A.inv.push(...got); trimHand(A); setLog(`Enemy opened a ${pk.rar} card pack`); await wait(600); }
+      if (pk) { const got = rollPack(pk.rar, A); A.gold -= packPrice(pk, A); A.inv.push(...got); trimHand(A); setLog(`Enemy opened a ${pk.rar} card pack`); await wait(600); }
       if (k) { if (k === A.saveFor) A.saveFor = null; A.gold -= costOf(k); offerOf(k).sold = true; noteBuy(A, k); A.inv.push(k); trimHand(A); setLog("Enemy bought a card from the shop"); await wait(600); }
     }
     trimHand(A);
@@ -4526,9 +4591,9 @@
       keys.map(k => {
         const lv = level(me, k);
         return `<div class="ptile ${lv ? "on" : "off"}${pop === k ? " pop" : ""}" data-k="${k}"><div class="pt-icon">${PASSIVES[k].icon}</div><div class="pt-name">${PASSIVES[k].name}</div>` +
-               `<div class="pt-pips">${[1, 2, 3].map(n => `<i class="${n <= lv ? "on" : ""}"></i>`).join("")}</div></div>`;
+               `<div class="pt-pips">${[1, 2, 3, 4, 5].map(n => `<i class="${n <= lv ? "on" : ""}"></i>`).join("")}</div></div>`;
       }).join("") + `</div>` +
-      `<div class="pas-next">${allMax ? "Every passive is at tier 3" : tier === 0 ? `Every ${every} turns: a new passive` : `Every ${every} turns: a tier ${tier + 1} upgrade`}</div>`;
+      `<div class="pas-next">${allMax ? "Every passive is at tier 5" : tier === 0 ? `Every ${every} turns: a new passive` : `Every ${every} turns: a tier ${tier + 1} upgrade`}</div>`;
     renderUlt();
     el.querySelectorAll(".ptile").forEach(r => {
       const k = r.dataset.k;
@@ -4582,7 +4647,7 @@
       }
       panelBody.appendChild(start);
       const oppNote = mode === "mp" ? (mp.oppReady ? " · <b class='okc'>Opponent is ready</b>" : " · Opponent is placing ships…") : "";
-      panelHint.innerHTML = (!allPlaced ? "Press <kbd>R</kbd> to rotate · click your board to place" : "🎉 Fleet ready — let's go!") + oppNote;
+      panelHint.innerHTML = (!allPlaced ? "Press <kbd>R</kbd> to rotate · click your board to place · ships can't touch, not even corners" : "🎉 Fleet ready — let's go!") + oppNote;
       return;
     }
     const mine = whose === "me" && !busy && phase === "battle";
@@ -4771,7 +4836,8 @@
 
     if (!key) {                                   // plain shot
       if (onZone !== "zone2") return;
-      const done = j => sides.bot.marks[j] && (sides.bot.marks[j].kind === "miss" || sides.bot.marks[j].kind === "hit");
+      // you may fire at your old hit marks again (a ship might have been repaired) — only misses and sunk ships are off-limits
+      const done = j => { const m = sides.bot.marks[j]; if (!m) return false; if (m.kind === "miss") return true; const sh = shipAt(sides.bot, j); return m.kind === "hit" && (!sh || sh.sunk); };
       if (shotCells(me, i).every(done)) { setLog("You already fired there"); return; }
       myShot(i);
       return;
@@ -5382,8 +5448,8 @@
   const deserOpts = (o, sd) => ({ at: o.at, horiz: o.horiz, ship: o.ship !== undefined ? sd.ships[o.ship] : undefined });
 
   Net.onMessage(m => {
-    if (m.t === "hello" && Net.state.isHost) { Net.send({ t: "welcome" }); goPlacement(); }
-    else if (m.t === "welcome" && !Net.state.isHost) goPlacement();
+    if (m.t === "hello" && Net.state.isHost) { oppName = cleanName(m.name); Net.send({ t: "welcome", name: myName }); goPlacement(); }
+    else if (m.t === "welcome" && !Net.state.isHost) { oppName = cleanName(m.name); goPlacement(); }
     else if (m.t === "ready") { mp.oppReady = true; mp.oppFleet = m.fleet; renderPanel(); maybeStartMP(); }
     else if (m.t === "bye") opponentLeft();
     else if (m.t === "act") mp.queue = mp.queue.then(() => replay(m)).catch(e => console.error(e));
@@ -5579,7 +5645,31 @@
   });
 
   const CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  document.querySelector('[data-go="host"]').onclick = async () => {
+  // ---- your name (asked before HOST / JOIN, remembered) ----
+  let myName = "", oppName = "";
+  try { myName = localStorage.getItem("bs-name") || ""; } catch (e) {}
+  const cleanName = n => String(n || "").replace(/[<>&"'`]/g, "").replace(/\s+/g, " ").trim().slice(0, 14);
+  const foeName = () => mode === "mp" ? (oppName || "OPPONENT") : "ENEMY";
+  let afterName = null;
+  function askName(next) {
+    afterName = next;
+    showMenu("menuName");
+    const inp = document.getElementById("nameIn");
+    inp.value = myName; setTimeout(() => { inp.focus(); inp.select(); }, 50);
+  }
+  function nameDone() {
+    const n = cleanName(document.getElementById("nameIn").value);
+    if (!n) { document.getElementById("nameStatus").textContent = "Type a name first"; return; }
+    document.getElementById("nameStatus").textContent = "";
+    myName = n; try { localStorage.setItem("bs-name", n); } catch (e) {}
+    Sound.play("select");
+    const f = afterName; afterName = null; if (f) f();
+  }
+  document.getElementById("nameBtn").onclick = nameDone;
+  document.getElementById("nameIn").addEventListener("keydown", e => { if (e.key === "Enter") nameDone(); });
+
+  document.querySelector('[data-go="host"]').onclick = () => askName(hostGame);
+  async function hostGame() {
     showMenu("menuHost");
     const st = document.getElementById("hostStatus"), codeEl = document.getElementById("hostCode");
     codeEl.textContent = "·····"; st.textContent = "Opening a room…";
@@ -5592,12 +5682,12 @@
     } catch (e) {
       st.textContent = netError(e);
     }
-  };
-  document.querySelector('[data-go="join"]').onclick = () => {
+  }
+  document.querySelector('[data-go="join"]').onclick = () => askName(() => {
     showMenu("menuJoin");
     document.getElementById("joinStatus").textContent = "";
     setTimeout(() => document.getElementById("joinCode").focus(), 50);
-  };
+  });
   document.getElementById("joinCode").addEventListener("input", e => {
     e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 5);
   });
@@ -5609,7 +5699,7 @@
     try {
       await Net.open(code, false);
       mode = "mp";
-      Net.send({ t: "hello" });
+      Net.send({ t: "hello", name: myName });
       st.innerHTML = '<span class="dots">Waiting for the host</span>';
     } catch (e) {
       st.textContent = netError(e, true);
