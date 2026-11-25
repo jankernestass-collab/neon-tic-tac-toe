@@ -1738,6 +1738,17 @@
      1) don't keep the whole battlefield / the huge sea as fixed giant GPU pictures (weaker graphics cards ran out of memory and blinked)
      2) the sea, sea life and boards sit clearly apart in 3D so browsers never mix up which one is on top */
   body:not(.touch) #world, body:not(.touch) .sea { will-change: auto !important; }
+  /* 6) the real board flicker: the water effects on each board were drawn as pictures 1.6× and 1.2× bigger than the board,
+        one of them blended with "screen" — on a tilted 3D board that's a lot of graphics memory, and weaker cards
+        dropped pieces of the boards. Same look, much smaller: the ripples stay still, the sunlight is a narrow moving band */
+  .ripples::after { display: none !important; }
+  .ripples { background:
+      repeating-radial-gradient(circle at 30% 40%, #ffffff00 0 30px, #ffffff0b 33px, #ffffff00 38px),
+      repeating-radial-gradient(circle at 70% 60%, #ffffff00 0 44px, #ffffff08 47px, #ffffff00 53px); }
+  .ripples::before { inset: -6% auto -6% 0 !important; width: 42%; will-change: auto !important;
+    background: linear-gradient(112deg, transparent 0%, #ffffff10 32%, #ffffff24 50%, #ffffff10 68%, transparent 100%) !important;
+    animation: sunBand 11s ease-in-out infinite alternate !important; }
+  @keyframes sunBand { from { transform: translateX(-70%); } to { transform: translateX(240%); } }
   /* 4) flat view (Settings): no 3D at all — boards seen straight from above, like on phones */
   body.flatview #world { transform-style: flat !important; }
   body.touch .set.pc-only { display: none; }
@@ -1887,7 +1898,7 @@
   </div>
 
   <div class="phonesea" aria-hidden="true"><i class="ps-a"></i><i class="ps-b"></i></div>
-  <div class="buildtag">build 74</div>
+  <div class="buildtag">build 75</div>
   <div class="turnside" id="turnside"></div>
   <div class="touchbar" id="touchbar">
     <button id="tbCancel" class="tb small">✕</button>
