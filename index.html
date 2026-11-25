@@ -1726,7 +1726,7 @@
   </div>
 
   <div class="phonesea" aria-hidden="true"><i class="ps-a"></i><i class="ps-b"></i></div>
-  <div class="buildtag">build 58</div>
+  <div class="buildtag">build 59</div>
   <div class="turnside" id="turnside"></div>
   <div class="touchbar" id="touchbar">
     <button id="tbCancel" class="tb small">✕</button>
@@ -2168,9 +2168,17 @@
     let ctx = null, master, music, sfx, verb, noiseBuf, pinkBuf, on = true, vMusic = 0.6, vSfx = 0.8;
     const last = {};                              // stops the same sound piling up when many play at once
 
+    // phones only allow sound to start from a finished tap (not the moment the finger lands), and pause it after app switches:
+    // so we (re)start it from every kind of tap/click/key and play one silent sample to unlock iPhones
+    function unlock() {
+      try { if (ctx.state !== "running") ctx.resume(); } catch (e) {}
+      try { const b = ctx.createBuffer(1, 1, 22050), s = ctx.createBufferSource(); s.buffer = b; s.connect(ctx.destination); s.start(0); } catch (e) {}
+    }
     function init() {
-      if (ctx) { if (ctx.state === "suspended") ctx.resume(); return; }
+      if (ctx) { if (ctx.state !== "running") unlock(); return; }
+      try { if (navigator.audioSession) navigator.audioSession.type = "playback"; } catch (e) {}   // iPhone: play even with the silent switch on
       ctx = new (window.AudioContext || window.webkitAudioContext)();
+      unlock();
       // master: gentle limiter so big moments never crackle
       const limiter = ctx.createDynamicsCompressor();
       limiter.threshold.value = -14; limiter.knee.value = 12; limiter.ratio.value = 6;
@@ -2342,7 +2350,8 @@
       },
     };
   })();
-  window.addEventListener("pointerdown", () => Sound.init());
+  ["pointerdown", "pointerup", "touchend", "click", "keydown"].forEach(ev => window.addEventListener(ev, () => Sound.init(), { capture: true, passive: true }));
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) Sound.init(); });
   document.getElementById("soundbtn").onclick = e => { e.currentTarget.textContent = Sound.toggle() ? "🔊" : "🔇"; };
 
   // =====================================================================
