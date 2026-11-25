@@ -1805,7 +1805,7 @@
   </div>
 
   <div class="phonesea" aria-hidden="true"><i class="ps-a"></i><i class="ps-b"></i></div>
-  <div class="buildtag">build 65</div>
+  <div class="buildtag">build 66</div>
   <div class="turnside" id="turnside"></div>
   <div class="touchbar" id="touchbar">
     <button id="tbCancel" class="tb small">✕</button>
@@ -2152,7 +2152,10 @@
     haggler:    { name: "Haggler",        icon: "🏷️", type: "tactic" },
     repairs:    { name: "Damage Control", icon: "🛠️", type: "defense" },
   };
-  const PASSIVE_EVERY = 10, PASSIVE_MAX = 3;     // a passive every 10 of your turns; 3 tiers each
+  const PASSIVE_MAX = 3;                         // 3 tiers each
+  const PASSIVE_TURNS = { 1: 5, 2: 6, 3: 7 };    // turns to wait: a new passive every 5, a tier 2 every 6, a tier 3 every 7
+  const passiveTier = sd => Math.min(...Object.keys(PASSIVES).map(k => level(sd, k)));    // what everyone is at now
+  const passiveWait = sd => PASSIVE_TURNS[passiveTier(sd) + 1] || 0;
   // upgrade levels — won by choosing upgrades when your charges fill up
   const UPGRADES = {
     shot:      { name: "Shot Range",     base: 1,  levels: [{ v: 2 }, { v: 3 }, { v: 4 }] },
@@ -3397,7 +3400,7 @@
     else nextTurn("me");
   }
 
-  // ---- passives: one every 10 turns. First you collect all 6, then each goes to tier 2, then tier 3 ----
+  // ---- passives: new ones every 5 turns, tier 2 every 6, tier 3 every 7. First you collect all 6, then each goes to tier 2, then tier 3 ----
   // the pick is random but the same on both screens: it's seeded from that player's own fleet and turn count
   function passiveRoll(sd) {
     let h = (2166136261 ^ (sd.turns * 2654435761)) >>> 0;
@@ -3457,7 +3460,10 @@
     if (oc && sd.turns % oc === 0 && sd.charge < CHARGE_CAP) sd.charge++;          // Overcharge passive
     const dc = val(sd, "repairs");
     if (dc && sd.turns % dc === 0) autoRepair(sd);                                  // Damage Control passive
-    if (sd.turns % PASSIVE_EVERY === 0) { const got = grantPassive(sd); if (got) passiveAward(sd, got); }
+    if (passiveWait(sd)) {                                                          // passive turn counter
+      sd.pasTurns = (sd.pasTurns || 0) + 1;
+      if (sd.pasTurns >= passiveWait(sd)) { sd.pasTurns = 0; const got = grantPassive(sd); if (got) passiveAward(sd, got); }
+    }
     // shields of the OTHER side count down at the start of each of my turns (i.e. after an enemy turn)
     if (sd.shields.length) { sd.shields.forEach(sh => sh.turns--); sd.shields = sd.shields.filter(sh => sh.turns > 0); renderShields(sd); }
     if (sd.charge < CHARGE_CAP) {
@@ -3592,7 +3598,7 @@
     for (const [r, w] of Object.entries(CHARGE_RARITY)) if ((x -= w) < 0) { const l = RARITY[r].cards; return l[Math.floor(LR() * l.length)]; }
     return RARITY.common.cards[0];
   }
-  const pickPool = sd => [];                       // charges give cards only (passives come every 10 turns)
+  const pickPool = sd => [];                       // charges give cards only (passives come from the turn counter)
   function upgradeOffer(sd) {
     const ups = lshuffle(pickPool(sd)), out = [], used = new Set();
     for (let n = 0; n < 3; n++) {
@@ -4165,18 +4171,18 @@
   function renderPassives(pop) {
     const el = document.getElementById("passives"), me = sides.me, keys = Object.keys(PASSIVES);
     const tier = Math.min(...keys.map(k => level(me, k))), allMax = tier >= PASSIVE_MAX;
-    const t = (me.turns || 0) % PASSIVE_EVERY;
+    const every = passiveWait(me), t = me.pasTurns || 0;
     el.innerHTML =
       `<div class="pastimer${allMax ? " done" : ""}"><span class="pt-ic">⏳</span>` +
       (allMax ? `<span class="pt-t">ALL PASSIVES MAXED</span>`
-              : `<span class="pt-t">TURNS <b>${t}/${PASSIVE_EVERY}</b></span><i class="pt-bar"><s style="width:${t / PASSIVE_EVERY * 100}%"></s></i>`) + `</div>` +
+              : `<span class="pt-t">TURNS <b>${t}/${every}</b></span><i class="pt-bar"><s style="width:${t / every * 100}%"></s></i>`) + `</div>` +
       `<h3>PASSIVES</h3><div class="pasgrid">` +
       keys.map(k => {
         const lv = level(me, k);
         return `<div class="ptile ${lv ? "on" : "off"}${pop === k ? " pop" : ""}" data-k="${k}"><div class="pt-icon">${PASSIVES[k].icon}</div><div class="pt-name">${PASSIVES[k].name}</div>` +
                `<div class="pt-pips">${[1, 2, 3].map(n => `<i class="${n <= lv ? "on" : ""}"></i>`).join("")}</div></div>`;
       }).join("") + `</div>` +
-      `<div class="pas-next">${allMax ? "Every passive is at tier 3" : tier === 0 ? "Every 10 turns: a new passive" : "Every 10 turns: a tier " + (tier + 1) + " upgrade"}</div>`;
+      `<div class="pas-next">${allMax ? "Every passive is at tier 3" : tier === 0 ? `Every ${every} turns: a new passive` : `Every ${every} turns: a tier ${tier + 1} upgrade`}</div>`;
     el.querySelectorAll(".ptile").forEach(r => {
       const k = r.dataset.k;
       r.onmouseenter = () => showPreview(k, sides.me, level(me, k) ? "" : "NOT YET");
