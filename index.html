@@ -422,6 +422,19 @@
   @keyframes floaty { from { transform: translateY(0); } to { transform: translateY(-10px); } }
   .popup .flip-in { transition: transform .7s cubic-bezier(.3, 1.4, .5, 1); }
   .popup.locked .flip { cursor: default; }
+  /* face-up picks: no hidden cards, no spin */
+  .popup .flip.faceup .flip-in { transform: none; }
+  .popup .flip.faceup .gcard { box-shadow: 0 0 0 2px #ffffff30, 0 0 22px color-mix(in srgb, var(--rc) 45%, transparent), 0 12px 26px #000a; }
+  .popup .flip.faceup.open:hover .gcard { box-shadow: 0 0 0 3px #fff, 0 0 40px var(--rc), 0 16px 32px #000b; }
+  .popup .flip.gone { animation: goneOut .45s ease-in forwards !important; opacity: 1; pointer-events: none; }
+  .popup .flip.picked { animation: pickPop .5s cubic-bezier(.2, 1.5, .4, 1) forwards; opacity: 1; z-index: 2; }
+  @keyframes pickPop { 0% { transform: scale(1); } 45% { transform: scale(1.18) translateY(-16px); } 100% { transform: scale(1.12) translateY(-12px); } }
+  .popup .flip.picked .gcard { box-shadow: 0 0 0 4px #fff, 0 0 60px var(--rc), 0 0 120px color-mix(in srgb, var(--rc) 60%, transparent) !important; }
+  .popup .flip.picked.chosen { animation: pickFly .75s cubic-bezier(.55, 0, .75, .3) forwards; }
+  @keyframes pickFly { 0% { transform: scale(1.12) translateY(-12px); opacity: 1; } 100% { transform: translateY(62vh) scale(.3) rotate(-8deg); opacity: 0; } }
+  .pickring { position: absolute; left: 50%; top: 50%; width: 40px; height: 40px; margin: -20px 0 0 -20px; border-radius: 50%; pointer-events: none;
+    border: 4px solid var(--rc); box-shadow: 0 0 24px var(--rc); animation: pickRing .6s ease-out forwards; }
+  @keyframes pickRing { to { transform: scale(9); opacity: 0; border-width: 1px; } }
   .popup.locked .flip.open:hover .flip-in { transform: rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) scale(1); }
   .popup .flip.open .flip-in { transform: rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) scale(1); }
   .popup .flip.open.tilt .flip-in { transition: transform .12s; transform: rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) scale(1.08); }
@@ -1723,7 +1736,7 @@
     <h3>CHARGES</h3>
     <div class="val" id="chargeVal">0</div>
     <div class="pips" id="pips"><i></i><i></i><i></i><i></i><i></i></div>
-    <div class="cta">MYSTERY CARD!</div>
+    <div class="cta">PICK A CARD!</div>
   </div>
 
   <div class="fleetpanel" id="fleet"></div>
@@ -1756,7 +1769,7 @@
   </div>
 
   <div class="phonesea" aria-hidden="true"><i class="ps-a"></i><i class="ps-b"></i></div>
-  <div class="buildtag">build 61</div>
+  <div class="buildtag">build 62</div>
   <div class="turnside" id="turnside"></div>
   <div class="touchbar" id="touchbar">
     <button id="tbCancel" class="tb small">✕</button>
@@ -2079,6 +2092,7 @@
     legendary: { label: "LEGENDARY", weight: 5,  cards: ["nuke", "kraken", "rocket"] },
   };
   const rarityOf = key => Object.keys(RARITY).find(r => RARITY[r].cards.includes(key));
+  Object.values(sides).forEach(sd => Object.keys(CARDS).forEach(k => sd.unl.add(k)));   // every card is open in the shop from the start
 
   // game-logic randomness is seeded per action, so both players' screens stay identical
   let LR = Math.random;
@@ -3435,7 +3449,7 @@
     document.getElementById("chargeVal").innerHTML = c > MAX_CHARGE ? `${MAX_CHARGE}<small class="extra">+${c - MAX_CHARGE}</small>` : c;
     [...document.querySelectorAll("#pips i")].forEach((p, k) => p.classList.toggle("on", k < c));
     const cta = document.querySelector("#charges .cta");
-    if (cta) cta.textContent = c >= MAX_CHARGE * 2 ? `${Math.floor(c / MAX_CHARGE)} MYSTERY CARDS!` : "MYSTERY CARD!";
+    if (cta) cta.textContent = c >= MAX_CHARGE * 2 ? `PICK ${Math.floor(c / MAX_CHARGE)} CARDS!` : "PICK A CARD!";
     document.getElementById("charges").classList.toggle("ready", c >= MAX_CHARGE && phase === "battle");
   }
   // longer descriptions get a smaller font so they always fit on the card
@@ -3484,11 +3498,11 @@
     for (const [r, w] of Object.entries(CHARGE_RARITY)) if ((x -= w) < 0) { const l = RARITY[r].cards; return l[Math.floor(LR() * l.length)]; }
     return RARITY.common.cards[0];
   }
-  const pickPool = sd => [...Object.keys(PASSIVES), ...Object.keys(CARDS)].filter(k => canUpgrade(sd, k) && (isPassive(k) || sd.unl.has(k)));
+  const pickPool = sd => [...Object.keys(PASSIVES), ...new Set(sd.inv)].filter(k => canUpgrade(sd, k));   // passives, or upgrades for cards in your hand
   function upgradeOffer(sd) {
     const ups = lshuffle(pickPool(sd)), out = [], used = new Set();
     for (let n = 0; n < 3; n++) {
-      if (ups.length && LR() < 0.45) { out.push(ups.pop()); continue; }
+      if (ups.length && LR() < 0.25) { out.push(ups.pop()); continue; }
       for (let t = 0; t < 30; t++) { const k = mysteryCard(); if (!used.has(k)) { used.add(k); out.push("+" + k); break; } }
     }
     return out;
@@ -3499,7 +3513,6 @@
   function applyPick(sd, key) {
     if (key[0] === "+") { const k = key.slice(1); if (!CARDS[k]) return "card"; sd.inv.push(k); sd.unl.add(k); return "card"; }
     if (isPassive(key)) { sd.up[key] = level(sd, key) + 1; return level(sd, key) === 1 ? "unlock" : "upgrade"; }
-    if (!sd.unl.has(key)) { sd.unl.add(key); return "unlock"; }
     sd.up[key] = level(sd, key) + 1; return "upgrade";
   }
   function unlockHTML(key) {
@@ -3563,22 +3576,24 @@
     const offer = upgradeOffer(sides.me);
     if (!offer.length) return;
     popup.classList.remove("hype");
-    document.querySelector("#popup .popup-title").textContent = "PICK A MYSTERY CARD";
-    document.querySelector("#popup .popup-hint").textContent = "? = a mystery card for your hand · face-up = upgrade for a card you have";
+    document.querySelector("#popup .popup-title").textContent = "PICK A CARD";
+    document.querySelector("#popup .popup-hint").textContent = "Pick one: a card for your hand, an upgrade or a passive";
     box.innerHTML = "";
     let picked = false, ready = false;                 // no picking until every card has dealt in and flipped
     popup.classList.add("locked");
-    const readyAt = 700 + (offer.length - 1) * 180 + 750;
+    const readyAt = 750 + (offer.length - 1) * 160 + 150;
     setTimeout(() => { ready = true; popup.classList.remove("locked"); }, readyAt);
     offer.forEach((key, k) => {
       const f = document.createElement("div");
       f.className = "flip"; f.style.setProperty("--i", k);
-      const isNew = !hasCard(sides.me, key);
-      f.className = "flip mystery"; f.style.setProperty("--i", k);
-      const face = !isNew ? upgradeHTML(key) : isPassive(key) ? passiveHTML(key, { up: { [key]: 1 } }, "NEW PASSIVE").replace('gc-rar"', 'gc-rar new"') : cardHTML(pickKey(key));
-      f.innerHTML = `<div class="flip-in"><div class="face front">${face}</div><div class="face back"><div class="gback">?</div></div></div>`;
+      const isCard = key[0] === "+";
+      f.className = "flip faceup"; f.style.setProperty("--i", k);
+      const rar = isCard ? rarityOf(pickKey(key)) : "epic";
+      f.style.setProperty("--rc", RAR_COLOR[rar]);
+      const face = isCard ? cardHTML(pickKey(key)) : !hasCard(sides.me, key) ? passiveHTML(key, { up: { [key]: 1 } }, "NEW PASSIVE").replace('gc-rar"', 'gc-rar new"') : upgradeHTML(key);
+      f.innerHTML = `<div class="flip-in"><div class="face front">${face}</div></div>`;
       setTimeout(() => Sound.play("flip"), k * 150 + 200);
-      if (!isNew) setTimeout(() => { if (!picked) { f.classList.add("open"); Sound.play("flip"); } }, 700 + k * 180);
+      setTimeout(() => { if (!picked) f.classList.add("open"); }, 750 + k * 160);
       // tilt toward the mouse
       f.onmousemove = e => {
         if (picked) return;
@@ -3593,17 +3608,13 @@
         if (picked || !ready) return;
         picked = true;
         f.style.setProperty("--ry", "0deg"); f.style.setProperty("--rx", "0deg"); f.classList.remove("tilt");
-        const wasOpen = f.classList.contains("open");
         [...box.children].forEach(o => { if (o !== f) o.classList.add("gone"); });
-        let hold;                                         // ms until the pop-up closes
-        if (wasOpen) {
-          setTimeout(() => Sound.play("upgrade"), 350);
-          setTimeout(() => f.classList.add("chosen"), 700);
-          hold = 1450;
-        } else {
-          hold = hypeReveal(f, popup, isPassive(key) ? "epic" : rarityOf(pickKey(key)));
-          setTimeout(() => f.classList.add("chosen"), hold - 750);
-        }
+        // picked: a quick glow + ring in the card's rarity colour, then it flies down into your hand
+        f.classList.add("picked");
+        Sound.play(key[0] === "+" ? "pick" : "upgrade");
+        const ring = document.createElement("div"); ring.className = "pickring"; f.appendChild(ring);
+        setTimeout(() => { f.classList.add("chosen"); Sound.play("whoosh"); }, 520);
+        const hold = 1300;                                // ms until the pop-up closes
         setTimeout(() => {
           popup.classList.remove("show");
           const what = applyPick(sides.me, key); sides.me.charge = Math.max(0, sides.me.charge - MAX_CHARGE);
@@ -3650,7 +3661,7 @@
     const prices = me.offers.filter(o => !o.sold).map(o => offerPrice(o, me)), cheapest = prices.length ? Math.min(...prices) : Infinity;
     el.innerHTML = `<div class="up-head"><h3>SHOP</h3><div class="gold${bump ? " bump" : ""}">🪙 <b>${me.gold}</b></div></div>` +
       `<button class="shopbtn" id="openShop">🛒 OPEN SHOP</button>` +
-      `<div class="shop-sub">${me.gold >= cheapest ? "You can afford a card!" : !me.unl.size ? "Fill your CHARGES to unlock cards" : "Earn gold: +" + (GOLD_PER_HIT + val(me, "bounty")) + " per hit · +20 per ship sunk · +" + (TURN_INCOME + val(me, "warchest")) + " per turn"}</div>`;
+      `<div class="shop-sub">${me.gold >= cheapest ? "You can afford a card!" :  "Earn gold: +" + (GOLD_PER_HIT + val(me, "bounty")) + " per hit · +20 per ship sunk · +" + (TURN_INCOME + val(me, "warchest")) + " per turn"}</div>`;
     document.getElementById("openShop").onclick = openShop;
     if (document.getElementById("shop").classList.contains("show")) renderShop();
   }
