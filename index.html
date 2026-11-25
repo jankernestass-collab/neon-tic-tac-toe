@@ -1805,7 +1805,7 @@
   </div>
 
   <div class="phonesea" aria-hidden="true"><i class="ps-a"></i><i class="ps-b"></i></div>
-  <div class="buildtag">build 66</div>
+  <div class="buildtag">build 67</div>
   <div class="turnside" id="turnside"></div>
   <div class="touchbar" id="touchbar">
     <button id="tbCancel" class="tb small">✕</button>
@@ -2103,7 +2103,10 @@
     cross:     { name: "Cross Strike",  icon: "✚",  type: "attack", desc: "Hits a + shape, 4 squares in every direction", target: "enemy" },
     chain:     { name: "Chain Reaction",icon: "⛓️", type: "attack", desc: "Fire at a square — if it hits a ship, up to 3 squares of that ship blow up", target: "enemy" },
     evade:     { name: "Evasive Maneuver", icon: "🌀", type: "defense", desc: "All your revealed ships sail away to random safe spots", target: "none" },
-    pickpocket:{ name: "Pickpocket",    icon: "👛", type: "tactic", desc: "Steal 30 gold from the enemy", target: "none" },
+    pickpocket:{ name: "Steal",         icon: "👛", type: "tactic", desc: "Steal 30 gold from the enemy", target: "none" },
+    stealam:   { name: "Steal Amateur", icon: "🧤", type: "tactic", desc: "Steal 40 gold from the enemy", target: "none" },
+    stealpro:  { name: "Steal Pro",     icon: "🎭", type: "tactic", desc: "Steal 50 gold from the enemy", target: "none" },
+    heist:     { name: "Heist",         icon: "💼", type: "tactic", desc: "Steal half of the enemy's gold", target: "none" },
     cardthief: { name: "Card Thief",    icon: "🦹", type: "tactic", desc: "Steal a random card from the enemy's hand", target: "none" },
     jammer:    { name: "Jammer",        icon: "📡", type: "tactic", desc: "Destroy a random card in the enemy's hand", target: "none" },
     rush:      { name: "Card Rush",     icon: "⚡", type: "tactic", desc: "Play 2 more cards this turn", target: "none" },
@@ -2122,10 +2125,10 @@
 
   // rarity of each card + how often each rarity shows up in a draw
   const RARITY = {
-    common:    { label: "COMMON",    weight: 50, cards: ["satellite", "plunder", "move", "depth", "broadside", "supply", "smoke", "gamble", "pickpocket"] },
-    rare:      { label: "RARE",      weight: 30, cards: ["scan", "torpedo", "recon", "cluster", "repair", "shield", "airstrike", "sabotage", "decoy", "armor", "cross", "chain", "evade", "jammer"] },
-    epic:      { label: "EPIC",      weight: 15, cards: ["aoe", "flare", "homing", "double", "barrage", "carpet", "irondome", "mines", "rush", "cardthief"] },
-    legendary: { label: "LEGENDARY", weight: 5,  cards: ["nuke", "kraken", "rocket"] },
+    common:    { label: "COMMON",    weight: 50, cards: ["satellite", "plunder", "depth", "broadside", "supply", "smoke", "gamble", "pickpocket"] },
+    rare:      { label: "RARE",      weight: 30, cards: ["scan", "torpedo", "recon", "cluster", "repair", "shield", "airstrike", "sabotage", "decoy", "armor", "cross", "chain", "evade", "jammer", "move", "stealam"] },
+    epic:      { label: "EPIC",      weight: 15, cards: ["aoe", "flare", "homing", "double", "barrage", "carpet", "irondome", "mines", "rush", "cardthief", "stealpro"] },
+    legendary: { label: "LEGENDARY", weight: 5,  cards: ["nuke", "kraken", "rocket", "heist"] },
   };
   const rarityOf = key => Object.keys(RARITY).find(r => RARITY[r].cards.includes(key));
   Object.values(sides).forEach(sd => Object.keys(CARDS).forEach(k => sd.unl.add(k)));   // every card is open in the shop from the start
@@ -2188,7 +2191,10 @@
     nuke:      { name: "NUKE",           base: 11, levels: [{ v: 13 }] },
     sabotage:  { name: "Sabotage",       base: 40, levels: [{ v: 70 }] },
     gamble:    { name: "Gamble",         base: 5,  levels: [{ v: 7 }] },
-    pickpocket:{ name: "Pickpocket",     base: 30, levels: [{ v: 45 }, { v: 60 }] },
+    pickpocket:{ name: "Steal",          base: 30, levels: [{ v: 45 }, { v: 60 }] },
+    stealam:   { name: "Steal Amateur",  base: 40, levels: [] },
+    stealpro:  { name: "Steal Pro",      base: 50, levels: [] },
+    heist:     { name: "Heist",          base: 50, levels: [] },
     cardthief: { name: "Card Thief",     base: 1,  levels: [{ v: 2 }] },
     jammer:    { name: "Jammer",         base: 1,  levels: [{ v: 2 }] },
     rocket:    { name: "Rocket Strike",  base: 7,  levels: [{ v: 9 }] },
@@ -2233,7 +2239,8 @@
       case "nuke": return `Obliterate a ${sq(v)} area`;
       case "sabotage": return `Enemy loses 2 charges · steal ${v} of their gold`;
       case "gamble": return `50% chance: blast a ${sq(v)} area · 50%: nothing`;
-      case "pickpocket": return `Steal ${v} gold from the enemy`;
+      case "pickpocket": case "stealam": case "stealpro": return `Steal ${v} gold from the enemy`;
+      case "heist": return `Steal ${v}% of the enemy's gold`;
       case "cardthief": return v === 1 ? "Steal a random card from the enemy's hand" : `Steal ${v} random cards from the enemy's hand`;
       case "jammer": return v === 1 ? "Destroy a random card in the enemy's hand" : `Destroy ${v} random cards in the enemy's hand`;
       case "rocket": return `Blast a ${sq(v)} area — but 30% chance it misfires onto your own fleet`;
@@ -3032,8 +3039,8 @@
       await wait(400);
       return `${who}: ${name} — +${val(A, "supply")} charges`;
     }
-    if (key === "pickpocket") {
-      const stolen = Math.min(val(A, "pickpocket"), T.gold);
+    if (key === "pickpocket" || key === "stealam" || key === "stealpro" || key === "heist") {
+      const stolen = key === "heist" ? Math.floor(T.gold * val(A, "heist") / 100) : Math.min(val(A, key), T.gold);
       T.gold -= stolen; A.gold += stolen;
       for (let k = 0; k < 3; k++) setTimeout(() => Sound.play("coin"), 100 + k * 110);
       renderUpgrades(true); renderFleet();
@@ -4099,6 +4106,9 @@
     else if (pick("plunder") >= 0) { idx = pick("plunder"); opts = {}; }
     else if (pick("cardthief") >= 0 && sides.me.inv.length) { idx = pick("cardthief"); opts = {}; }
     else if (pick("jammer") >= 0 && sides.me.inv.length) { idx = pick("jammer"); opts = {}; }
+    else if (pick("heist") >= 0 && sides.me.gold >= 80) { idx = pick("heist"); opts = {}; }
+    else if (pick("stealpro") >= 0 && sides.me.gold >= 30) { idx = pick("stealpro"); opts = {}; }
+    else if (pick("stealam") >= 0 && sides.me.gold >= 25) { idx = pick("stealam"); opts = {}; }
     else if (pick("pickpocket") >= 0 && sides.me.gold >= 20) { idx = pick("pickpocket"); opts = {}; }
     else if (pick("double") >= 0) { idx = pick("double"); opts = {}; }
     else if (pick("rocket") >= 0 && (hot >= 0 || Math.random() < 0.5)) { idx = pick("rocket"); opts = { at: clampCenter(hot >= 0 ? hot : randomUnshot(), val(A, "rocket")) }; }
