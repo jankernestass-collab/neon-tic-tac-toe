@@ -1805,7 +1805,7 @@
   </div>
 
   <div class="phonesea" aria-hidden="true"><i class="ps-a"></i><i class="ps-b"></i></div>
-  <div class="buildtag">build 64</div>
+  <div class="buildtag">build 65</div>
   <div class="turnside" id="turnside"></div>
   <div class="touchbar" id="touchbar">
     <button id="tbCancel" class="tb small">✕</button>
@@ -3413,9 +3413,11 @@
     sd.up[k] = tier + 1;
     return k;
   }
+  let awardUntil = 0;                                // while a passive is being shown, the charge pick waits
   function passiveAward(sd, k) {
     const lv = level(sd, k), what = lv === 1 ? "NEW PASSIVE" : "TIER " + lv + " UPGRADE";
     if (sd !== sides.me) { setTimeout(() => setLog(`Enemy got ${what.toLowerCase()}: ${PASSIVES[k].name}`), 600); return; }
+    awardUntil = performance.now() + BANNER_MS + 150 + 1900 + 650;
     setTimeout(() => {
       const el = document.createElement("div"); el.className = "pasaward";
       el.innerHTML = `<div class="pa-tag">${what}!</div>${passiveHTML(k, sd, lv === 1 ? "NEW PASSIVE" : "TIER " + lv)}<div class="pa-sub">${statText(k, val(sd, k))}</div>`;
@@ -3663,6 +3665,8 @@
     return spin + [1500, 1700, 2000, 2600][lvl];
   }
   function openDraw() {
+    const wait = awardUntil - performance.now();
+    if (wait > 0) { setTimeout(() => { if (phase === "battle" && whose === "me") openDraw(); }, wait + 250); return; }   // passive first, then charges
     const popup = document.getElementById("popup"), box = document.getElementById("popupCards");
     if (popup.classList.contains("show") || phase !== "battle" || whose !== "me") return;
     const offer = upgradeOffer(sides.me);
