@@ -1710,6 +1710,7 @@
   .hand .slot.empty { width: 96px; height: 137px; box-sizing: border-box; border: 2px dashed #9fe6ff30; border-radius: 9px; cursor: default;
     display: flex; align-items: center; justify-content: center; background: radial-gradient(circle at 50% 45%, #9fe6ff0f, transparent 70%); }
   .hand .slot.empty i { font-style: normal; font-size: 1.6rem; opacity: .18; }
+  .panel.handmode .hand { justify-content: center; }
   .hand .slot.empty:hover { transform: none; }
   .hand .slot.off { opacity: 1; filter: grayscale(.75) brightness(.62); }
   .hand .slot.ready .gcard { box-shadow: 0 0 0 2px #ffffff40, 0 10px 22px #000b; }
@@ -1719,6 +1720,14 @@
     padding: 3px 9px; border-radius: 20px; font: bold .72rem "Segoe UI", sans-serif; color: #fff; background: linear-gradient(180deg, #ff5a5a, #c81e1e);
     border: 1px solid #ffc0c0; box-shadow: 0 3px 10px #000b; transition: transform .15s; }
   .hand .slot.selling { cursor: pointer; }
+  .sellbtn { position: absolute; left: 50%; bottom: -9px; transform: translateX(-50%) scale(.9); z-index: 4; white-space: nowrap; cursor: pointer;
+    padding: 3px 9px; border-radius: 20px; font: bold .66rem "Segoe UI", sans-serif; letter-spacing: .5px; color: #fff3c4;
+    background: linear-gradient(180deg, #7a4a10, #4a2a05); border: 1px solid #ffd84a99; box-shadow: 0 3px 8px #000b;
+    opacity: 0; pointer-events: none; transition: opacity .15s, transform .15s, background .15s; }
+  .hand .slot:hover .sellbtn { opacity: 1; pointer-events: auto; transform: translateX(-50%) scale(1); }
+  .sellbtn:hover { background: linear-gradient(180deg, #ff5a5a, #c81e1e); border-color: #ffc0c0; color: #fff; }
+  body.touch .sellbtn { opacity: 1; pointer-events: auto; transform: translateX(-50%) scale(1); font-size: .95rem; padding: 5px 10px; bottom: 4px; }
+  body.touch .sellbtn .sl-l { display: none; }
   .hand .slot.selling:hover .gcard { filter: brightness(1.08) saturate(.7); box-shadow: 0 0 0 3px #ff6b6b, 0 0 24px #ff3b3b, 0 14px 26px #000c; }
   .hand .slot.selling:hover .sellbadge { transform: translateX(-50%) scale(1.15); }
   .sellbar { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 0; padding: 7px 16px; border-radius: 12px;
@@ -1805,7 +1814,7 @@
   </div>
 
   <div class="phonesea" aria-hidden="true"><i class="ps-a"></i><i class="ps-b"></i></div>
-  <div class="buildtag">build 68</div>
+  <div class="buildtag">build 69</div>
   <div class="turnside" id="turnside"></div>
   <div class="touchbar" id="touchbar">
     <button id="tbCancel" class="tb small">✕</button>
@@ -2211,7 +2220,7 @@
     switch (key) {
       case "shot": return v === 1 ? "Your shot hits 1 square" : v === 2 ? "Your shot hits a + shape (5 squares)" : v === 3 ? "Your shot hits 3×3 (9 squares)" : "Your shot hits 3×3 plus a cross (13 squares)";
       case "warchest": return `+${v} extra gold at the start of every turn`;
-      case "pockets": return `Hold up to ${6 + v} cards instead of 6`;
+      case "pockets": return `Hold up to ${HAND_MAX + v} cards instead of ${HAND_MAX}`;
       case "haggler": return `Everything in the shop costs ${v}% less`;
       case "repairs": return `Every ${v} turns your most damaged ship is fully repaired`;
       case "overcharge": return `+1 extra charge every ${v} turns`;
@@ -3742,7 +3751,7 @@
 
   // shop -----------------------------------------------------------------
   const PRICE = { common: 30, rare: 60, epic: 120, legendary: 220 };
-  const HAND_MAX = 6;                                       // most cards you can hold (Deep Pockets adds more)
+  const HAND_MAX = 3;                                       // most cards you can hold (Deep Pockets adds more)
   const handMax = sd => HAND_MAX + val(sd, "pockets");
   const sellValue = key => Math.floor(PRICE[rarityOf(key)] / 2);   // selling gives back half the shop price
   const TURN_INCOME = 5;                                    // a little gold every turn
@@ -3967,10 +3976,10 @@
     });
   }
 
-  // ---- hand limit: 6 cards; above that you must sell before you can do anything else ----
+  // ---- hand limit: 3 cards (Deep Pockets adds more); above that you must sell before you can do anything else ----
   function sellCard(k) {
     const me = sides.me;
-    if (phase !== "battle" || whose !== "me" || busy || me.inv.length <= handMax(sides.me)) return;
+    if (phase !== "battle" || whose !== "me" || busy) return;          // sell any card, any time on your turn — it doesn't use the turn
     const key = me.inv[k]; if (!key) return;
     const g = sellValue(key);
     me.inv.splice(k, 1); me.gold += g;
@@ -4276,7 +4285,10 @@
       const ok = mine && !over && canUse(sides.me, key);
       const slot = document.createElement("div");
       slot.className = "slot" + (k === active ? " sel" : "") + (over ? " selling" : !ok ? " off" : " ready") + (newCard && k === inv.length - 1 ? " new" : "");
-      slot.innerHTML = cardHTML(key) + (over ? `<div class="sellbadge">+${sellValue(key)} 🪙</div>` : "");
+      slot.innerHTML = cardHTML(key) + (over ? `<div class="sellbadge">+${sellValue(key)} 🪙</div>`
+                     : mine ? `<button class="sellbtn" title="Sell this card (doesn't use your turn)"><span class="sl-l">SELL </span>+${sellValue(key)} 🪙</button>` : "");
+      const sb = slot.querySelector(".sellbtn");
+      if (sb) sb.onclick = e => { e.stopPropagation(); sellCard(k); };
       slot.dataset.k = k; slot.dataset.ok = ok ? 1 : 0;
       const mid = (inv.length - 1) / 2, off = k - mid;                       // phones: cards held in a fan
       slot.style.setProperty("--rot", (off * 5) + "deg"); slot.style.setProperty("--lift", (Math.abs(off) * Math.abs(off) * 3) + "px");
@@ -4293,11 +4305,11 @@
       row.appendChild(slot);
     });
     newCard = false;
-    // the tray always shows room for 6 cards: empty spots are outlined
+    // the tray always shows room for all the cards you can hold: empty spots are outlined
     if (inv.length) for (let k = inv.length; k < handMax(sides.me); k++) { const e = document.createElement("div"); e.className = "slot empty"; e.innerHTML = "<i>⚓</i>"; row.appendChild(e); }
     // more than 6: they overlap like held cards so the panel never gets too wide
     const n = Math.max(inv.length, handMax(sides.me));
-    const ov = n > HAND_MAX ? Math.max(0, (n * 98 - HAND_MAX * 98) / (n - 1)) : 0;   // wider than 6: overlap so the tray keeps its size
+    const ov = n > 6 ? Math.max(0, (n * 98 - 6 * 98) / (n - 1)) : 0;   // wider than 6: overlap so the tray keeps its size
     row.style.setProperty("--ov", ov + "px");
     panelBody.appendChild(row);
     if (phase !== "battle") panelHint.textContent = "";
@@ -5512,7 +5524,7 @@
   const AIM_UP = 38;                                // aim a little above the finger so you can see the range
   document.addEventListener("touchstart", e => {
     const slot = e.target.closest(".hand .slot");
-    if (!slot || e.touches.length !== 1) return;
+    if (!slot || e.touches.length !== 1 || e.target.closest(".sellbtn")) return;
     const t = e.touches[0];
     cd = { k: +slot.dataset.k, ok: slot.dataset.ok === "1", x: t.clientX, y: t.clientY, slot, ghost: null, on: false };
   }, { passive: true });
