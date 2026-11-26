@@ -1719,6 +1719,27 @@
   }
 
   /* ---- v52: phones — much cheaper boards to redraw while zooming / moving ---- */
+  /* ---- v77: coins wallet + end-of-game reward ---- */
+  .wallet { position: relative; display: none; align-items: center; gap: 16px; margin: -12px 0 18px; padding: 7px 20px; border-radius: 999px;
+    background: linear-gradient(90deg, #2a1d00cc, #00203fcc); border: 1px solid #ffe45c77; box-shadow: 0 4px 18px #000a, 0 0 20px #ffe45c22;
+    font-family: "Black Ops One", "Segoe UI", sans-serif; letter-spacing: 2px; white-space: nowrap; }
+  .wallet.show { display: flex; animation: menuIn .4s ease-out; }
+  .w-coins { color: #ffe45c; font-size: 1.25rem; text-shadow: 0 0 12px #ffe45c66; }
+  .w-coins b { font-weight: normal; display: inline-block; min-width: 1ch; }
+  .w-coins small { font-size: .68rem; opacity: .8; letter-spacing: 3px; }
+  .w-rec { font-size: .82rem; opacity: .75; }
+  .wallet.gain { animation: walletGain 1.4s ease-out; }
+  @keyframes walletGain { 0% { box-shadow: 0 0 0 #ffe45c00; } 30% { box-shadow: 0 0 34px #ffe45ccc; border-color: #ffe45c; } 100% { box-shadow: 0 4px 18px #000a, 0 0 20px #ffe45c22; } }
+  .w-plus { position: absolute; right: 50%; top: -6px; color: #8dffb0; font-size: 1.1rem; text-shadow: 0 0 10px #8dffb0; pointer-events: none;
+    animation: wPlus 1.8s ease-out forwards; }
+  @keyframes wPlus { from { transform: translate(50%, 0); opacity: 0; } 20% { opacity: 1; } to { transform: translate(50%, -34px); opacity: 0; } }
+  .endreward { display: none; text-align: center; min-width: 360px; padding: 10px 18px; border-radius: 14px; background: #2a1d00cc; border: 1px solid #ffe45c66; }
+  .endreward.show { display: block; animation: menuIn .4s ease-out; }
+  .endreward.wait { opacity: .75; font-size: .9rem; letter-spacing: 1px; }
+  .er-big { font-family: "Black Ops One", "Segoe UI", sans-serif; font-size: 1.9rem; letter-spacing: 3px; color: #ffe45c; text-shadow: 0 0 18px #ffe45c88;
+    animation: titleDrop .7s cubic-bezier(.2, 1.4, .4, 1); }
+  .er-small { font-size: .85rem; opacity: .75; margin-top: 2px; }
+  body.touch .endreward { min-width: 0; }
   .buildtag { position: fixed; left: 8px; bottom: 6px; z-index: 70; font: 10px "Segoe UI", sans-serif; color: #ffffff66; pointer-events: none; display: none; }
   body.in-menu .buildtag { display: block; }
   @media (pointer: coarse) {
@@ -1912,7 +1933,7 @@
   </div>
 
   <div class="phonesea" aria-hidden="true"><i class="ps-a"></i><i class="ps-b"></i></div>
-  <div class="buildtag">build 76</div>
+  <div class="buildtag">build 77</div>
   <div class="turnside" id="turnside"></div>
   <div class="touchbar" id="touchbar">
     <button id="tbCancel" class="tb small">✕</button>
@@ -1942,6 +1963,7 @@
       <div class="home-badge">⚓</div>
       <div class="home-title"><span class="t1">BATTLE</span><span class="t2">SHIPS</span></div>
       <div class="home-sub"><i></i>NAVAL WARFARE · CARDS · UPGRADES<i></i></div>
+      <div class="wallet" id="wallet" title="Coins from multiplayer games"><span class="w-coins">🪙 <b id="wCoins">0</b> <small>COINS</small></span><span class="w-rec" id="wRec"></span></div>
 
       <div class="menu show" id="menuMain">
         <button class="mbtn primary" data-go="bots"><span>⚔️</span>PLAY VS BOTS</button>
@@ -2006,6 +2028,7 @@
   <div class="overlay" id="overlay">
     <div class="big" id="endText"></div>
     <div class="endstats" id="endStats"></div>
+    <div class="endreward" id="endReward"></div>
     <button class="startbtn" onclick="location.reload()">BACK TO MENU</button>
   </div>
 
@@ -3795,6 +3818,7 @@
       row("Cards played", me.cards, en.cards);
     document.getElementById("overlay").style.display = "flex";
     Sound.play(win ? "win" : "lose");
+    if (mode === "mp") Acct.finish(win, false);
   }
 
   // my actions --------------------------------------------------------
@@ -5448,8 +5472,13 @@
   const deserOpts = (o, sd) => ({ at: o.at, horiz: o.horiz, ship: o.ship !== undefined ? sd.ships[o.ship] : undefined });
 
   Net.onMessage(m => {
-    if (m.t === "hello" && Net.state.isHost) { oppName = cleanName(m.name); Net.send({ t: "welcome", name: myName }); goPlacement(); }
-    else if (m.t === "welcome" && !Net.state.isHost) { oppName = cleanName(m.name); goPlacement(); }
+    if (m.t === "hello" && Net.state.isHost) {
+      oppName = cleanName(m.name);
+      const match = Acct.makeId(); Acct.pair(match, m.uid);
+      Net.send({ t: "welcome", name: myName, uid: Acct.uid(), match });
+      goPlacement();
+    }
+    else if (m.t === "welcome" && !Net.state.isHost) { oppName = cleanName(m.name); Acct.pair(m.match, m.uid); goPlacement(); }
     else if (m.t === "ready") { mp.oppReady = true; mp.oppFleet = m.fleet; renderPanel(); maybeStartMP(); }
     else if (m.t === "bye") opponentLeft();
     else if (m.t === "act") mp.queue = mp.queue.then(() => replay(m)).catch(e => console.error(e));
@@ -5462,6 +5491,7 @@
     const t = document.getElementById("endText");
     t.textContent = "OPPONENT LEFT"; t.style.color = "#ffe45c";
     document.getElementById("overlay").style.display = "flex";
+    if (mode === "mp") Acct.finish(true, true);
   }
 
   function sendReady() {
@@ -5470,7 +5500,7 @@
     Net.send({ t: "ready", fleet: sides.me.ships.map(sh => [sh.size, sh.horiz ? 1 : 0, sh.at]) });
     renderPanel(); maybeStartMP();
   }
-  function maybeStartMP() { if (mp.myReady && mp.oppReady && phase === "place") startBattle(mp.oppFleet); }
+  function maybeStartMP() { if (mp.myReady && mp.oppReady && phase === "place") { startBattle(mp.oppFleet); Acct.startMatch(); } }
 
   // the opponent's actions, replayed exactly on this screen
   async function replay(m) {
@@ -5650,6 +5680,119 @@
   try { myName = localStorage.getItem("bs-name") || ""; } catch (e) {}
   const cleanName = n => String(n || "").replace(/[<>&"'`]/g, "").replace(/\s+/g, " ").trim().slice(0, 14);
   const foeName = () => mode === "mp" ? (oppName || "OPPONENT") : "ENEMY";
+  // =====================================================================
+  //  ACCOUNT + COINS (Supabase) — a guest account is made automatically on this device.
+  //  Coins are kept on the server, so players can't edit them. Rewards: multiplayer only.
+  // =====================================================================
+  const SUPA_URL = "";   // e.g. https://abcd1234.supabase.co
+  const SUPA_KEY = "";   // publishable (or anon) key — public by design; never put the secret key here
+  const Acct = (() => {
+    const on = !!(SUPA_URL && SUPA_KEY) && typeof fetch === "function";
+    const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    let sess = null, prof = null, matchId = null, oppUid = null, started = false, finished = false, signing = null;
+    try { sess = JSON.parse(localStorage.getItem("bs-acct") || "null"); } catch (e) {}
+    const save = () => { try { localStorage.setItem("bs-acct", JSON.stringify(sess)); } catch (e) {} };
+    async function call(path, body, auth) {
+      const h = { apikey: SUPA_KEY, "Content-Type": "application/json" };
+      if (auth) h.Authorization = "Bearer " + sess.access_token;
+      const ctl = typeof AbortController === "function" ? new AbortController() : null, to = setTimeout(() => ctl && ctl.abort(), 12000);
+      try {
+        const r = await fetch(SUPA_URL.replace(/\/+$/, "") + path, { method: "POST", headers: h, body: JSON.stringify(body || {}), signal: ctl ? ctl.signal : undefined });
+        const j = await r.json().catch(() => null);
+        if (!r.ok) { const e = new Error((j && (j.msg || j.message || j.error_description || j.error)) || "HTTP " + r.status); e.status = r.status; throw e; }
+        return j;
+      } finally { clearTimeout(to); }
+    }
+    const keep = j => {
+      sess = { access_token: j.access_token, refresh_token: j.refresh_token, exp: Date.now() + (j.expires_in || 3600) * 1000, uid: (j.user && j.user.id) || (sess && sess.uid) };
+      save();
+    };
+    function session() {
+      if (sess && sess.access_token && sess.exp - Date.now() > 60000) return Promise.resolve();
+      return signing || (signing = (async () => {
+        if (sess && sess.refresh_token) {
+          try { keep(await call("/auth/v1/token?grant_type=refresh_token", { refresh_token: sess.refresh_token })); return; }
+          catch (e) { if (!e.status || e.status >= 500 || e.status === 429) throw e; }   // offline / server trouble: keep this account and try again later
+        }
+        keep(await call("/auth/v1/signup", {}));   // first visit on this device: new guest account
+      })().finally(() => { signing = null; }));
+    }
+    async function rpc(fn, args) {
+      await session();
+      try { return await call("/rest/v1/rpc/" + fn, args, true); }
+      catch (e) {
+        if (e.status !== 401) throw e;
+        sess.exp = 0; await session();
+        return call("/rest/v1/rpc/" + fn, args, true);
+      }
+    }
+    function renderWallet() {
+      const w = document.getElementById("wallet");
+      if (!w || !prof) return;
+      w.classList.add("show");
+      document.getElementById("wRec").textContent = `${prof.wins}W · ${prof.losses}L`;
+      const el = document.getElementById("wCoins"), to = prof.coins | 0;
+      let seen = null; try { const v = localStorage.getItem("bs-coins-seen"); if (v !== null && isFinite(+v)) seen = +v; } catch (e) {}
+      try { localStorage.setItem("bs-coins-seen", String(to)); } catch (e) {}
+      if (seen === null || to <= seen) { el.textContent = to; return; }
+      // coins earned since you last saw the menu: count up
+      el.textContent = seen;
+      setTimeout(() => {
+        w.classList.remove("gain"); void w.offsetWidth; w.classList.add("gain");
+        const plus = document.createElement("div"); plus.className = "w-plus"; plus.textContent = "+" + (to - seen);
+        w.appendChild(plus); setTimeout(() => plus.remove(), 1900);
+        const t0 = performance.now();
+        (function step(t) {
+          const k = Math.min(1, (t - t0) / 1100);
+          el.textContent = Math.round(seen + (to - seen) * (1 - Math.pow(1 - k, 3)));
+          if (k < 1) requestAnimationFrame(step);
+        })(t0);
+      }, 500);
+    }
+    const ready = !on ? Promise.resolve(false)
+      : rpc("my_profile", { p_name: myName || null }).then(p => { prof = p; renderWallet(); return true; })
+          .catch(e => { console.warn("account offline:", e.message); return false; });
+    const uid = () => (prof && sess && UUID.test(sess.uid || "")) ? sess.uid : null;
+    function showReward(r) {
+      const box = document.getElementById("endReward");
+      box.className = "endreward show";
+      if (r.reward > 0) {
+        box.innerHTML = `<div class="er-big">🪙 +${r.reward} COINS</div><div class="er-small">You now have ${r.coins} coins</div>`;
+        Sound.play("coin");
+      } else {
+        box.innerHTML = `<div class="er-small">No coins this game</div><div class="er-small">(battles under 90 seconds, or games that ended early, don't pay)</div>`;
+      }
+    }
+    return {
+      on, ready, uid,
+      whenReady: (ms = 5000) => Promise.race([ready, wait(ms).then(() => false)]),
+      setName(n) { if (on) rpc("my_profile", { p_name: n }).then(p => { prof = p; renderWallet(); }).catch(() => {}); },
+      makeId: () => Array.from({ length: 16 }, () => "abcdefghijkmnpqrstuvwxyz23456789"[rand(32)]).join(""),
+      pair(id, opp) { matchId = typeof id === "string" ? id.slice(0, 40) : null; oppUid = UUID.test(opp || "") ? opp : null; },
+      startMatch() {
+        if (!on || started || !matchId || !oppUid || !uid() || oppUid === uid()) return;
+        rpc("start_match", { p_match: matchId, p_opponent: oppUid }).then(() => { started = true; }).catch(e => console.warn("start_match:", e.message));
+      },
+      async finish(win, oppLeft) {
+        if (!started || finished) return;
+        finished = true;
+        const box = document.getElementById("endReward");
+        box.className = "endreward show wait"; box.innerHTML = '<span class="dots">Saving result</span>';
+        let reached = false;
+        for (let i = 0; i < 18; i++) {
+          let r = null;
+          try { r = await rpc("finish_match", { p_match: matchId, p_won: !!win, p_opp_left: !!oppLeft }); reached = true; }
+          catch (e) { console.warn("finish_match:", e.message); }
+          if (r && r.status === "done") { showReward(r); return; }
+          if (r && r.status === "unknown") { box.className = "endreward"; return; }
+          await wait(i < 6 ? 2000 : 5000);
+        }
+        box.className = "endreward show wait";
+        box.textContent = reached ? "Result saved — your coins arrive when your opponent's game confirms it" : "Couldn't reach the coin server — no coins this time";
+      },
+    };
+  })();
+
   let afterName = null;
   function askName(next) {
     afterName = next;
@@ -5662,6 +5805,7 @@
     if (!n) { document.getElementById("nameStatus").textContent = "Type a name first"; return; }
     document.getElementById("nameStatus").textContent = "";
     myName = n; try { localStorage.setItem("bs-name", n); } catch (e) {}
+    Acct.setName(n);
     Sound.play("select");
     const f = afterName; afterName = null; if (f) f();
   }
@@ -5673,6 +5817,7 @@
     showMenu("menuHost");
     const st = document.getElementById("hostStatus"), codeEl = document.getElementById("hostCode");
     codeEl.textContent = "·····"; st.textContent = "Opening a room…";
+    await Acct.whenReady();
     const code = Array.from({ length: 5 }, () => CODE_CHARS[rand(CODE_CHARS.length)]).join("");
     try {
       await Net.open(code, true);
@@ -5697,9 +5842,10 @@
     if (code.length !== 5) { st.textContent = "Room codes have 5 characters"; return; }
     st.innerHTML = '<span class="dots">Connecting</span>';
     try {
+      await Acct.whenReady();
       await Net.open(code, false);
       mode = "mp";
-      Net.send({ t: "hello", name: myName });
+      Net.send({ t: "hello", name: myName, uid: Acct.uid() });
       st.innerHTML = '<span class="dots">Waiting for the host</span>';
     } catch (e) {
       st.textContent = netError(e, true);
