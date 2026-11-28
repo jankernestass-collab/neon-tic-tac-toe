@@ -159,3 +159,90 @@ revoke all on function public.finish_match(text, boolean, boolean) from public, 
 grant execute on function public.my_profile(text)                    to authenticated;
 grant execute on function public.start_match(text, uuid)             to authenticated;
 grant execute on function public.finish_match(text, boolean, boolean) to authenticated;
+-- =====================================================================
+--  BATTLESHIPS — shop (step 2). Safe to run again.
+--  Prices live here on the server, so nobody can buy things cheaper by editing the game.
+-- =====================================================================
+
+alter table public.profiles add column if not exists equipped jsonb not null default '{}'::jsonb;
+
+create table if not exists public.owned_items (
+  player    uuid not null references auth.users(id) on delete cascade,
+  item      text not null,
+  bought_at timestamptz not null default now(),
+  primary key (player, item)
+);
+alter table public.owned_items enable row level security;
+-- no policies: only the functions below touch this table
+
+-- price list (free starter items are not listed: everyone owns them)
+create or replace function public.bs_items() returns jsonb language sql immutable as $$
+  select '{
+    "board.toxic": 150, "board.glacier": 150, "board.midnight": 250, "board.royal": 300, "board.lava": 400, "board.gold": 800,
+    "sea.tropical": 120, "sea.arctic": 150, "sea.night": 200, "sea.sunset": 300, "sea.abyss": 400,
+    "ship.navy": 100, "ship.desert": 150, "ship.arctic": 150, "ship.crimson": 250, "ship.stealth": 350, "ship.neon": 500, "ship.gold": 1000
+  }'::jsonb
+$$;
+create or replace function public.bs_free_item(p text) returns boolean language sql immutable as $$
+  select p in ('board.classic', 'sea.classic', 'ship.steel')
+$$;
+
+create or replace function public.bs_profile_json(me uuid) returns json
+language plpgsql security definer set search_path = public as $$
+declare r public.profiles;
+begin
+  select * into r from profiles where id = me;
+  return json_build_object('name', r.name, 'coins', r.coins, 'wins', r.wins, 'losses', r.losses,
+    'equipped', r.equipped,
+    'owned', coalesce((select json_agg(item order by item) from owned_items where player = me), '[]'::json));
+end $$;
+
+create or replace function public.my_profile(p_name text default null)
+returns json language plpgsql security definer set search_path = public as $$
+declare me uuid := auth.uid();
+begin
+  if me is null then raise exception 'not signed in'; end if;
+  insert into profiles (id, name) values (me, bs_clean_name(p_name)) on conflict (id) do nothing;
+  if p_name is not null and btrim(p_name) <> '' then
+    update profiles set name = bs_clean_name(p_name) where id = me;
+  end if;
+  return bs_profile_json(me);
+end $$;
+
+create or replace function public.buy_item(p_item text)
+returns json language plpgsql security definer set search_path = public as $$
+declare me uuid := auth.uid(); price int; have int;
+begin
+  if me is null then raise exception 'not signed in'; end if;
+  price := (bs_items() ->> p_item)::int;
+  if price is null then raise exception 'unknown item'; end if;
+  insert into profiles (id) values (me) on conflict (id) do nothing;
+  select coins into have from profiles where id = me for update;
+  if exists (select 1 from owned_items where player = me and item = p_item) then return bs_profile_json(me); end if;
+  if have < price then raise exception 'not enough coins'; end if;
+  update profiles set coins = coins - price where id = me;
+  insert into owned_items (player, item) values (me, p_item);
+  return bs_profile_json(me);
+end $$;
+
+create or replace function public.equip_item(p_item text)
+returns json language plpgsql security definer set search_path = public as $$
+declare me uuid := auth.uid(); slot text := split_part(coalesce(p_item, ''), '.', 1);
+begin
+  if me is null then raise exception 'not signed in'; end if;
+  if slot not in ('board', 'sea', 'ship') then raise exception 'unknown item'; end if;
+  if not bs_free_item(p_item) and not exists (select 1 from owned_items where player = me and item = p_item) then
+    raise exception 'not owned';
+  end if;
+  insert into profiles (id) values (me) on conflict (id) do nothing;
+  update profiles set equipped = equipped || jsonb_build_object(slot, p_item) where id = me;
+  return bs_profile_json(me);
+end $$;
+
+revoke all on function public.bs_profile_json(uuid) from public, anon, authenticated;
+revoke all on function public.my_profile(text)      from public, anon;
+revoke all on function public.buy_item(text)        from public, anon;
+revoke all on function public.equip_item(text)      from public, anon;
+grant execute on function public.my_profile(text)   to authenticated;
+grant execute on function public.buy_item(text)     to authenticated;
+grant execute on function public.equip_item(text)   to authenticated;

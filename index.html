@@ -14,7 +14,7 @@
   html, body { margin: 0; height: 100%; overflow: hidden; }
   body {
     font-family: "Segoe UI", Arial, sans-serif; color: #fff;
-    background: #0a5288;
+    background: var(--sea, #0a5288);
     user-select: none;
   }
 
@@ -71,13 +71,13 @@
   .sea {
     position: absolute; left: 0; top: 0; width: 8400px; height: 6400px;
     pointer-events: none; overflow: hidden;
-    background-color: #0a5288;
+    background-color: var(--sea, #0a5288);
     background-image:
       url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='80'%3E%3Cg fill='none' stroke='%23ffffff' stroke-linecap='round'%3E%3Cpath d='M8 22 q12 -9 24 0 q12 9 24 0' stroke-opacity='.38' stroke-width='2'/%3E%3Cpath d='M78 60 q10 -7 20 0 q10 7 20 0' stroke-opacity='.32' stroke-width='2'/%3E%3Cpath d='M60 34 q8 -5 16 0' stroke-opacity='.26' stroke-width='1.5'/%3E%3Cpath d='M112 14 q6 -4 12 0' stroke-opacity='.26' stroke-width='1.5'/%3E%3C/g%3E%3Cg fill='%23ffffff'%3E%3Ccircle cx='40' cy='50' r='1.2' fill-opacity='.25'/%3E%3Ccircle cx='100' cy='30' r='1' fill-opacity='.2'/%3E%3Ccircle cx='20' cy='70' r='.8' fill-opacity='.2'/%3E%3C/g%3E%3C/svg%3E"),
-      radial-gradient(ellipse 900px 600px at 700px 500px, #2aa6d877, transparent 70%),
-      radial-gradient(ellipse 1000px 700px at 2000px 1050px, #021a33aa, transparent 70%),
-      radial-gradient(ellipse 800px 400px at 1300px 1250px, #2aa6d866, transparent 70%),
-      radial-gradient(ellipse 700px 450px at 2250px 350px, #021a3399, transparent 70%);
+      radial-gradient(ellipse 900px 600px at 700px 500px, var(--sea-hi, #2aa6d877), transparent 70%),
+      radial-gradient(ellipse 1000px 700px at 2000px 1050px, var(--sea-lo, #021a33aa), transparent 70%),
+      radial-gradient(ellipse 800px 400px at 1300px 1250px, var(--sea-hi, #2aa6d866), transparent 70%),
+      radial-gradient(ellipse 700px 450px at 2250px 350px, var(--sea-lo, #021a3399), transparent 70%);
     background-size: 140px 80px, 2800px 1600px, 2800px 1600px, 2800px 1600px, 2800px 1600px;
   }
   .sea::before {             /* light ripples */
@@ -1169,7 +1169,7 @@
      ===================================================================== */
   .zone {
     --deep1: #34c4dc; --deep2: #1590bd; --deep3: #0b5f97; --deep4: #063f6c;
-    border: 2px solid #d4f1ff !important; border-radius: 14px !important;
+    border: 2px solid var(--edge, #d4f1ff) !important; border-radius: 14px !important;
     background:
       linear-gradient(90deg, #ffffff3a 3px, transparent 3px) 8px 0 / 195px 195px,
       linear-gradient(0deg,  #ffffff3a 3px, transparent 3px) 0 8px / 195px 195px,
@@ -1177,7 +1177,7 @@
       linear-gradient(0deg,  #ffffff26 2px, transparent 2px) 0 8.5px / 39px 39px,
       radial-gradient(ellipse 70% 60% at 50% 42%, var(--deep1) 0%, var(--deep2) 42%, var(--deep3) 78%, var(--deep4) 100%) !important;
     box-shadow:
-      0 0 0 7px #17324b, 0 0 0 9px #8cc8e4, 0 0 0 11px #0a1d2e,
+      0 0 0 7px #17324b, 0 0 0 9px var(--rim, #8cc8e4), 0 0 0 11px #0a1d2e,
       0 26px 0 11px #0b2338, 0 28px 0 11px #050f1a,
       0 70px 110px #000000b0, 0 0 90px #58d0ff38 !important;
   }
@@ -1426,7 +1426,7 @@
     #world { transform-style: flat !important; will-change: auto !important; }
     #world .sea, #world .life { display: none !important; }
     body { background: #0b5a8c; }
-    .zone { box-shadow: 0 0 0 7px #17324b, 0 0 0 9px #8cc8e4, 0 0 0 11px #0a1d2e, 0 12px 30px #000a !important; }
+    .zone { box-shadow: 0 0 0 7px #17324b, 0 0 0 9px var(--rim, #8cc8e4), 0 0 0 11px #0a1d2e, 0 12px 30px #000a !important; }
   }
   .fsbtn { right: 66px !important; z-index: 60 !important; opacity: 1 !important; pointer-events: auto !important; }
   .fstip { z-index: 61 !important; }
@@ -1669,7 +1669,7 @@
   /* ---- v49: the PC sea, rebuilt screen-sized for phones (same waves, ripples, sea life) ---- */
   .phonesea { display: none; }
   @media (pointer: coarse) {
-    .phonesea { display: block; position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; background-color: #0a5288; }
+    .phonesea { display: block; position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; background-color: var(--sea, #0a5288); }
     .phonesea .ps-a, .phonesea .ps-b { position: absolute; left: -200px; top: -200px; right: -200px; bottom: -200px; will-change: transform; }
     .phonesea .ps-a { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='80'%3E%3Cg fill='none' stroke='%23ffffff' stroke-linecap='round'%3E%3Cpath d='M8 22 q12 -9 24 0 q12 9 24 0' stroke-opacity='.38' stroke-width='2'/%3E%3Cpath d='M78 60 q10 -7 20 0 q10 7 20 0' stroke-opacity='.32' stroke-width='2'/%3E%3Cpath d='M60 34 q8 -5 16 0' stroke-opacity='.26' stroke-width='1.5'/%3E%3Cpath d='M112 14 q6 -4 12 0' stroke-opacity='.26' stroke-width='1.5'/%3E%3C/g%3E%3Cg fill='%23ffffff'%3E%3Ccircle cx='40' cy='50' r='1.2' fill-opacity='.25'/%3E%3Ccircle cx='100' cy='30' r='1' fill-opacity='.2'/%3E%3Ccircle cx='20' cy='70' r='.8' fill-opacity='.2'/%3E%3C/g%3E%3C/svg%3E"),
         radial-gradient(ellipse 420px 280px at 330px 230px, #2aa6d877, transparent 70%),
@@ -1682,7 +1682,7 @@
     .phonesea .ps-life { position: absolute; inset: 0; }
     .phonesea .creature svg { transform: scale(.55); }
     .phonesea .glint { width: 10px; height: 10px; }
-    html { background: #0a5288 !important; }
+    html { background: var(--sea, #0a5288) !important; }
     body { background: transparent !important; }
     /* in-board layers that become huge textures when you zoom in: off on phones */
     .ripples::before, .ripples::after { display: none !important; }
@@ -1719,6 +1719,40 @@
   }
 
   /* ---- v52: phones — much cheaper boards to redraw while zooming / moving ---- */
+  /* ---- v79: shop ---- */
+  #menuShop { width: 640px !important; }
+  .lk-coins { align-self: center; font-family: "Black Ops One", "Segoe UI", sans-serif; color: #ffe45c; font-size: 1.3rem; letter-spacing: 2px;
+    text-shadow: 0 0 12px #ffe45c66; margin: -4px 0 2px; }
+  .lk-coins small { font-size: .7rem; letter-spacing: 3px; opacity: .8; }
+  .lk-tabs { display: flex; gap: 8px; }
+  .lk-tabs button { flex: 1; padding: 9px 0; border-radius: 10px; border: 1px solid #7fd8ff44; background: #0a2a48cc; color: #cfefff; cursor: pointer;
+    font: inherit; font-size: .85rem; letter-spacing: 3px; }
+  .lk-tabs button.on { background: linear-gradient(180deg, #2a8fc8, #135d92); border-color: #9fe6ff; color: #fff; box-shadow: 0 0 14px #5ad0ff55; }
+  .lk-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; max-height: 360px; overflow-y: auto; padding: 4px 2px; }
+  .lk-item { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 8px; border-radius: 12px;
+    background: #062038cc; border: 1px solid #7fd8ff33; }
+  .lk-item.worn { border-color: #8dffb0; box-shadow: 0 0 14px #8dffb044 inset; }
+  .lk-name { font-size: .8rem; letter-spacing: 2px; text-transform: uppercase; }
+  .lk-btn { width: 100%; padding: 6px 0; border-radius: 8px; border: 1px solid #ffe45c88; background: #3a2a00cc; color: #ffe45c; cursor: pointer;
+    font: inherit; font-size: .75rem; letter-spacing: 1px; white-space: nowrap; }
+  .lk-btn.poor { opacity: .55; }
+  .lk-btn.confirm { background: #ffe45c; color: #2a1d00; font-weight: bold; animation: addGlow 1s ease-in-out infinite alternate; }
+  .lk-btn.equip { border-color: #9fe6ff88; background: #0d4a78; color: #e8f8ff; }
+  .lk-btn.worn { border-color: #8dffb088; background: #0d3a24; color: #8dffb0; cursor: default; }
+  .lk-btn:disabled:not(.worn) { opacity: .45; cursor: default; }
+  .lk-board, .lk-sea, .lk-ship { width: 100%; height: 74px; border-radius: 8px; }
+  .lk-board { width: 74px; border: 2px solid var(--edge); box-shadow: 0 0 0 3px #17324b, 0 0 0 5px var(--rim);
+    background: linear-gradient(90deg, #ffffff30 1px, transparent 1px) 0 0 / 12px 12px, linear-gradient(0deg, #ffffff30 1px, transparent 1px) 0 0 / 12px 12px,
+      radial-gradient(ellipse 70% 60% at 50% 42%, var(--d1) 0%, var(--d2) 42%, var(--d3) 78%, var(--d4) 100%); margin: 5px 0 3px; }
+  .lk-sea { background:
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='70' height='40'%3E%3Cg fill='none' stroke='%23ffffff' stroke-linecap='round'%3E%3Cpath d='M4 11 q6 -4.5 12 0 q6 4.5 12 0' stroke-opacity='.4' stroke-width='1.5'/%3E%3Cpath d='M39 30 q5 -3.5 10 0 q5 3.5 10 0' stroke-opacity='.32' stroke-width='1.5'/%3E%3C/g%3E%3C/svg%3E"),
+      radial-gradient(ellipse 70% 70% at 30% 30%, var(--hi), transparent 70%), radial-gradient(ellipse 70% 70% at 80% 85%, var(--lo), transparent 70%), var(--s); }
+  .lk-ship { display: flex; align-items: center; justify-content: center; background: radial-gradient(ellipse at 50% 50%, #1590bd, #063f6c); }
+  .lk-ship svg { width: 86%; height: auto; }
+  /* phones: the shop gets the whole screen height (title hidden while shopping) */
+  body.touch .home.shopping .home-badge, body.touch .home.shopping .home-title, body.touch .home.shopping .home-sub, body.touch .home.shopping .wallet { display: none !important; }
+  body.touch .lk-grid { max-height: 470px; }
+
   /* ---- v77: coins wallet + end-of-game reward ---- */
   .wallet { position: relative; display: none; align-items: center; gap: 16px; margin: -12px 0 18px; padding: 7px 20px; border-radius: 999px;
     background: linear-gradient(90deg, #2a1d00cc, #00203fcc); border: 1px solid #ffe45c77; box-shadow: 0 4px 18px #000a, 0 0 20px #ffe45c22;
@@ -1743,7 +1777,7 @@
   .buildtag { position: fixed; left: 8px; bottom: 6px; z-index: 70; font: 10px "Segoe UI", sans-serif; color: #ffffff66; pointer-events: none; display: none; }
   body.in-menu .buildtag { display: block; }
   @media (pointer: coarse) {
-    .zone { box-shadow: 0 0 0 5px #17324b, 0 0 0 7px #8cc8e4 !important; }       /* no big blurred shadows */
+    .zone { box-shadow: 0 0 0 5px #17324b, 0 0 0 7px var(--rim, #8cc8e4) !important; }       /* no big blurred shadows */
     .zone.domed { box-shadow: 0 0 0 5px #17324b, 0 0 0 7px #7fe7ff !important; }
     .zone::before { display: none !important; }
     .ripples { display: none !important; }
@@ -1933,7 +1967,7 @@
   </div>
 
   <div class="phonesea" aria-hidden="true"><i class="ps-a"></i><i class="ps-b"></i></div>
-  <div class="buildtag">build 78</div>
+  <div class="buildtag">build 79</div>
   <div class="turnside" id="turnside"></div>
   <div class="touchbar" id="touchbar">
     <button id="tbCancel" class="tb small">✕</button>
@@ -1974,8 +2008,20 @@
         </div>
         <button class="mbtn" data-go="host"><span>🛰️</span>HOST</button>
         <button class="mbtn" data-go="join"><span>🔗</span>JOIN</button>
+        <button class="mbtn" data-go="shop"><span>🛒</span>SHOP</button>
         <button class="mbtn" data-go="settings"><span>⚙️</span>SETTINGS</button>
         <button class="mbtn" data-go="quit"><span>⏻</span>QUIT</button>
+      </div>
+
+      <div class="menu" id="menuShop">
+        <div class="m-title">SHOP</div>
+        <div class="lk-coins">🪙 <b id="lkCoins">0</b> <small>COINS</small></div>
+        <div class="lk-tabs" id="lkTabs">
+          <button data-tab="board" class="on">BOARDS</button><button data-tab="sea">SEAS</button><button data-tab="ship">SHIPS</button>
+        </div>
+        <div class="lk-grid" id="lkGrid"></div>
+        <div class="m-status" id="lkStatus"></div>
+        <button class="mbtn small" data-back="1">BACK</button>
       </div>
 
       <div class="menu" id="menuHost">
@@ -2665,7 +2711,8 @@
   function drawModel(sd, ship) {
     if (!ship.model) {
       ship.model = document.createElement("div");
-      ship.model.innerHTML = shipSVG(ship.size);
+      ship.model.innerHTML = shipSVG(ship.size, skinOf(sd));
+      ship.model.dataset.size = ship.size;
       document.getElementById(sd.zone).appendChild(ship.model);
     }
     const [r, c] = rc(ship.at);
@@ -4650,7 +4697,7 @@
         const bump = placeCounts[k] !== undefined && placeCounts[k] !== f.count;
         placeCounts[k] = f.count;
         b.className = "shipbtn" + (k === selected ? " sel" : "") + (f.count === 0 ? " done" : "") + (bump ? " bump" : "");
-        b.innerHTML = '<div class="icon">' + shipSVG(f.size).replace('preserveAspectRatio="none"', "") + '<i class="sb-wave"></i></div>' +
+        b.innerHTML = '<div class="icon">' + shipSVG(f.size, Look.me.ship).replace('preserveAspectRatio="none"', "") + '<i class="sb-wave"></i></div>' +
                       '<div class="size">' + f.size + (f.size === 1 ? " square" : " squares") + "</div>" +
                       '<div class="count">' + (f.count === 0 ? "✓" : "×" + f.count) + "</div>";
         b.onclick = () => { if (f.count > 0) { selected = k; Sound.play("select"); renderPanel(); refreshHover(); } };
@@ -4770,7 +4817,7 @@
   let ghost = null;
   function showGhost(size, horiz, at, ok) {
     if (!ghost) { ghost = document.createElement("div"); document.getElementById("zone1").appendChild(ghost); }
-    if (ghost.dataset.size != size) { ghost.innerHTML = shipSVG(size); ghost.dataset.size = size; }
+    if (ghost.dataset.size != size || ghost.dataset.skin !== Look.me.ship) { ghost.innerHTML = shipSVG(size, Look.me.ship); ghost.dataset.size = size; ghost.dataset.skin = Look.me.ship; }
     const [r, c] = rc(at);
     ghost.className = "shipmodel ghost" + (horiz ? "" : " vertical") + (ok ? "" : " bad");
     ghost.style.left = (10 + c * 39) + "px"; ghost.style.top = (10 + r * 39) + "px"; ghost.style.width = (size * 39 - 1) + "px";
@@ -4915,31 +4962,117 @@
   });
 
   // ---- Ship models (top-down drawings) ----
-  function shipSVG(size) {
-    const W = size * 39 - 1, H = 38, uid = "s" + size;
+  // =====================================================================
+  //  LOOKS (shop items): board themes, sea themes, ship skins — looks only, no gameplay effect.
+  //  Prices must match bs_items() on the server (the server decides what things cost).
+  // =====================================================================
+  const SKINS = {
+    steel:   { h: ["#c2ced8", "#8d9caa", "#4c5a66"], d: ["#a9b6c1", "#7f8e9b"], b: ["#f4f7fa", "#b9c6d1"], t: ["#b8c5d0", "#55636f"], o: "#26313b", pl: "#6f7e8b", g: "#2f3a44" },
+    navy:    { h: ["#7f9bc0", "#46628a", "#1f3352"], d: ["#6f88aa", "#4b6385"], b: ["#dfe8f5", "#9fb3cf"], t: ["#8ea6c6", "#2f4566"], o: "#101b2b", pl: "#3c5273", g: "#1a2638" },
+    desert:  { h: ["#e9d6a8", "#c4a56a", "#7d6334"], d: ["#d8c08a", "#b2955c"], b: ["#fbf3de", "#d9c69c"], t: ["#dcc796", "#7d6838"], o: "#3d2f16", pl: "#9c8152", g: "#4a3a1c" },
+    arctic:  { h: ["#ffffff", "#dfe9f0", "#9fb2c0"], d: ["#f2f7fa", "#cfdbe4"], b: ["#ffffff", "#e3ecf2"], t: ["#ffffff", "#a8b9c6"], o: "#5b6d7a", pl: "#b8c8d4", g: "#6b7c88" },
+    crimson: { h: ["#f08a8a", "#c2333b", "#6e1219"], d: ["#d9a0a0", "#a8585c"], b: ["#fff0ee", "#e4b8b4"], t: ["#f0a0a0", "#7a1f26"], o: "#3a0c10", pl: "#8e3c40", g: "#3a1216" },
+    stealth: { h: ["#5a6068", "#33383e", "#15181b"], d: ["#4a4f55", "#2c3035"], b: ["#80868d", "#4c5157"], t: ["#62686f", "#1e2125"], o: "#050607", pl: "#24282c", g: "#0d0f11" },
+    neon:    { h: ["#9ffcff", "#2fc8e8", "#0a5d8a"], d: ["#1d3d55", "#10283a"], b: ["#c8ffff", "#53d8f0"], t: ["#a0fbff", "#1a7fa8"], o: "#00e5ff", pl: "#2a90b0", g: "#06324a" },
+    gold:    { h: ["#fff1b0", "#e0b23c", "#8a6612"], d: ["#f2d27a", "#c9a040"], b: ["#fffbe6", "#f0d68a"], t: ["#ffeaa0", "#9a7418"], o: "#4a3505", pl: "#a8842a", g: "#5a420c" },
+  };
+  const LOOKS = {
+    board: [
+      { id: "classic",  name: "Classic",  price: 0 },
+      { id: "toxic",    name: "Toxic",    price: 150, deep: ["#6af58a", "#22b35e", "#0e7444", "#06422b"], rim: "#8df0b0", edge: "#d8ffe4" },
+      { id: "glacier",  name: "Glacier",  price: 150, deep: ["#f0fdff", "#a6e3f5", "#5fb2d4", "#2c7199"], rim: "#ffffff", edge: "#ffffff" },
+      { id: "midnight", name: "Midnight", price: 250, deep: ["#4a6aa0", "#22396a", "#111f42", "#070e22"], rim: "#7f9ad0", edge: "#b8ccf5" },
+      { id: "royal",    name: "Royal",    price: 300, deep: ["#c695ff", "#8250dc", "#4c2698", "#27105c"], rim: "#d4b8ff", edge: "#efe2ff" },
+      { id: "lava",     name: "Lava",     price: 400, deep: ["#ffa24f", "#dc542b", "#8e2a1a", "#480e0b"], rim: "#ffb08a", edge: "#ffe0cc" },
+      { id: "gold",     name: "Gold",     price: 800, deep: ["#ffe88f", "#e0b23c", "#9a7418", "#4e3a08"], rim: "#ffe9a8", edge: "#fff6d6" },
+    ],
+    sea: [
+      { id: "classic",  name: "Ocean",    price: 0 },
+      { id: "tropical", name: "Tropical", price: 120, sea: "#0a9aa6", hi: "#5ff0e077", lo: "#04506699" },
+      { id: "arctic",   name: "Arctic",   price: 150, sea: "#3a86a8", hi: "#e2f8ff77", lo: "#0a3b5c99" },
+      { id: "night",    name: "Night",    price: 200, sea: "#06213b", hi: "#2a5f9055", lo: "#000814cc" },
+      { id: "sunset",   name: "Sunset",   price: 300, sea: "#3b3d78", hi: "#ff8a5c55", lo: "#1a0f3acc" },
+      { id: "abyss",    name: "Abyss",    price: 400, sea: "#0b3a2c", hi: "#3cff8a33", lo: "#00140bcc" },
+    ],
+    ship: [
+      { id: "steel",   name: "Steel",   price: 0 },
+      { id: "navy",    name: "Navy",    price: 100 },
+      { id: "desert",  name: "Desert",  price: 150 },
+      { id: "arctic",  name: "Arctic",  price: 150 },
+      { id: "crimson", name: "Crimson", price: 250 },
+      { id: "stealth", name: "Stealth", price: 350 },
+      { id: "neon",    name: "Neon",    price: 500 },
+      { id: "gold",    name: "Gold",    price: 1000 },
+    ],
+  };
+  const LOOK_DEFAULT = { board: "classic", sea: "classic", ship: "steel" };
+  const lookOf = (slot, id) => LOOKS[slot].find(x => x.id === id) || LOOKS[slot][0];
+  // what you wear, and what your multiplayer opponent wears (they send it when you connect)
+  const Look = { me: { ...LOOK_DEFAULT }, opp: null };
+  function cleanLook(o) {
+    const out = { ...LOOK_DEFAULT };
+    if (o && typeof o === "object") for (const slot in LOOK_DEFAULT) {
+      let v = o[slot]; if (typeof v === "string" && v.startsWith(slot + ".")) v = v.slice(slot.length + 1);
+      if (LOOKS[slot].some(x => x.id === v)) out[slot] = v;
+    }
+    return out;
+  }
+  try { Look.me = cleanLook(JSON.parse(localStorage.getItem("bs-look") || "null")); } catch (e) {}
+  const skinOf = sd => sd && sd.name === "bot" ? (Look.opp ? Look.opp.ship : "steel") : Look.me.ship;
+  function paintBoard(zoneId, id) {
+    const z = document.getElementById(zoneId), t = lookOf("board", id);
+    if (!z) return;
+    ["--deep1", "--deep2", "--deep3", "--deep4", "--rim", "--edge"].forEach(v => z.style.removeProperty(v));
+    if (!t.deep) return;                                     // classic: keep the normal look
+    t.deep.forEach((c, k) => z.style.setProperty("--deep" + (k + 1), c));
+    z.style.setProperty("--rim", t.rim); z.style.setProperty("--edge", t.edge);
+  }
+  function paintSea(id) {
+    const t = lookOf("sea", id), st = document.documentElement.style;
+    ["--sea", "--sea-hi", "--sea-lo"].forEach(v => st.removeProperty(v));
+    if (t.sea) { st.setProperty("--sea", t.sea); st.setProperty("--sea-hi", t.hi); st.setProperty("--sea-lo", t.lo); }
+  }
+  function reskinShips(zoneId, skin) {
+    document.querySelectorAll(`#${zoneId} .shipmodel[data-size]:not(.ghost)`).forEach(el => { el.innerHTML = shipSVG(+el.dataset.size, skin); });
+  }
+  function applyLook() {
+    paintBoard("zone1", Look.me.board);
+    paintBoard("zone2", Look.opp ? Look.opp.board : "classic");
+    paintSea(Look.me.sea);
+    reskinShips("zone1", Look.me.ship);
+    reskinShips("zone2", Look.opp ? Look.opp.ship : "steel");
+  }
+  function setMyLook(look) {
+    Look.me = cleanLook(look);
+    try { localStorage.setItem("bs-look", JSON.stringify(Look.me)); } catch (e) {}
+    applyLook(); renderPanel();
+  }
+
+  function shipSVG(size, skin) {
+    const P = SKINS[skin] || SKINS.steel, W = size * 39 - 1, H = 38, uid = "s" + size + (SKINS[skin] ? skin : "steel");
     const bow = size === 1 ? 12 : Math.min(30, 16 + size * 2);
     const hull = `M7 6 Q2 6 2 12 L2 26 Q2 32 7 32 L${W - bow} 32 Q${W - 5} 29 ${W - 1} 19 Q${W - 5} 9 ${W - bow} 6 Z`;
     let g = `<defs>
       <linearGradient id="${uid}h" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stop-color="#c2ced8"/><stop offset=".45" stop-color="#8d9caa"/><stop offset="1" stop-color="#4c5a66"/></linearGradient>
+        <stop offset="0" stop-color="${P.h[0]}"/><stop offset=".45" stop-color="${P.h[1]}"/><stop offset="1" stop-color="${P.h[2]}"/></linearGradient>
       <linearGradient id="${uid}d" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stop-color="#a9b6c1"/><stop offset="1" stop-color="#7f8e9b"/></linearGradient>
+        <stop offset="0" stop-color="${P.d[0]}"/><stop offset="1" stop-color="${P.d[1]}"/></linearGradient>
       <linearGradient id="${uid}b" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stop-color="#f4f7fa"/><stop offset="1" stop-color="#b9c6d1"/></linearGradient>
-      <radialGradient id="${uid}t" cx=".4" cy=".35" r=".7"><stop offset="0" stop-color="#b8c5d0"/><stop offset="1" stop-color="#55636f"/></radialGradient>
-      <pattern id="${uid}p" width="6" height="38" patternUnits="userSpaceOnUse"><rect width="6" height="38" fill="none"/><line x1="0" y1="0" x2="0" y2="38" stroke="#6f7e8b" stroke-width=".6" opacity=".55"/></pattern>
+        <stop offset="0" stop-color="${P.b[0]}"/><stop offset="1" stop-color="${P.b[1]}"/></linearGradient>
+      <radialGradient id="${uid}t" cx=".4" cy=".35" r=".7"><stop offset="0" stop-color="${P.t[0]}"/><stop offset="1" stop-color="${P.t[1]}"/></radialGradient>
+      <pattern id="${uid}p" width="6" height="38" patternUnits="userSpaceOnUse"><rect width="6" height="38" fill="none"/><line x1="0" y1="0" x2="0" y2="38" stroke="${P.pl}" stroke-width=".6" opacity=".55"/></pattern>
     </defs>`;
     // foam around the waterline + bow spray + stern wake
     g += `<path d="${hull}" fill="none" stroke="#ffffff" stroke-opacity=".55" stroke-width="4"/>`;
     g += `<path d="M${W - 2} 19 l6 -5 M${W - 2} 19 l6 5" stroke="#fff" stroke-opacity=".7" stroke-width="1.5" stroke-linecap="round"/>`;
     g += `<path d="M2 14 l-6 -3 M2 24 l-6 3" stroke="#fff" stroke-opacity=".5" stroke-width="1.5" stroke-linecap="round"/>`;
     // hull + deck with planks
-    g += `<path d="${hull}" fill="url(#${uid}h)" stroke="#26313b" stroke-width="1.4"/>`;
+    g += `<path d="${hull}" fill="url(#${uid}h)" stroke="${P.o}" stroke-width="1.4"/>`;
     g += `<path d="M8 10 L${W - bow} 10 Q${W - 9} 13 ${W - 6} 19 Q${W - 9} 25 ${W - bow} 28 L8 28 Q6 28 6 26 L6 12 Q6 10 8 10 Z" fill="url(#${uid}d)"/>`;
     g += `<path d="M8 10 L${W - bow} 10 Q${W - 9} 13 ${W - 6} 19 Q${W - 9} 25 ${W - bow} 28 L8 28 Q6 28 6 26 L6 12 Q6 10 8 10 Z" fill="url(#${uid}p)"/>`;
-    g += `<line x1="8" y1="19" x2="${W - 10}" y2="19" stroke="#5d6b77" stroke-width=".6" opacity=".6"/>`;
+    g += `<line x1="8" y1="19" x2="${W - 10}" y2="19" stroke="${P.pl}" stroke-width=".6" opacity=".6"/>`;
     if (size === 1) {
-      g += `<rect x="8" y="12" width="13" height="14" rx="3" fill="url(#${uid}b)" stroke="#26313b"/>`;
+      g += `<rect x="8" y="12" width="13" height="14" rx="3" fill="url(#${uid}b)" stroke="${P.o}"/>`;
       g += `<rect x="16" y="14" width="3.5" height="10" rx="1" fill="#3aa7e0"/>`;
       g += `<circle cx="26" cy="19" r="2" fill="#2d3741"/>`;
       return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">${g}</svg>`;
@@ -4947,16 +5080,16 @@
     const turret = (x, flip) => {
       const dir = flip ? -1 : 1;
       return `<g transform="translate(${x} 19)">` +
-        `<rect x="${flip ? -15 : 3}" y="-3.4" width="12" height="2.2" rx="1" fill="#2f3a44"/><rect x="${flip ? -15 : 3}" y="1.2" width="12" height="2.2" rx="1" fill="#2f3a44"/>` +
-        `<circle r="6" fill="url(#${uid}t)" stroke="#26313b" stroke-width="1"/><circle r="2" fill="#3a4651" transform="translate(${-1.5 * dir} -1)"/></g>`;
+        `<rect x="${flip ? -15 : 3}" y="-3.4" width="12" height="2.2" rx="1" fill="${P.g}"/><rect x="${flip ? -15 : 3}" y="1.2" width="12" height="2.2" rx="1" fill="${P.g}"/>` +
+        `<circle r="6" fill="url(#${uid}t)" stroke="${P.o}" stroke-width="1"/><circle r="2" fill="#3a4651" transform="translate(${-1.5 * dir} -1)"/></g>`;
     };
     // superstructure (two tiers), funnel, radar
     const bx = Math.max(10, W * 0.24), bw = size >= 4 ? 30 : 24;
-    g += `<rect x="${bx}" y="10.5" width="${bw}" height="17" rx="3" fill="url(#${uid}b)" stroke="#26313b"/>`;
-    g += `<rect x="${bx + 5}" y="13" width="${bw - 12}" height="12" rx="2" fill="#dfe6ec" stroke="#8a97a3" stroke-width=".8"/>`;
+    g += `<rect x="${bx}" y="10.5" width="${bw}" height="17" rx="3" fill="url(#${uid}b)" stroke="${P.o}"/>`;
+    g += `<rect x="${bx + 5}" y="13" width="${bw - 12}" height="12" rx="2" fill="${P.b[0]}" stroke="${P.pl}" stroke-width=".8"/>`;
     g += `<rect x="${bx + bw - 6}" y="13" width="3.5" height="12" rx="1" fill="#3aa7e0"/>`;
     g += `<ellipse cx="${bx + 7}" cy="19" rx="3.6" ry="3" fill="#39434d"/><ellipse cx="${bx + 7}" cy="18.4" rx="2.2" ry="1.7" fill="#14191e"/>`;
-    g += `<circle cx="${bx + bw / 2 + 2}" cy="19" r="2.4" fill="none" stroke="#2f3a44" stroke-width="1"/><line x1="${bx + bw / 2 + 2}" y1="16" x2="${bx + bw / 2 + 2}" y2="22" stroke="#2f3a44" stroke-width="1"/>`;
+    g += `<circle cx="${bx + bw / 2 + 2}" cy="19" r="2.4" fill="none" stroke="${P.g}" stroke-width="1"/><line x1="${bx + bw / 2 + 2}" y1="16" x2="${bx + bw / 2 + 2}" y2="22" stroke="${P.g}" stroke-width="1"/>`;
     // lifeboats along the sides
     if (size >= 3) { g += `<rect x="${bx + 2}" y="7.6" width="8" height="2.6" rx="1.3" fill="#e9814a"/><rect x="${bx + 2}" y="27.8" width="8" height="2.6" rx="1.3" fill="#e9814a"/>`; }
     // forward turrets
@@ -5474,11 +5607,12 @@
   Net.onMessage(m => {
     if (m.t === "hello" && Net.state.isHost) {
       oppName = cleanName(m.name);
+      Look.opp = cleanLook(m.look); applyLook();
       const match = Acct.makeId(); Acct.pair(match, m.uid);
-      Net.send({ t: "welcome", name: myName, uid: Acct.uid(), match });
+      Net.send({ t: "welcome", name: myName, uid: Acct.uid(), match, look: { board: Look.me.board, ship: Look.me.ship } });
       goPlacement();
     }
-    else if (m.t === "welcome" && !Net.state.isHost) { oppName = cleanName(m.name); Acct.pair(m.match, m.uid); goPlacement(); }
+    else if (m.t === "welcome" && !Net.state.isHost) { oppName = cleanName(m.name); Look.opp = cleanLook(m.look); applyLook(); Acct.pair(m.match, m.uid); goPlacement(); }
     else if (m.t === "ready") { mp.oppReady = true; mp.oppFleet = m.fleet; renderPanel(); maybeStartMP(); }
     else if (m.t === "bye") opponentLeft();
     else if (m.t === "act") mp.queue = mp.queue.then(() => replay(m)).catch(e => console.error(e));
@@ -5538,6 +5672,7 @@
   const home = document.getElementById("home");
   function showMenu(id) {
     document.querySelectorAll(".home .menu").forEach(m => m.classList.toggle("show", m.id === id));
+    home.classList.toggle("shopping", id === "menuShop");
   }
   // ---- a pretend battle playing behind the menu (only visuals, no game state is touched) ----
   const Demo = { on: false, timers: [], zones: [] };
@@ -5548,7 +5683,8 @@
       if (!cells || cells.some(j => z.used.has(j))) continue;
       cells.forEach(j => z.used.add(j));
       const el = document.createElement("div"), [r, c] = rc(at);
-      el.innerHTML = shipSVG(size);
+      el.innerHTML = shipSVG(size, z.id === "zone1" ? Look.me.ship : "steel");
+      el.dataset.size = size;
       el.className = "shipmodel appear" + (horiz ? "" : " vertical");
       el.style.left = (10 + c * 39) + "px"; el.style.top = (10 + r * 39) + "px"; el.style.width = (size * 39 - 1) + "px";
       z.box.appendChild(el);
@@ -5686,6 +5822,7 @@
   // =====================================================================
   const SUPA_URL = "https://beswtgblyqivduunzvcc.supabase.co";   // e.g. https://abcd1234.supabase.co
   const SUPA_KEY = "sb_publishable_oaMfbCzGzvA9MI0Ez3Zk8w_QEaLQ53U";   // publishable (or anon) key — public by design; never put the secret key here
+  applyLook();
   const Acct = (() => {
     const on = !!(SUPA_URL && SUPA_KEY) && typeof fetch === "function";
     const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -5749,8 +5886,14 @@
         })(t0);
       }, 500);
     }
+    function gotProfile(p) {
+      if (!p || typeof p !== "object") return;
+      prof = p; renderWallet();
+      if (p && p.equipped && typeof p.equipped === "object") setMyLook(p.equipped);   // the server knows what you wear
+      if (typeof renderLookShop === "function") renderLookShop();
+    }
     const ready = !on ? Promise.resolve(false)
-      : rpc("my_profile", { p_name: myName || null }).then(p => { prof = p; renderWallet(); return true; })
+      : rpc("my_profile", { p_name: myName || null }).then(p => { gotProfile(p); return true; })
           .catch(e => { console.warn("account offline:", e.message); return false; });
     const uid = () => (prof && sess && UUID.test(sess.uid || "")) ? sess.uid : null;
     function showReward(r) {
@@ -5766,7 +5909,12 @@
     return {
       on, ready, uid,
       whenReady: (ms = 5000) => Promise.race([ready, wait(ms).then(() => false)]),
-      setName(n) { if (on) rpc("my_profile", { p_name: n }).then(p => { prof = p; renderWallet(); }).catch(() => {}); },
+      setName(n) { if (on) rpc("my_profile", { p_name: n }).then(gotProfile).catch(() => {}); },
+      online: () => !!prof,
+      coins: () => prof ? prof.coins | 0 : 0,
+      owns: (slot, id) => !lookOf(slot, id).price || !!(prof && (prof.owned || []).includes(slot + "." + id)),
+      async buy(slot, id) { gotProfile(await rpc("buy_item", { p_item: slot + "." + id })); },
+      async equip(slot, id) { gotProfile(await rpc("equip_item", { p_item: slot + "." + id })); },
       makeId: () => Array.from({ length: 16 }, () => "abcdefghijkmnpqrstuvwxyz23456789"[rand(32)]).join(""),
       pair(id, opp) { matchId = typeof id === "string" ? id.slice(0, 40) : null; oppUid = UUID.test(opp || "") ? opp : null; },
       startMatch() {
@@ -5845,7 +5993,7 @@
       await Acct.whenReady();
       await Net.open(code, false);
       mode = "mp";
-      Net.send({ t: "hello", name: myName, uid: Acct.uid() });
+      Net.send({ t: "hello", name: myName, uid: Acct.uid(), look: { board: Look.me.board, ship: Look.me.ship } });
       st.innerHTML = '<span class="dots">Waiting for the host</span>';
     } catch (e) {
       st.textContent = netError(e, true);
@@ -5860,6 +6008,69 @@
   }
   document.getElementById("joinBtn").onclick = doJoin;
   document.getElementById("joinCode").addEventListener("keydown", e => { if (e.key === "Enter") doJoin(); });
+
+  // ---- SHOP ----
+  let lookTab = "board", lookConfirm = null, lookBusy = false;
+  function lookPreview(slot, it) {
+    if (slot === "ship") return `<div class="lk-ship">${shipSVG(4, it.id).replace('preserveAspectRatio="none"', "")}</div>`;
+    if (slot === "board") {
+      const d = it.deep || ["#34c4dc", "#1590bd", "#0b5f97", "#063f6c"], rim = it.rim || "#8cc8e4", edge = it.edge || "#d4f1ff";
+      return `<div class="lk-board" style="--d1:${d[0]};--d2:${d[1]};--d3:${d[2]};--d4:${d[3]};--rim:${rim};--edge:${edge}"></div>`;
+    }
+    const sea = it.sea || "#0a5288", hi = it.hi || "#2aa6d877", lo = it.lo || "#021a33aa";
+    return `<div class="lk-sea" style="--s:${sea};--hi:${hi};--lo:${lo}"></div>`;
+  }
+  function renderLookShop() {
+    const grid = document.getElementById("lkGrid");
+    if (!grid) return;
+    document.getElementById("lkCoins").textContent = Acct.coins();
+    document.querySelectorAll("#lkTabs button").forEach(b => b.classList.toggle("on", b.dataset.tab === lookTab));
+    const online = Acct.online();
+    grid.innerHTML = LOOKS[lookTab].map(it => {
+      const owned = Acct.owns(lookTab, it.id), worn = Look.me[lookTab] === it.id;
+      const key = lookTab + "." + it.id, poor = !owned && Acct.coins() < it.price;
+      let btn;
+      if (worn) btn = `<button class="lk-btn worn" disabled>✓ EQUIPPED</button>`;
+      else if (owned) btn = `<button class="lk-btn equip" data-act="equip" data-id="${it.id}"${online || !it.price ? "" : " disabled"}>EQUIP</button>`;
+      else if (lookConfirm === key) btn = `<button class="lk-btn confirm" data-act="buy" data-id="${it.id}">CONFIRM 🪙 ${it.price}</button>`;
+      else btn = `<button class="lk-btn buy${poor ? " poor" : ""}" data-act="ask" data-id="${it.id}"${online ? "" : " disabled"}>🪙 ${it.price}</button>`;
+      return `<div class="lk-item${worn ? " worn" : ""}${owned ? " owned" : ""}">${lookPreview(lookTab, it)}<div class="lk-name">${it.name}</div>${btn}</div>`;
+    }).join("");
+    if (!online) document.getElementById("lkStatus").textContent = Acct.on ? "Connecting to the shop…" : "The shop needs an internet connection";
+  }
+  document.querySelector('[data-go="shop"]').onclick = () => {
+    lookConfirm = null; document.getElementById("lkStatus").textContent = "";
+    showMenu("menuShop"); renderLookShop();
+  };
+  document.getElementById("lkTabs").onclick = e => {
+    const b = e.target.closest("button[data-tab]"); if (!b) return;
+    lookTab = b.dataset.tab; lookConfirm = null; document.getElementById("lkStatus").textContent = "";
+    Sound.play("select"); renderLookShop();
+  };
+  document.getElementById("lkGrid").onclick = async e => {
+    const b = e.target.closest("button[data-act]"); if (!b || lookBusy) return;
+    const id = b.dataset.id, it = lookOf(lookTab, id), st = document.getElementById("lkStatus");
+    st.textContent = "";
+    if (b.dataset.act === "ask") {
+      if (Acct.coins() < it.price) { st.textContent = `You need ${it.price - Acct.coins()} more coins — win multiplayer games to earn them`; Sound.play("deny"); return; }
+      lookConfirm = lookTab + "." + id; Sound.play("select"); renderLookShop(); return;
+    }
+    lookBusy = true; b.disabled = true; b.innerHTML = '<span class="dots">…</span>';
+    try {
+      if (b.dataset.act === "buy") {
+        await Acct.buy(lookTab, id);
+        lookConfirm = null; Sound.play("coin");
+        await Acct.equip(lookTab, id);                 // put it on straight away
+        st.textContent = `${it.name} bought and equipped!`;
+      } else {
+        await Acct.equip(lookTab, id); Sound.play("select");
+      }
+    } catch (err) {
+      st.textContent = /not enough/.test(err.message) ? "Not enough coins" : "Couldn't reach the shop — try again";
+      Sound.play("deny");
+    }
+    lookBusy = false; renderLookShop();
+  };
 
   document.querySelector('[data-go="settings"]').onclick = () => {
     showMenu("menuSettings");
@@ -5962,7 +6173,7 @@
   try { if (localStorage.getItem("bs-touchgfx") !== "1") { localStorage.setItem("bs-autolow", "1"); localStorage.setItem("bs-touchgfx", "1"); } } catch (x) {}
   autoLow = true; applySettings();
   // stop pull-to-refresh / overscroll from reloading the game
-  document.addEventListener("touchmove", e => { if (!e.target.closest("input, .shop-grid, .scroll")) e.preventDefault(); }, { passive: false });
+  document.addEventListener("touchmove", e => { if (!e.target.closest("input, .shop-grid, .lk-grid, .scroll")) e.preventDefault(); }, { passive: false });
 
   // remember the "fit both boards" zoom so pinch can't go further out than that
   let baseZoom = 1;
